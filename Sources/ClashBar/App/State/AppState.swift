@@ -26,7 +26,7 @@ final class AppState: ObservableObject {
     @Published var socksPort: Int?
     @Published var redirPort: Int?
     @Published var tproxyPort: Int?
-    @Published var mixedPort: Int = 7891
+    @Published var mixedPort: Int = 7890
 
     @Published var mihomoBinaryPath: String = "-"
     @Published var selectedConfigName: String = "-"
@@ -76,7 +76,7 @@ final class AppState: ObservableObject {
     @Published var settingsLogLevel: String = ConfigLogLevel.info.rawValue { didSet { persistEditableSettingsSnapshot() } }
     @Published var settingsPort: String = "0" { didSet { persistEditableSettingsSnapshot() } }
     @Published var settingsSocksPort: String = "0" { didSet { persistEditableSettingsSnapshot() } }
-    @Published var settingsMixedPort: String = "7891" { didSet { persistEditableSettingsSnapshot() } }
+    @Published var settingsMixedPort: String = "7890" { didSet { persistEditableSettingsSnapshot() } }
     @Published var settingsRedirPort: String = "0" { didSet { persistEditableSettingsSnapshot() } }
     @Published var settingsTProxyPort: String = "0" { didSet { persistEditableSettingsSnapshot() } }
     @Published var settingsSyncingKey: String?

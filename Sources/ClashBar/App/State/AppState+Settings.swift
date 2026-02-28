@@ -182,7 +182,7 @@ extension AppState {
         if let value = Int(trimmed), (1...65535).contains(value) {
             return value
         }
-        return 7891
+        return 7890
     }
 
     func applyEditableSettingsSnapshotToUI(_ snapshot: EditableSettingsSnapshot) {
