@@ -266,8 +266,10 @@ final class AppState: ObservableObject {
     var mediumFrequencyIntervalNanoseconds: UInt64 = 4_000_000_000
     var lowFrequencyIntervalNanoseconds: UInt64 = 20_000_000_000
     var currentConnectionsStreamIntervalMilliseconds: Int?
-    var appLogFileURL: URL?
-    var appLogStore: AppLogStore?
+    var clashbarLogFileURL: URL?
+    var mihomoLogFileURL: URL?
+    var clashbarLogStore: AppLogStore?
+    var mihomoLogStore: AppLogStore?
     var didAttemptAutoStart = false
     var didCheckSystemProxyConsistencyOnLaunch = false
     var remoteConfigSources: [String: String] = [:]
@@ -281,7 +283,8 @@ final class AppState: ObservableObject {
         systemProxyService: SystemProxyService = SystemProxyService(),
         configImportService: ConfigImportService = ConfigImportService(),
         appLaunchService: AppLaunchService = AppLaunchService(),
-        appLogStore: AppLogStore? = nil,
+        clashbarLogStore: AppLogStore? = nil,
+        mihomoLogStore: AppLogStore? = nil,
         startBackgroundRefresh: Bool = true
     ) {
         self.processManager = processManager ?? MihomoProcessManager()
@@ -289,7 +292,8 @@ final class AppState: ObservableObject {
         self.systemProxyService = systemProxyService
         self.configImportService = configImportService
         self.appLaunchService = appLaunchService
-        self.appLogStore = appLogStore
+        self.clashbarLogStore = clashbarLogStore
+        self.mihomoLogStore = mihomoLogStore
         self.configManager = configManager ?? ConfigDirectoryManager(workingDirectoryManager: workingDirectoryManager)
         uiLanguage = loadPersistedUILanguage()
         refreshLaunchAtLoginStatus()
@@ -298,7 +302,7 @@ final class AppState: ObservableObject {
             mihomoBinaryPath = managedProcess.detectedBinaryPath ?? "-"
             managedProcess.onLog = { [weak self] line in
                 Task { @MainActor in
-                    self?.appendLog(level: "info", message: line)
+                    self?.appendMihomoLog(level: "info", message: line)
                 }
             }
             managedProcess.onTermination = { [weak self] code in
@@ -315,9 +319,14 @@ final class AppState: ObservableObject {
         }
         do {
             try self.workingDirectoryManager.bootstrapDirectories()
-            appLogFileURL = self.workingDirectoryManager.logsDirectoryURL.appendingPathComponent("clashbar.log", isDirectory: false)
-            if let appLogFileURL, self.appLogStore == nil {
-                self.appLogStore = AppLogStore(logFileURL: appLogFileURL)
+            clashbarLogFileURL = self.workingDirectoryManager.logsDirectoryURL.appendingPathComponent("clashbar.log", isDirectory: false)
+            mihomoLogFileURL = self.workingDirectoryManager.logsDirectoryURL.appendingPathComponent("mihomo.log", isDirectory: false)
+
+            if let clashbarLogFileURL, self.clashbarLogStore == nil {
+                self.clashbarLogStore = AppLogStore(logFileURL: clashbarLogFileURL)
+            }
+            if let mihomoLogFileURL, self.mihomoLogStore == nil {
+                self.mihomoLogStore = AppLogStore(logFileURL: mihomoLogFileURL)
             }
             ensureLogFileExists()
             seedBundledConfigIfNeeded()

@@ -55,6 +55,40 @@ extension MenuBarRoot {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+                .disabled(appState.errorLogs.isEmpty)
+
+                Button(role: .destructive) {
+                    appState.clearAllLogs()
+                } label: {
+                    Label(tr("ui.action.clear_all_logs"), systemImage: "trash")
+                        .font(.system(size: 11, weight: .medium))
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(appState.errorLogs.isEmpty)
+
+                AttachedPopoverMenu {
+                    HStack(spacing: MenuBarLayoutTokens.hMicro + 1) {
+                        Text(tr(logSourceFilter.titleKey))
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundStyle(nativePrimaryLabel)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(nativeTertiaryLabel)
+                    }
+                } content: { dismiss in
+                    ForEach(LogSourceFilter.allCases) { option in
+                        AttachedPopoverMenuItem(
+                            title: tr(option.titleKey),
+                            selected: option == logSourceFilter
+                        ) {
+                            logSourceFilter = option
+                            dismiss()
+                        }
+                    }
+                }
+                .fixedSize()
+                .buttonStyle(.bordered)
 
                 AttachedPopoverMenu {
                     HStack(spacing: MenuBarLayoutTokens.hMicro + 1) {
@@ -93,6 +127,8 @@ extension MenuBarRoot {
         let logs = Array(appState.errorLogs.prefix(120))
         let keyword = logSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return logs.filter { log in
+            let sourceMatched = logSourceFilter.matches(source: log.source)
+            guard sourceMatched else { return false }
             let levelMatched = logLevelFilter.matches(level: normalizedLogLevel(log.level))
             guard levelMatched else { return false }
             guard !keyword.isEmpty else { return true }
@@ -102,6 +138,8 @@ extension MenuBarRoot {
 
     func logEntryRow(_ log: AppErrorLogEntry) -> some View {
         let level = normalizedLogLevel(log.level)
+        let sourceLabel = localizedLogSourceLabel(log.source)
+        let sourceTone = logSourceStyle(log.source)
         let displayLevel = localizedLogLevelLabel(level)
         let parsed = parseLogMessage(log.message)
         let tone = logLevelStyle(level)
@@ -119,6 +157,10 @@ extension MenuBarRoot {
 
             VStack(alignment: .leading, spacing: MenuBarLayoutTokens.vDense) {
                 HStack(spacing: MenuBarLayoutTokens.hMicro + 1) {
+                    Text("[\(sourceLabel)]")
+                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(sourceTone)
+
                     Text("[\(displayLevel)]")
                         .font(.system(size: 10, weight: .semibold, design: .monospaced))
                         .foregroundStyle(tone)
@@ -192,6 +234,24 @@ extension MenuBarRoot {
         }
     }
 
+    func localizedLogSourceLabel(_ source: AppLogSource) -> String {
+        switch source {
+        case .clashbar:
+            return tr("ui.log_source.clashbar")
+        case .mihomo:
+            return tr("ui.log_source.mihomo")
+        }
+    }
+
+    func logSourceStyle(_ source: AppLogSource) -> Color {
+        switch source {
+        case .clashbar:
+            return nativeSecondaryLabel
+        case .mihomo:
+            return nativeAccent.opacity(0.95)
+        }
+    }
+
     func logLevelStyle(_ level: String) -> Color {
         switch level {
         case "ERROR":
@@ -261,10 +321,11 @@ extension MenuBarRoot {
     }
 
     func logSearchTextContent(for log: AppErrorLogEntry) -> String {
+        let source = localizedLogSourceLabel(log.source)
         let level = normalizedLogLevel(log.level)
         let time = ValueFormatter.dateTime(log.timestamp)
         let message = log.message
-        return "\(level) \(time) \(message)"
+        return "\(source) \(level) \(time) \(message)"
     }
 
 }

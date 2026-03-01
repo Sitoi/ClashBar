@@ -27,6 +27,14 @@ struct AppLogStore {
         handle.write(data)
     }
 
+    func clear() {
+        if FileManager.default.fileExists(atPath: logFileURL.path) {
+            try? Data().write(to: logFileURL, options: .atomic)
+        } else {
+            ensureLogFileExists()
+        }
+    }
+
     private static func timestampString(from date: Date) -> String {
         formatterLock.lock()
         defer { formatterLock.unlock() }

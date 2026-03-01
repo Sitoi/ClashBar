@@ -186,7 +186,7 @@ extension AppState {
             onPayload: { [weak self] payload in
                 guard let self else { return }
                 if let line = decodeLogLinePayload(payload) {
-                    appendLog(level: line.level, message: line.message)
+                    appendMihomoLog(level: line.level, message: line.message)
                 }
             }
         )

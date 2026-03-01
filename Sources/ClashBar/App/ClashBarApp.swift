@@ -66,6 +66,12 @@ struct ClashBarApp: App {
                     appDelegate.appState.copyAllLogs()
                 }
                 .keyboardShortcut("L", modifiers: [.command, .option, .shift])
+
+                Button(tr("ui.action.clear_all_logs")) {
+                    appDelegate.appState.clearAllLogs()
+                }
+                .keyboardShortcut(.delete, modifiers: [.command, .option, .shift])
+                .disabled(appDelegate.appState.errorLogs.isEmpty)
             }
         }
     }

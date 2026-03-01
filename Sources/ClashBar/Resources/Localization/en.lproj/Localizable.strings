@@ -8,6 +8,9 @@
 "ui.log_filter.info" = "Info";
 "ui.log_filter.warning" = "Warning";
 "ui.log_filter.error" = "Error";
+"ui.log_source.all" = "All Sources";
+"ui.log_source.clashbar" = "ClashBar";
+"ui.log_source.mihomo" = "Mihomo";
 
 "ui.header.status.running" = "Running";
 "ui.header.status.starting" = "Starting";
@@ -21,6 +24,7 @@
 "ui.action.close_all" = "Close All";
 "ui.action.close_connection" = "Close Connection";
 "ui.action.copy_all_logs" = "Copy All Logs";
+"ui.action.clear_all_logs" = "Clear All Logs";
 "ui.action.copy_host" = "Copy Host";
 "ui.action.copy_connection_id" = "Copy Connection ID";
 "ui.action.copy_log_message" = "Copy Log Message";

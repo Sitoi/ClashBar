@@ -8,6 +8,9 @@
 "ui.log_filter.info" = "信息";
 "ui.log_filter.warning" = "警告";
 "ui.log_filter.error" = "错误";
+"ui.log_source.all" = "全部来源";
+"ui.log_source.clashbar" = "ClashBar";
+"ui.log_source.mihomo" = "Mihomo";
 
 "ui.header.status.running" = "运行中";
 "ui.header.status.starting" = "启动中";
@@ -21,6 +24,7 @@
 "ui.action.close_all" = "关闭全部";
 "ui.action.close_connection" = "关闭连接";
 "ui.action.copy_all_logs" = "复制全部日志";
+"ui.action.clear_all_logs" = "清理全部日志";
 "ui.action.copy_host" = "复制 Host";
 "ui.action.copy_connection_id" = "复制连接 ID";
 "ui.action.copy_log_message" = "复制日志消息";

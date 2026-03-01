@@ -50,6 +50,36 @@ enum LogLevelFilter: String, CaseIterable, Identifiable {
     }
 }
 
+enum LogSourceFilter: String, CaseIterable, Identifiable {
+    case all
+    case clashbar
+    case mihomo
+
+    var id: String { rawValue }
+
+    var titleKey: String {
+        switch self {
+        case .all:
+            return "ui.log_source.all"
+        case .clashbar:
+            return "ui.log_source.clashbar"
+        case .mihomo:
+            return "ui.log_source.mihomo"
+        }
+    }
+
+    func matches(source: AppLogSource) -> Bool {
+        switch self {
+        case .all:
+            return true
+        case .clashbar:
+            return source == .clashbar
+        case .mihomo:
+            return source == .mihomo
+        }
+    }
+}
+
 struct MenuBarRoot: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var popoverLayoutModel: PopoverLayoutModel
@@ -63,6 +93,7 @@ struct MenuBarRoot: View {
     @State var hoveredProxyGroupName: String?
     @State var hoveredProxyProviderName: String?
     @State var hoveredMode: CoreMode?
+    @State var logSourceFilter: LogSourceFilter = .all
     @State var logLevelFilter: LogLevelFilter = .all
     @State var logSearchText: String = ""
     @State var topHeaderHeight: CGFloat = 0

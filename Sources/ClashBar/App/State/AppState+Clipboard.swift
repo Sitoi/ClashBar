@@ -38,7 +38,8 @@ extension AppState {
     }
 
     func formattedLogEntry(_ log: AppErrorLogEntry) -> String {
-        "[\(ValueFormatter.dateTime(log.timestamp))] [\(log.level.uppercased())] \(log.message)"
+        let source = log.source.rawValue.uppercased()
+        return "[\(ValueFormatter.dateTime(log.timestamp))] [\(source)] [\(log.level.uppercased())] \(log.message)"
     }
 
     private func copyAndLog(_ text: String, message: String) {
