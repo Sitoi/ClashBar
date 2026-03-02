@@ -104,6 +104,7 @@ final class ClashBarAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        appState.shutdownForTermination()
         statusItemController?.shutdown()
         statusItemController = nil
     }

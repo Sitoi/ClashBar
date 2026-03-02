@@ -31,108 +31,239 @@ extension MenuBarRoot {
 
     var logsControlCard: some View {
         VStack(alignment: .leading, spacing: MenuBarLayoutTokens.vDense + 2) {
-            HStack(spacing: MenuBarLayoutTokens.hDense) {
-                Text(tr("ui.tab.logs"))
-                    .font(.system(size: 12, weight: .bold))
-                    .tracking(1.2)
-                    .textCase(.uppercase)
-                    .foregroundStyle(nativeTertiaryLabel)
-
-                Text("\(filteredLogs.count)")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .foregroundStyle(nativeSecondaryLabel)
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 1)
-                    .background(nativeBadgeCapsule())
-
-                Spacer(minLength: 0)
-
-                Button {
-                    appState.copyAllLogs()
-                } label: {
-                    Label(tr("ui.action.copy_all_logs"), systemImage: "doc.on.doc")
-                        .font(.system(size: 11, weight: .medium))
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .disabled(appState.errorLogs.isEmpty)
-
-                Button(role: .destructive) {
-                    appState.clearAllLogs()
-                } label: {
-                    Label(tr("ui.action.clear_all_logs"), systemImage: "trash")
-                        .font(.system(size: 11, weight: .medium))
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .disabled(appState.errorLogs.isEmpty)
-
-                AttachedPopoverMenu {
-                    HStack(spacing: MenuBarLayoutTokens.hMicro + 1) {
-                        Text(tr(logSourceFilter.titleKey))
-                            .font(.system(size: 11, weight: .regular))
-                            .foregroundStyle(nativePrimaryLabel)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(nativeTertiaryLabel)
-                    }
-                } content: { dismiss in
-                    ForEach(LogSourceFilter.allCases) { option in
-                        AttachedPopoverMenuItem(
-                            title: tr(option.titleKey),
-                            selected: option == logSourceFilter
-                        ) {
-                            logSourceFilter = option
-                            dismiss()
-                        }
-                    }
-                }
-                .fixedSize()
-                .buttonStyle(.bordered)
-
-                AttachedPopoverMenu {
-                    HStack(spacing: MenuBarLayoutTokens.hMicro + 1) {
-                        Text(tr(logLevelFilter.titleKey))
-                            .font(.system(size: 11, weight: .regular))
-                            .foregroundStyle(nativePrimaryLabel)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(nativeTertiaryLabel)
-                    }
-                } content: { dismiss in
-                    ForEach(LogLevelFilter.allCases) { option in
-                        AttachedPopoverMenuItem(
-                            title: tr(option.titleKey),
-                            selected: option == logLevelFilter
-                        ) {
-                            logLevelFilter = option
-                            dismiss()
-                        }
-                    }
-                }
-                .fixedSize()
-                .buttonStyle(.bordered)
-            }
-
-            TextField(tr("ui.placeholder.search_logs"), text: $logSearchText)
-                .textFieldStyle(.roundedBorder)
-                .font(.system(size: 12, weight: .regular))
-                .foregroundStyle(nativePrimaryLabel)
+            logsPrimaryControlRow
+            logsSecondaryControlRow
+            logsSearchControlRow
         }
         .menuRowPadding(vertical: MenuBarLayoutTokens.vDense + 2)
         .background(nativeSectionCard())
     }
 
-    var filteredLogs: [AppErrorLogEntry] {
+    var logsPrimaryControlRow: some View {
+        HStack(spacing: MenuBarLayoutTokens.hDense) {
+            logsSourceFilterButtons
+
+            Spacer(minLength: 0)
+
+            logsCountSummaryBadge
+        }
+    }
+
+    var logsSecondaryControlRow: some View {
+        HStack(spacing: MenuBarLayoutTokens.hDense) {
+            logsLevelFilterButtons
+
+            Button {
+                resetLogFilters()
+            } label: {
+                Image(systemName: "line.3.horizontal.decrease.circle")
+                    .font(.system(size: 11, weight: .semibold))
+                    .frame(width: 12, height: 12)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .help(tr("ui.action.reset_log_filters"))
+            .accessibilityLabel(tr("ui.action.reset_log_filters"))
+            .disabled(!hasActiveLogFilters)
+
+            Spacer(minLength: 0)
+
+            Button {
+                appState.copyAllLogs()
+            } label: {
+                Image(systemName: "doc.on.doc")
+                    .font(.system(size: 11, weight: .semibold))
+                    .frame(width: 12, height: 12)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .help(tr("ui.action.copy_all_logs"))
+            .accessibilityLabel(tr("ui.action.copy_all_logs"))
+            .disabled(appState.errorLogs.isEmpty)
+
+            Button(role: .destructive) {
+                appState.clearAllLogs()
+            } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 11, weight: .semibold))
+                    .frame(width: 12, height: 12)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .help(tr("ui.action.clear_all_logs"))
+            .accessibilityLabel(tr("ui.action.clear_all_logs"))
+            .disabled(appState.errorLogs.isEmpty)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    var logsSearchControlRow: some View {
+        TextField(tr("ui.placeholder.search_logs"), text: $logSearchText)
+            .textFieldStyle(.roundedBorder)
+            .font(.system(size: 12, weight: .regular))
+            .foregroundStyle(nativePrimaryLabel)
+    }
+
+    var logsSourceFilterButtons: some View {
+        HStack(spacing: MenuBarLayoutTokens.hMicro + 1) {
+            Image(systemName: "line.3.horizontal.decrease.circle")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(nativeTertiaryLabel)
+
+            logFilterToggleButton(
+                title: tr("ui.log_source.all"),
+                selected: selectedLogSources == allLogSourceSelection,
+                action: { selectedLogSources = allLogSourceSelection }
+            )
+            .help(tr("ui.log_source.all"))
+
+            ForEach(AppLogSource.allCases) { source in
+                logFilterToggleButton(
+                    title: localizedLogSourceLabel(source),
+                    selected: selectedLogSources.contains(source),
+                    action: { toggleLogSource(source) }
+                )
+                .help(tr("ui.log_source.all"))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    var logsLevelFilterButtons: some View {
+        HStack(spacing: MenuBarLayoutTokens.hMicro + 1) {
+            Image(systemName: "slider.horizontal.3")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(nativeTertiaryLabel)
+
+            logFilterToggleButton(
+                title: tr("ui.log_filter.all"),
+                selected: selectedLogLevels == allLogLevelSelection,
+                action: { selectedLogLevels = allLogLevelSelection }
+            )
+            .help(tr("ui.log_filter.all"))
+
+            ForEach(logSelectableLevels, id: \.self) { level in
+                logFilterToggleButton(
+                    title: tr(level.titleKey),
+                    selected: selectedLogLevels.contains(level),
+                    action: { toggleLogLevel(level) }
+                )
+                .help(tr("ui.settings.log_level"))
+            }
+        }
+    }
+
+    @ViewBuilder
+    func logFilterToggleButton(
+        title: String,
+        selected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        if selected {
+            Button(action: action) {
+                Text(title)
+                    .font(.system(size: 11, weight: .medium))
+                    .lineLimit(1)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+        } else {
+            Button(action: action) {
+                Text(title)
+                    .font(.system(size: 11, weight: .medium))
+                    .lineLimit(1)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+    }
+
+    var logSelectableLevels: [LogLevelFilter] {
+        [.info, .warning, .error]
+    }
+
+    var allLogSourceSelection: Set<AppLogSource> {
+        Set(AppLogSource.allCases)
+    }
+
+    var allLogLevelSelection: Set<LogLevelFilter> {
+        Set(logSelectableLevels)
+    }
+
+    var logsCountSummaryBadge: some View {
+        HStack(spacing: MenuBarLayoutTokens.hMicro) {
+            Text("\(filteredLogs.count)")
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+            Text("/")
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+            Text("\(appState.errorLogs.count)")
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
+        }
+        .foregroundStyle(nativeSecondaryLabel)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(nativeBadgeCapsule())
+    }
+
+    func toggleLogSource(_ source: AppLogSource) {
+        if selectedLogSources.contains(source) {
+            selectedLogSources.remove(source)
+            if selectedLogSources.isEmpty {
+                selectedLogSources = allLogSourceSelection
+            }
+        } else {
+            selectedLogSources.insert(source)
+        }
+    }
+
+    func toggleLogLevel(_ level: LogLevelFilter) {
+        if selectedLogLevels.contains(level) {
+            selectedLogLevels.remove(level)
+            if selectedLogLevels.isEmpty {
+                selectedLogLevels = allLogLevelSelection
+            }
+        } else {
+            selectedLogLevels.insert(level)
+        }
+    }
+
+    var hasActiveLogFilters: Bool {
+        selectedLogSources != allLogSourceSelection || selectedLogLevels != allLogLevelSelection || !trimmedLogKeyword.isEmpty
+    }
+
+    var trimmedLogKeyword: String {
+        logSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var logsMatchingSourceAndSearch: [AppErrorLogEntry] {
         let logs = Array(appState.errorLogs.prefix(120))
-        let keyword = logSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return logs.filter { log in
-            let sourceMatched = logSourceFilter.matches(source: log.source)
-            guard sourceMatched else { return false }
-            let levelMatched = logLevelFilter.matches(level: normalizedLogLevel(log.level))
-            guard levelMatched else { return false }
-            guard !keyword.isEmpty else { return true }
-            return logSearchTextContent(for: log).localizedStandardContains(keyword)
+            guard selectedLogSources.contains(log.source) else { return false }
+            guard !trimmedLogKeyword.isEmpty else { return true }
+            return logSearchTextContent(for: log).localizedStandardContains(trimmedLogKeyword)
+        }
+    }
+
+    func resetLogFilters() {
+        selectedLogSources = allLogSourceSelection
+        selectedLogLevels = allLogLevelSelection
+        logSearchText = ""
+    }
+
+    var filteredLogs: [AppErrorLogEntry] {
+        logsMatchingSourceAndSearch.filter { log in
+            selectedLogLevels.contains(levelFilterOption(from: normalizedLogLevel(log.level)))
+        }
+    }
+
+    func levelFilterOption(from normalizedLevel: String) -> LogLevelFilter {
+        switch normalizedLevel {
+        case "ERROR":
+            return .error
+        case "WARNING":
+            return .warning
+        default:
+            return .info
         }
     }
 

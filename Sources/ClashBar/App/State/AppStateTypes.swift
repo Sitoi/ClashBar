@@ -209,6 +209,23 @@ struct EditableSettingsSnapshot: Equatable, Codable {
     }
 }
 
+extension EditableSettingsSnapshot {
+    func withTunEnabled(_ enabled: Bool) -> EditableSettingsSnapshot {
+        EditableSettingsSnapshot(
+            allowLan: allowLan,
+            ipv6: ipv6,
+            unifiedDelay: unifiedDelay,
+            tunEnabled: enabled,
+            logLevel: logLevel,
+            port: port,
+            socksPort: socksPort,
+            mixedPort: mixedPort,
+            redirPort: redirPort,
+            tproxyPort: tproxyPort
+        )
+    }
+}
+
 struct SystemProxyPorts: Equatable, Sendable {
     let httpPort: Int?
     let httpsPort: Int?

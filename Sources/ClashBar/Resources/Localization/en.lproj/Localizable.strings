@@ -25,6 +25,7 @@
 "ui.action.close_connection" = "Close Connection";
 "ui.action.copy_all_logs" = "Copy All Logs";
 "ui.action.clear_all_logs" = "Clear All Logs";
+"ui.action.reset_log_filters" = "Reset Filters";
 "ui.action.copy_host" = "Copy Host";
 "ui.action.copy_connection_id" = "Copy Connection ID";
 "ui.action.copy_log_message" = "Copy Log Message";
@@ -150,6 +151,7 @@
 "app.system_proxy.error.helper_install_location" = "Move ClashBar.app to /Applications and reopen it before enabling system proxy";
 "app.system_proxy.error.helper_needs_approval" = "Allow ClashBar background item in System Settings > General > Login Items, then try again";
 "app.system_proxy.error.helper_registration_failed" = "Failed to register privileged helper: %@";
+"app.system_proxy.error.helper_recovery_failed" = "Failed to recover privileged helper: %@";
 "app.system_proxy.error.helper_connection_failed" = "Failed to connect privileged helper: %@";
 "app.system_proxy.error.helper_operation_failed" = "Privileged helper operation failed: %@";
 "app.tun.error.binary_not_found" = "mihomo binary not found. Rebuild or reinstall ClashBar.";

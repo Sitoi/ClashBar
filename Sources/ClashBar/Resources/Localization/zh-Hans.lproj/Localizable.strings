@@ -25,6 +25,7 @@
 "ui.action.close_connection" = "关闭连接";
 "ui.action.copy_all_logs" = "复制全部日志";
 "ui.action.clear_all_logs" = "清理全部日志";
+"ui.action.reset_log_filters" = "重置筛选";
 "ui.action.copy_host" = "复制 Host";
 "ui.action.copy_connection_id" = "复制连接 ID";
 "ui.action.copy_log_message" = "复制日志消息";
@@ -150,6 +151,7 @@
 "app.system_proxy.error.helper_install_location" = "请先将 ClashBar.app 拖到“应用程序”目录后重试";
 "app.system_proxy.error.helper_needs_approval" = "需要在系统设置 > 通用 > 登录项中允许 ClashBar 后台项目，然后重试";
 "app.system_proxy.error.helper_registration_failed" = "注册系统代理 helper 失败: %@";
+"app.system_proxy.error.helper_recovery_failed" = "恢复系统代理 helper 失败: %@";
 "app.system_proxy.error.helper_connection_failed" = "连接系统代理 helper 失败: %@";
 "app.system_proxy.error.helper_operation_failed" = "系统代理 helper 执行失败: %@";
 "app.tun.error.binary_not_found" = "未找到 mihomo 二进制，请重新打包或重装 ClashBar。";

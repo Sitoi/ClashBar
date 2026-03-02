@@ -46,6 +46,28 @@ extension AppState {
         }
     }
 
+    func prepareTunOverlayForCoreStartup(
+        configPath: String,
+        overlay: EditableSettingsSnapshot
+    ) async throws -> EditableSettingsSnapshot {
+        guard overlay.tunEnabled else { return overlay }
+
+        do {
+            try await ensureTunPermissions(requestIfMissing: false)
+            return overlay
+        } catch {
+            try tunConfigFileService.patchConfig(
+                at: configPath,
+                tunEnabled: false,
+                ensureDNSEnabledWhenTunOn: false
+            )
+            isTunEnabled = false
+            persistEditableSettingsSnapshot()
+            appendLog(level: "warning", message: tr("log.tun.startup_disabled"))
+            return overlay.withTunEnabled(false)
+        }
+    }
+
     func validateTunPermissionsOnStartup() async {
         guard isTunEnabled else { return }
         do {
@@ -53,7 +75,9 @@ extension AppState {
         } catch {
             do {
                 try? await persistTunConfigToSelectedFile(enabled: false, ensureDNSEnabled: false)
-                try await patchTunConfig(enable: false)
+                if isRuntimeRunning {
+                    try await patchTunConfig(enable: false)
+                }
                 isTunEnabled = false
                 persistEditableSettingsSnapshot()
                 appendLog(level: "warning", message: tr("log.tun.startup_disabled"))

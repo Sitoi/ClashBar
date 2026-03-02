@@ -93,8 +93,8 @@ struct MenuBarRoot: View {
     @State var hoveredProxyGroupName: String?
     @State var hoveredProxyProviderName: String?
     @State var hoveredMode: CoreMode?
-    @State var logSourceFilter: LogSourceFilter = .all
-    @State var logLevelFilter: LogLevelFilter = .all
+    @State var selectedLogSources: Set<AppLogSource> = Set(AppLogSource.allCases)
+    @State var selectedLogLevels: Set<LogLevelFilter> = [.info, .warning, .error]
     @State var logSearchText: String = ""
     @State var topHeaderHeight: CGFloat = 0
     @State var modeAndTabSectionHeight: CGFloat = 0

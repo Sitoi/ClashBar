@@ -95,6 +95,8 @@ extension AppState {
             return tr("app.system_proxy.error.helper_needs_approval")
         case let .helperRegistrationFailed(message):
             return tr("app.system_proxy.error.helper_registration_failed", message)
+        case let .helperRecoveryFailed(message):
+            return tr("app.system_proxy.error.helper_recovery_failed", message)
         case let .helperConnectionFailed(message):
             return tr("app.system_proxy.error.helper_connection_failed", message)
         case let .helperOperationFailed(message):

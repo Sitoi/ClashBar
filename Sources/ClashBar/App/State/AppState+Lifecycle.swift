@@ -7,7 +7,7 @@ extension AppState {
         guard !isCoreActionProcessing else { return }
         coreActionState = .starting
         defer { coreActionState = .idle }
-        let settingsOverlay = currentEditableSettingsSnapshot()
+        var settingsOverlay = currentEditableSettingsSnapshot()
         preserveLocalSettingsOnNextSync = true
         do {
             guard let configPath = await resolveSelectedConfigPath() else {
@@ -20,6 +20,11 @@ extension AppState {
                 }
                 return
             }
+
+            settingsOverlay = try await prepareTunOverlayForCoreStartup(
+                configPath: configPath,
+                overlay: settingsOverlay
+            )
 
             let launchController = applyExternalControllerFromSelectedConfigFile(configPath: configPath)
             statusText = "Starting"
@@ -114,12 +119,16 @@ extension AppState {
     }
 
     func quitApp() async {
+        shutdownForTermination()
+        NSApplication.shared.terminate(nil)
+    }
+
+    func shutdownForTermination() {
         cancelProviderRefresh(reason: "quit requested")
         cancelPolling()
         if processManager.isRunning {
             processManager.stop()
         }
-        NSApplication.shared.terminate(nil)
     }
 
     func applyAppAppearance() {

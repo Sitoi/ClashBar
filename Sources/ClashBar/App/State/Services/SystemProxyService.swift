@@ -9,6 +9,7 @@ enum SystemProxyServiceError: LocalizedError {
     case helperRequiresInstallToApplications
     case helperNeedsApproval
     case helperRegistrationFailed(String)
+    case helperRecoveryFailed(String)
     case helperConnectionFailed(String)
     case helperOperationFailed(String)
 
@@ -26,6 +27,8 @@ enum SystemProxyServiceError: LocalizedError {
             return "Privileged helper requires approval in System Settings > Login Items."
         case let .helperRegistrationFailed(message):
             return "Failed to register privileged helper: \(message)"
+        case let .helperRecoveryFailed(message):
+            return "Failed to recover privileged helper: \(message)"
         case let .helperConnectionFailed(message):
             return "Failed to connect privileged helper: \(message)"
         case let .helperOperationFailed(message):
@@ -61,13 +64,19 @@ private final class ContinuationBox<Value: Sendable>: @unchecked Sendable {
 }
 
 struct SystemProxyService {
+    private let helperRecoveryMaxAttempts = 3
+    private let helperRecoveryDelayNanoseconds: UInt64 = 700_000_000
+
     func applySystemProxy(enabled: Bool, host: String, ports: SystemProxyPorts) async throws {
         try validateHost(host)
-        try ensureHelperReadyForWrite()
 
         if enabled {
             let resolvedPorts = try validateAndResolvePorts(ports, requiresEnabledPort: true)
-            try await invokeMutation { helper, completion in
+            // Match clash-party's "disable then enable" sequence to avoid stale proxy residue.
+            try await invokeMutationWithRecovery { helper, completion in
+                helper.clearSystemProxy(completion: completion)
+            }
+            try await invokeMutationWithRecovery { helper, completion in
                 helper.setSystemProxy(
                     host: host,
                     httpPort: resolvedPorts.httpPort,
@@ -77,7 +86,7 @@ struct SystemProxyService {
                 )
             }
         } else {
-            try await invokeMutation { helper, completion in
+            try await invokeMutationWithRecovery { helper, completion in
                 helper.clearSystemProxy(completion: completion)
             }
         }
@@ -89,7 +98,7 @@ struct SystemProxyService {
             return false
         }
 
-        return try await invokeStateQuery()
+        return try await invokeStateQueryWithRecovery()
     }
 
     func isSystemProxyConfigured(host: String, ports: SystemProxyPorts) async throws -> Bool {
@@ -100,7 +109,7 @@ struct SystemProxyService {
             return false
         }
 
-        return try await invokeBooleanQuery { helper, completion in
+        return try await invokeBooleanQueryWithRecovery { helper, completion in
             helper.isSystemProxyConfigured(
                 host: host,
                 httpPort: resolvedPorts.httpPort,
@@ -201,6 +210,95 @@ struct SystemProxyService {
 
     private func helperService() -> SMAppService {
         SMAppService.daemon(plistName: ProxyHelperConstants.daemonPlistName)
+    }
+
+    private func invokeMutationWithRecovery(
+        _ invoke: @escaping (ProxyHelperProtocol, @escaping (Bool, String?) -> Void) -> Void
+    ) async throws {
+        var attempt = 0
+        var lastError: Error?
+
+        while attempt < helperRecoveryMaxAttempts {
+            do {
+                try ensureHelperReadyForWrite()
+                try await invokeMutation(invoke)
+                return
+            } catch {
+                lastError = error
+                let shouldRetry = shouldRetryAfterRecovery(error)
+                if !shouldRetry || attempt == helperRecoveryMaxAttempts - 1 {
+                    throw error
+                }
+                try await recoverHelperForRetry(error: error)
+                attempt += 1
+            }
+        }
+
+        throw lastError ?? SystemProxyServiceError.helperOperationFailed("Unknown helper mutation failure.")
+    }
+
+    private func invokeStateQueryWithRecovery() async throws -> Bool {
+        try await invokeBooleanQueryWithRecovery { helper, completion in
+            helper.getSystemProxyState(completion: completion)
+        }
+    }
+
+    private func invokeBooleanQueryWithRecovery(
+        _ invoke: @escaping (ProxyHelperProtocol, @escaping (Bool, Bool, String?) -> Void) -> Void
+    ) async throws -> Bool {
+        var attempt = 0
+        var lastError: Error?
+
+        while attempt < helperRecoveryMaxAttempts {
+            do {
+                return try await invokeBooleanQuery(invoke)
+            } catch {
+                lastError = error
+                let shouldRetry = shouldRetryAfterRecovery(error)
+                if !shouldRetry || attempt == helperRecoveryMaxAttempts - 1 {
+                    throw error
+                }
+                try await recoverHelperForRetry(error: error)
+                attempt += 1
+            }
+        }
+
+        throw lastError ?? SystemProxyServiceError.helperOperationFailed("Unknown helper query failure.")
+    }
+
+    private func shouldRetryAfterRecovery(_ error: Error) -> Bool {
+        guard let serviceError = error as? SystemProxyServiceError else {
+            return false
+        }
+
+        switch serviceError {
+        case .helperConnectionFailed, .helperOperationFailed, .helperRegistrationFailed:
+            return true
+        case .helperNeedsApproval, .helperNotBundled, .helperRequiresInstallToApplications, .invalidHost, .invalidPort, .helperRecoveryFailed:
+            return false
+        }
+    }
+
+    private func recoverHelperForRetry(error previousError: Error) async throws {
+        let daemonService = helperService()
+        do {
+            try daemonService.register()
+        } catch {
+            if daemonService.status == .requiresApproval {
+                SMAppService.openSystemSettingsLoginItems()
+                throw SystemProxyServiceError.helperNeedsApproval
+            }
+            throw SystemProxyServiceError.helperRecoveryFailed(
+                "\(previousError.localizedDescription) -> \(error.localizedDescription)"
+            )
+        }
+
+        if daemonService.status == .requiresApproval {
+            SMAppService.openSystemSettingsLoginItems()
+            throw SystemProxyServiceError.helperNeedsApproval
+        }
+
+        try? await Task.sleep(nanoseconds: helperRecoveryDelayNanoseconds)
     }
 
     private func invokeMutation(
