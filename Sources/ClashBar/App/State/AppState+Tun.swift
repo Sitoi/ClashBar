@@ -53,7 +53,9 @@ extension AppState {
         guard overlay.tunEnabled else { return overlay }
 
         do {
-            try await ensureTunPermissions(requestIfMissing: false)
+            // On app updates, bundled mihomo may lose setuid/root ownership.
+            // Request permission proactively to avoid silently disabling TUN on startup.
+            try await ensureTunPermissions(requestIfMissing: true)
             return overlay
         } catch {
             try tunConfigFileService.patchConfig(

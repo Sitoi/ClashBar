@@ -66,6 +66,7 @@ private final class ContinuationBox<Value: Sendable>: @unchecked Sendable {
 struct SystemProxyService {
     private let helperRecoveryMaxAttempts = 3
     private let helperRecoveryDelayNanoseconds: UInt64 = 700_000_000
+    private let helperResponseTimeoutNanoseconds: UInt64 = 4_000_000_000
 
     func applySystemProxy(enabled: Bool, host: String, ports: SystemProxyPorts) async throws {
         try validateHost(host)
@@ -341,17 +342,33 @@ struct SystemProxyService {
         try await withCheckedThrowingContinuation { continuation in
             let connection = makeConnection()
             let box = ContinuationBox<Value>(continuation)
+            let timeoutWorkItem = DispatchWorkItem {
+                connection.invalidate()
+                box.resume(
+                    with: .failure(
+                        SystemProxyServiceError.helperConnectionFailed("Helper response timed out.")
+                    )
+                )
+            }
+            let timeoutInterval = DispatchTimeInterval.nanoseconds(Int(helperResponseTimeoutNanoseconds))
+            DispatchQueue.global(qos: .userInitiated).asyncAfter(
+                deadline: .now() + timeoutInterval,
+                execute: timeoutWorkItem
+            )
 
             guard let helper = connection.remoteObjectProxyWithErrorHandler({ error in
+                timeoutWorkItem.cancel()
                 connection.invalidate()
                 box.resume(with: .failure(SystemProxyServiceError.helperConnectionFailed(error.localizedDescription)))
             }) as? ProxyHelperProtocol else {
+                timeoutWorkItem.cancel()
                 connection.invalidate()
                 box.resume(with: .failure(SystemProxyServiceError.helperConnectionFailed("Unable to create XPC proxy.")))
                 return
             }
 
             invoke(helper) { result in
+                timeoutWorkItem.cancel()
                 defer { connection.invalidate() }
                 box.resume(with: result)
             }

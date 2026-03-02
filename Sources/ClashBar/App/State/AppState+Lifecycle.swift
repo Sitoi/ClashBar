@@ -193,25 +193,23 @@ extension AppState {
         startPolling()
         await refreshFromAPI(includeSlowCalls: true)
 
-        if refreshSystemProxyBeforeOverlay {
-            await refreshSystemProxyStatus()
-        }
-
         await applyEditableSettingsOverlay(
             settingsOverlay,
             syncingKey: overlaySyncingKey,
             successMessage: ""
         )
         await validateTunPermissionsOnStartup()
-        await ensureSystemProxyConsistencyOnFirstLaunchIfNeeded()
         enqueueProviderRefresh(trigger: providerTrigger)
 
         if refreshProxyGroupsAfterBootstrap {
             await refreshProxyGroupsAfterRestart()
         }
-        if refreshSystemProxyAfterBootstrap {
-            await refreshSystemProxyStatus()
-        }
+
+        // Keep startup responsive even when helper registration or system proxy reads are slow.
+        scheduleSystemProxyStartupPostflight(
+            refreshStatusBeforeOverlay: refreshSystemProxyBeforeOverlay,
+            refreshStatusAfterBootstrap: refreshSystemProxyAfterBootstrap
+        )
 
         defaults.set(configPath, forKey: lastSuccessfulConfigPathKey)
         startupErrorMessage = nil

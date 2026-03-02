@@ -58,22 +58,51 @@ extension AppState {
 
     func ensureSystemProxyConsistencyOnFirstLaunchIfNeeded() async {
         guard !didCheckSystemProxyConsistencyOnLaunch else { return }
-        didCheckSystemProxyConsistencyOnLaunch = true
-        guard isSystemProxyEnabled else { return }
+        guard isRuntimeRunning else { return }
+        guard isSystemProxyEnabled else {
+            didCheckSystemProxyConsistencyOnLaunch = true
+            return
+        }
 
         do {
             let target = try await resolveSystemProxyTargetFromRuntimeConfig()
             let isConfigured = try await isSystemProxyConfigured(host: target.host, ports: target.ports)
-            guard !isConfigured else { return }
+            if !isConfigured {
+                try await applySystemProxy(enabled: true, host: target.host, ports: target.ports)
+                appendLog(
+                    level: "info",
+                    message: tr("log.system_proxy.startup_repaired", target.host, target.ports.primaryPort ?? 0)
+                )
+            }
 
-            try await applySystemProxy(enabled: true, host: target.host, ports: target.ports)
-            appendLog(
-                level: "info",
-                message: tr("log.system_proxy.startup_repaired", target.host, target.ports.primaryPort ?? 0)
-            )
+            didCheckSystemProxyConsistencyOnLaunch = true
             await refreshSystemProxyStatus()
         } catch {
             appendLog(level: "error", message: tr("log.system_proxy.startup_repair_failed", systemProxyErrorMessage(error)))
+        }
+    }
+
+    func scheduleSystemProxyStartupPostflight(
+        refreshStatusBeforeOverlay: Bool,
+        refreshStatusAfterBootstrap: Bool
+    ) {
+        let shouldRefreshStatus = refreshStatusBeforeOverlay || refreshStatusAfterBootstrap
+        let shouldRepairConsistency = !didCheckSystemProxyConsistencyOnLaunch
+        guard shouldRefreshStatus || shouldRepairConsistency else { return }
+
+        Task { [weak self] in
+            guard let self else { return }
+
+            if shouldRefreshStatus {
+                await self.refreshSystemProxyStatus()
+            }
+
+            if shouldRepairConsistency {
+                await self.ensureSystemProxyConsistencyOnFirstLaunchIfNeeded()
+                if shouldRefreshStatus {
+                    await self.refreshSystemProxyStatus()
+                }
+            }
         }
     }
 
