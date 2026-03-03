@@ -40,7 +40,19 @@ extension MenuBarRoot {
     }
 
     var systemTabBody: some View {
-        VStack(alignment: .leading, spacing: MenuBarLayoutTokens.sectionGap) {
+        let proxyPortFields: [(titleKey: String, symbol: String, text: Binding<String>)] = [
+            ("ui.settings.port.port", "network", $appState.settingsPort),
+            ("ui.settings.port.socks", "wave.3.right", $appState.settingsSocksPort),
+            ("ui.settings.port.mixed", "arrow.triangle.merge", $appState.settingsMixedPort),
+            ("ui.settings.port.redir", "arrowshape.turn.up.right", $appState.settingsRedirPort),
+            ("ui.settings.port.tproxy", "shield.lefthalf.filled", $appState.settingsTProxyPort),
+        ]
+        let maintenanceActions: [(titleKey: String, symbol: String, action: @MainActor () async -> Void)] = [
+            ("ui.action.flush_fakeip_cache", "externaldrive.badge.minus", { await appState.flushFakeIPCache() }),
+            ("ui.action.flush_dns_cache", "network.badge.shield.half.filled", { await appState.flushDNSCache() }),
+        ]
+
+        return VStack(alignment: .leading, spacing: MenuBarLayoutTokens.sectionGap) {
             if let feedback = settingsFeedbackState {
                 settingsFeedbackBanner(
                     text: feedback.message,
@@ -194,26 +206,12 @@ extension MenuBarRoot {
                         }
                     }
 
-                    settingsPortFieldRow(
-                        tr("ui.settings.port.port"),
-                        symbol: "network",
-                        text: $appState.settingsPort)
-                    settingsPortFieldRow(
-                        tr("ui.settings.port.socks"),
-                        symbol: "wave.3.right",
-                        text: $appState.settingsSocksPort)
-                    settingsPortFieldRow(
-                        tr("ui.settings.port.mixed"),
-                        symbol: "arrow.triangle.merge",
-                        text: $appState.settingsMixedPort)
-                    settingsPortFieldRow(
-                        tr("ui.settings.port.redir"),
-                        symbol: "arrowshape.turn.up.right",
-                        text: $appState.settingsRedirPort)
-                    settingsPortFieldRow(
-                        tr("ui.settings.port.tproxy"),
-                        symbol: "shield.lefthalf.filled",
-                        text: $appState.settingsTProxyPort)
+                    ForEach(proxyPortFields, id: \.titleKey) { item in
+                        settingsPortFieldRow(
+                            tr(item.titleKey),
+                            symbol: item.symbol,
+                            text: item.text)
+                    }
                 }
                 .menuRowPadding(vertical: MenuBarLayoutTokens.vDense + 2)
             }
@@ -227,18 +225,10 @@ extension MenuBarRoot {
 
                 VStack(alignment: .leading, spacing: MenuBarLayoutTokens.vDense + 2) {
                     HStack(spacing: MenuBarLayoutTokens.hDense) {
-                        maintenanceActionButton(
-                            tr("ui.action.flush_fakeip_cache"),
-                            symbol: "externaldrive.badge.minus")
-                        {
-                            await appState.flushFakeIPCache()
-                        }
-
-                        maintenanceActionButton(
-                            tr("ui.action.flush_dns_cache"),
-                            symbol: "network.badge.shield.half.filled")
-                        {
-                            await appState.flushDNSCache()
+                        ForEach(maintenanceActions, id: \.titleKey) { item in
+                            maintenanceActionButton(tr(item.titleKey), symbol: item.symbol) {
+                                await item.action()
+                            }
                         }
                     }
                 }

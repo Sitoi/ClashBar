@@ -161,7 +161,7 @@ extension MenuBarRoot {
                     ProxyGroupPopoverNodeItem(
                         title: node,
                         delayText: appState.providerNodeDelayText(provider: name, node: node),
-                        delayColor: providerNodeDelayColor(provider: name, node: node),
+                        delayColor: latencyColor(appState.providerNodeLatencies[name]?[node]),
                         selected: false)
                     {
                         dismiss()
@@ -250,7 +250,7 @@ extension MenuBarRoot {
 
                     Text(currentNode)
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(groupSelectionColor(for: group))
+                        .foregroundStyle(nativeSecondaryLabel)
                         .lineLimit(1)
                         .truncationMode(.middle)
                         .minimumScaleFactor(0.9)
@@ -261,7 +261,7 @@ extension MenuBarRoot {
 
                     Text(delayText)
                         .font(.system(size: 10, weight: .regular, design: .monospaced))
-                        .foregroundStyle(groupDelayColor(group: group.name, node: currentNode))
+                        .foregroundStyle(latencyColor(appState.delayValue(group: group.name, node: currentNode)))
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
                         .frame(width: columns.delay, alignment: .trailing)
@@ -299,7 +299,7 @@ extension MenuBarRoot {
 
                 Text(currentNode)
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(groupSelectionColor(for: group))
+                    .foregroundStyle(nativeSecondaryLabel)
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .padding(.horizontal, 4)
@@ -326,7 +326,7 @@ extension MenuBarRoot {
                 ProxyGroupPopoverNodeItem(
                     title: node,
                     delayText: appState.delayText(group: group.name, node: node),
-                    delayColor: groupDelayColor(group: group.name, node: node),
+                    delayColor: latencyColor(appState.delayValue(group: group.name, node: node)),
                     selected: node == group.now)
                 {
                     dismiss()

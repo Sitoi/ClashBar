@@ -102,40 +102,31 @@ extension MenuBarRoot {
     }
 
     var footerBar: some View {
-        VStack(spacing: 0) {
+        let mihomoRepositoryURL = URL(string: "https://github.com/MetaCubeX/mihomo")
+        let clashBarRepositoryURL = URL(string: "https://github.com/Sitoi/ClashBar")
+        let mihomoSymbol = "antenna.radiowaves.left.and.right"
+        let gitHubSymbol = "chevron.left.forwardslash.chevron.right"
+
+        return VStack(spacing: 0) {
             Rectangle()
                 .fill(self.nativeSeparator)
                 .frame(height: MenuBarLayoutTokens.hairline)
                 .padding(.bottom, MenuBarLayoutTokens.vDense)
 
             HStack(spacing: MenuBarLayoutTokens.hDense) {
-                if let mihomoRepositoryURL {
-                    self.footerInfoLink(
-                        tr("ui.footer.core_mihomo", appState.version),
-                        url: mihomoRepositoryURL,
-                        iconSystemName: self.footerMihomoSymbol,
-                        alignment: .leading)
-                } else {
-                    self.footerInfoText(
-                        tr("ui.footer.core_mihomo", appState.version),
-                        iconSystemName: self.footerMihomoSymbol,
-                        alignment: .leading)
-                }
+                self.footerInfo(
+                    tr("ui.footer.core_mihomo", appState.version),
+                    url: mihomoRepositoryURL,
+                    iconSystemName: mihomoSymbol,
+                    alignment: .leading)
 
                 Spacer(minLength: 0)
 
-                if let clashBarRepositoryURL {
-                    self.footerInfoLink(
-                        tr("ui.footer.version", self.appVersionText),
-                        url: clashBarRepositoryURL,
-                        iconSystemName: self.footerGitHubSymbol,
-                        alignment: .trailing)
-                } else {
-                    self.footerInfoText(
-                        tr("ui.footer.version", self.appVersionText),
-                        iconSystemName: self.footerGitHubSymbol,
-                        alignment: .trailing)
-                }
+                self.footerInfo(
+                    tr("ui.footer.version", self.appVersionText),
+                    url: clashBarRepositoryURL,
+                    iconSystemName: gitHubSymbol,
+                    alignment: .trailing)
             }
             .padding(.horizontal, MenuBarLayoutTokens.hRow)
             .padding(.vertical, MenuBarLayoutTokens.vDense + 2)
@@ -153,15 +144,16 @@ extension MenuBarRoot {
             .shadow(color: Color(nsColor: .shadowColor).opacity(0.16), radius: 10, x: 0, y: -3)
     }
 
-    func footerInfoText(_ text: String, iconSystemName: String? = nil, alignment: Alignment) -> some View {
-        self.footerInfoLabel(text, iconSystemName: iconSystemName, alignment: alignment)
-    }
-
-    func footerInfoLink(_ text: String, url: URL, iconSystemName: String? = nil, alignment: Alignment) -> some View {
-        Link(destination: url) {
+    @ViewBuilder
+    func footerInfo(_ text: String, url: URL?, iconSystemName: String? = nil, alignment: Alignment) -> some View {
+        if let url {
+            Link(destination: url) {
+                self.footerInfoLabel(text, iconSystemName: iconSystemName, alignment: alignment)
+            }
+            .buttonStyle(.plain)
+        } else {
             self.footerInfoLabel(text, iconSystemName: iconSystemName, alignment: alignment)
         }
-        .buttonStyle(.plain)
     }
 
     func footerInfoLabel(_ text: String, iconSystemName: String?, alignment: Alignment) -> some View {
@@ -179,22 +171,6 @@ extension MenuBarRoot {
                 .truncationMode(.middle)
         }
         .frame(maxWidth: .infinity, alignment: alignment)
-    }
-
-    var footerMihomoSymbol: String {
-        "antenna.radiowaves.left.and.right"
-    }
-
-    var footerGitHubSymbol: String {
-        "chevron.left.forwardslash.chevron.right"
-    }
-
-    var mihomoRepositoryURL: URL? {
-        URL(string: "https://github.com/MetaCubeX/mihomo")
-    }
-
-    var clashBarRepositoryURL: URL? {
-        URL(string: "https://github.com/Sitoi/ClashBar")
     }
 
     var statusColor: Color {
@@ -233,21 +209,21 @@ extension MenuBarRoot {
 
         let names = Array(Set(proxies.map(\.name)))
         return names.sorted { lhs, rhs in
-            let left = self.providerNodeSortWeight(provider: provider, node: lhs)
-            let right = self.providerNodeSortWeight(provider: provider, node: rhs)
+            let left = self.latencySortWeight(self.appState.providerNodeLatencies[provider]?[lhs])
+            let right = self.latencySortWeight(self.appState.providerNodeLatencies[provider]?[rhs])
             if left != right { return left < right }
             return lhs.localizedStandardCompare(rhs) == .orderedAscending
         }
     }
 
-    func providerNodeSortWeight(provider: String, node: String) -> Int {
-        guard let value = appState.providerNodeLatencies[provider]?[node] else { return Int.max }
+    func latencySortWeight(_ value: Int?) -> Int {
+        guard let value else { return Int.max }
         if value == 0 { return Int.max - 1 }
         return value
     }
 
-    func providerNodeDelayColor(provider: String, node: String) -> Color {
-        guard let value = appState.providerNodeLatencies[provider]?[node] else {
+    func latencyColor(_ value: Int?) -> Color {
+        guard let value else {
             return self.nativeTertiaryLabel
         }
         if value == 0 { return self.nativeCritical.opacity(0.9) }
@@ -257,17 +233,11 @@ extension MenuBarRoot {
 
     func sortedGroupNodes(_ group: ProxyGroup) -> [String] {
         group.all.sorted { lhs, rhs in
-            let left = self.sortWeight(group: group.name, node: lhs)
-            let right = self.sortWeight(group: group.name, node: rhs)
+            let left = self.latencySortWeight(self.appState.delayValue(group: group.name, node: lhs))
+            let right = self.latencySortWeight(self.appState.delayValue(group: group.name, node: rhs))
             if left != right { return left < right }
             return lhs.localizedStandardCompare(rhs) == .orderedAscending
         }
-    }
-
-    func sortWeight(group: String, node: String) -> Int {
-        guard let value = appState.delayValue(group: group, node: node) else { return Int.max }
-        if value == 0 { return Int.max - 1 }
-        return value
     }
 
     func groupColor(for group: ProxyGroup) -> Color {
@@ -328,19 +298,6 @@ extension MenuBarRoot {
             .replacingOccurrences(of: "_", with: "-")
             .replacingOccurrences(of: "-", with: "") ?? ""
         return (lowerName, compactType)
-    }
-
-    func groupSelectionColor(for group: ProxyGroup) -> Color {
-        self.nativeSecondaryLabel
-    }
-
-    func groupDelayColor(group: String, node: String) -> Color {
-        guard let value = appState.delayValue(group: group, node: node) else {
-            return self.nativeTertiaryLabel
-        }
-        if value == 0 { return self.nativeCritical.opacity(0.9) }
-        if value <= 400 { return self.nativePositive.opacity(0.9) }
-        return self.nativeWarning.opacity(0.9)
     }
 
     private struct AsyncBorderedIconStyle {
