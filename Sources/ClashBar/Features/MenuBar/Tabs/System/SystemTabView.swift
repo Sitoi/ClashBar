@@ -73,6 +73,13 @@ extension MenuBarRoot {
                         set: { appState.autoStartCoreEnabled = $0 }))
                 settingsDivider
                 settingsToggleRow(
+                    tr("ui.settings.auto_core_network_recovery"),
+                    symbol: "network.badge.shield.half.filled",
+                    isOn: Binding(
+                        get: { appState.autoManageCoreOnNetworkChangeEnabled },
+                        set: { appState.autoManageCoreOnNetworkChangeEnabled = $0 }))
+                settingsDivider
+                settingsToggleRow(
                     tr("ui.settings.launch_at_login"),
                     symbol: "person.crop.circle.badge.checkmark",
                     isOn: Binding(

@@ -13,6 +13,9 @@ extension AppState {
 
     func startCore(trigger: StartTrigger = .manual) async {
         guard !isCoreActionProcessing else { return }
+        if trigger == .manual {
+            shouldResumeCoreAfterNetworkRecovery = false
+        }
         coreActionState = .starting
         defer { coreActionState = .idle }
         var settingsOverlay = currentEditableSettingsSnapshot()
@@ -61,8 +64,11 @@ extension AppState {
         }
     }
 
-    func stopCore() async {
+    func stopCore(trigger: StopTrigger = .manual) async {
         guard !isCoreActionProcessing else { return }
+        if trigger == .manual {
+            shouldResumeCoreAfterNetworkRecovery = false
+        }
         coreActionState = .stopping
         defer { coreActionState = .idle }
         cancelProviderRefresh(reason: "stop requested")
@@ -131,6 +137,8 @@ extension AppState {
     }
 
     func shutdownForTermination() {
+        shouldResumeCoreAfterNetworkRecovery = false
+        stopNetworkReachabilityMonitoring(resetState: true)
         cancelProviderRefresh(reason: "quit requested")
         cancelPolling()
         if processManager.isRunning {
@@ -214,5 +222,6 @@ extension AppState {
 
         defaults.set(configPath, forKey: lastSuccessfulConfigPathKey)
         startupErrorMessage = nil
+        enforceNetworkManagedCorePolicyIfNeeded()
     }
 }

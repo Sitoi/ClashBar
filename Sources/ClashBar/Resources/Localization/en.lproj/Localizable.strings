@@ -100,6 +100,7 @@
 "ui.network.sort.total_desc" = "Total Traffic High to Low";
 
 "ui.settings.auto_start_core" = "Auto Start Core";
+"ui.settings.auto_core_network_recovery" = "Stop Offline & Restart on Recovery";
 "ui.settings.launch_at_login" = "Launch ClashBar at Login";
 "ui.settings.menu_bar_style" = "Menu Bar Style";
 "ui.settings.language" = "UI Language";
@@ -204,6 +205,8 @@
 "log.start.no_config" = "No config file selected";
 "log.start.failed" = "Failed to start core: %@";
 "log.restart.failed" = "Failed to restart core: %@";
+"log.network.offline_auto_stop" = "Network offline detected. Core stopped and will auto-start after recovery.";
+"log.network.online_auto_start" = "Network recovered. Auto-starting core.";
 "log.config.loaded_count" = "Loaded %d config files";
 "log.config.not_found" = "Config file not found: %@";
 "log.config.selected" = "Selected config: %@";

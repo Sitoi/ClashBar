@@ -11,6 +11,12 @@ enum RuntimeVisualStatus {
 enum StartTrigger {
     case manual
     case auto
+    case networkRecovery
+}
+
+enum StopTrigger {
+    case manual
+    case networkLoss
 }
 
 enum CoreActionState {

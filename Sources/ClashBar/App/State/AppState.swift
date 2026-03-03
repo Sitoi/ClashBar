@@ -241,6 +241,15 @@ final class AppState: ObservableObject {
         set { self.autoStartCore = newValue }
     }
 
+    var autoManageCoreOnNetworkChangeEnabled: Bool {
+        get { self.autoCoreControlOnNetworkChange }
+        set {
+            guard self.autoCoreControlOnNetworkChange != newValue else { return }
+            self.autoCoreControlOnNetworkChange = newValue
+            self.updateNetworkReachabilityMonitoringState()
+        }
+    }
+
     var isCoreActionProcessing: Bool {
         self.coreActionState != .idle
     }
@@ -267,6 +276,7 @@ final class AppState: ObservableObject {
     let tunConfigFileService: TunConfigFileService
     let configImportService: ConfigImportService
     let appLaunchService: AppLaunchService
+    let networkReachabilityMonitor: NetworkReachabilityMonitor
     var apiClient: MihomoAPIClient?
     var modeSwitchTransportOverride: MihomoAPITransporting?
     var settingsPatchTransportOverride: MihomoAPITransporting?
@@ -281,12 +291,15 @@ final class AppState: ObservableObject {
     var proxyPortsAutoSaveTask: Task<Void, Never>?
     var settingsFeedbackClearTask: Task<Void, Never>?
     var providerRefreshTask: Task<Void, Never>?
+    var networkAutoStopTask: Task<Void, Never>?
+    var networkAutoStartTask: Task<Void, Never>?
     var providerRefreshGeneration: Int = 0
     var lastTrafficSampleAt: Date?
     var modeSwitchInFlight = false
 
     let defaults = UserDefaults.standard
     @AppStorage("clashbar.auto.start.core") private var autoStartCore: Bool = false
+    @AppStorage("clashbar.auto.core.network.recovery") private var autoCoreControlOnNetworkChange: Bool = true
     @AppStorage("clashbar.statusbar.display.mode") private var statusBarDisplayModeRaw: String = StatusBarDisplayMode
         .iconOnly.rawValue
     let selectedConfigKey = "clashbar.config.selected.filename"
@@ -320,6 +333,9 @@ final class AppState: ObservableObject {
     var mihomoLogStore: AppLogStore?
     var didAttemptAutoStart = false
     var didCheckSystemProxyConsistencyOnLaunch = false
+    var networkReachabilityStatus: NetworkReachabilityStatus = .unknown
+    var shouldResumeCoreAfterNetworkRecovery = false
+    var isNetworkReachabilityMonitoring = false
     var remoteConfigSources: [String: String] = [:]
     var externalControllerWarningKeys: Set<String> = []
     let streamJSONDecoder = JSONDecoder()
@@ -333,6 +349,7 @@ final class AppState: ObservableObject {
         tunConfigFileService: TunConfigFileService = TunConfigFileService(),
         configImportService: ConfigImportService = ConfigImportService(),
         appLaunchService: AppLaunchService = AppLaunchService(),
+        networkReachabilityMonitor: NetworkReachabilityMonitor = NetworkReachabilityMonitor(),
         clashbarLogStore: AppLogStore? = nil,
         mihomoLogStore: AppLogStore? = nil,
         startBackgroundRefresh: Bool = true)
@@ -344,6 +361,7 @@ final class AppState: ObservableObject {
         self.tunConfigFileService = tunConfigFileService
         self.configImportService = configImportService
         self.appLaunchService = appLaunchService
+        self.networkReachabilityMonitor = networkReachabilityMonitor
         self.clashbarLogStore = clashbarLogStore
         self.mihomoLogStore = mihomoLogStore
         self.configManager = configManager ?? ConfigDirectoryManager(workingDirectoryManager: workingDirectoryManager)
@@ -414,10 +432,13 @@ final class AppState: ObservableObject {
             }
         }
 
+        self.updateNetworkReachabilityMonitoringState()
         self.refreshMenuBarDisplaySnapshotIfNeeded()
     }
 
     deinit {
+        networkAutoStopTask?.cancel()
+        networkAutoStartTask?.cancel()
         mediumFrequencyTask?.cancel()
         lowFrequencyTask?.cancel()
         for task in streamReceiveTasks.values {
