@@ -317,12 +317,6 @@ struct SystemProxyService {
         }
     }
 
-    private func invokeStateQuery() async throws -> Bool {
-        try await self.invokeBooleanQuery { helper, completion in
-            helper.getSystemProxyState(completion: completion)
-        }
-    }
-
     private func invokeBooleanQuery(
         _ invoke: @escaping (ProxyHelperProtocol, @escaping (Bool, Bool, String?) -> Void) -> Void) async throws -> Bool
     {

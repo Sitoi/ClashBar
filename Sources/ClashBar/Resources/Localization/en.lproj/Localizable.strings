@@ -26,6 +26,7 @@
 "ui.action.copy_all_logs" = "Copy All Logs";
 "ui.action.clear_all_logs" = "Clear All Logs";
 "ui.action.reset_log_filters" = "Reset Filters";
+"ui.action.reset_network_filters" = "Reset Network Filters";
 "ui.action.copy_host" = "Copy Host";
 "ui.action.copy_connection_id" = "Copy Connection ID";
 "ui.action.copy_log_message" = "Copy Log Message";
@@ -85,7 +86,21 @@
 "ui.placeholder.search_logs" = "Search logs...";
 "ui.placeholder.port" = "0";
 
+"ui.network.filter.transport" = "Transport Filter";
+"ui.network.filter.transport.all" = "All Protocols";
+"ui.network.filter.transport.tcp" = "TCP Only";
+"ui.network.filter.transport.udp" = "UDP Only";
+"ui.network.filter.transport.other" = "Other Protocols";
+"ui.network.sort.label" = "Network Sort";
+"ui.network.sort.default" = "Default Order";
+"ui.network.sort.newest" = "Newest Connections";
+"ui.network.sort.oldest" = "Oldest Connections";
+"ui.network.sort.upload_desc" = "Upload High to Low";
+"ui.network.sort.download_desc" = "Download High to Low";
+"ui.network.sort.total_desc" = "Total Traffic High to Low";
+
 "ui.settings.auto_start_core" = "Auto Start Core";
+"ui.settings.auto_core_network_recovery" = "Stop Offline & Restart on Recovery";
 "ui.settings.launch_at_login" = "Launch ClashBar at Login";
 "ui.settings.menu_bar_style" = "Menu Bar Style";
 "ui.settings.language" = "UI Language";
@@ -190,6 +205,8 @@
 "log.start.no_config" = "No config file selected";
 "log.start.failed" = "Failed to start core: %@";
 "log.restart.failed" = "Failed to restart core: %@";
+"log.network.offline_auto_stop" = "Network offline detected. Core stopped and will auto-start after recovery.";
+"log.network.online_auto_start" = "Network recovered. Auto-starting core.";
 "log.config.loaded_count" = "Loaded %d config files";
 "log.config.not_found" = "Config file not found: %@";
 "log.config.selected" = "Selected config: %@";

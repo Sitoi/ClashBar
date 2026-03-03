@@ -11,6 +11,12 @@ enum RuntimeVisualStatus {
 enum StartTrigger {
     case manual
     case auto
+    case networkRecovery
+}
+
+enum StopTrigger {
+    case manual
+    case networkLoss
 }
 
 enum CoreActionState {
@@ -133,6 +139,15 @@ struct MenuBarDisplay: Equatable {
     let mode: StatusBarDisplayMode
     let symbolName: String?
     let speedLines: MenuBarSpeedLines?
+}
+
+struct CoreFeatureRecoveryState {
+    let systemProxyEnabled: Bool
+    let tunEnabled: Bool
+
+    var shouldRecoverAnyFeature: Bool {
+        self.systemProxyEnabled || self.tunEnabled
+    }
 }
 
 struct EditableSettingsSnapshot: Equatable, Codable {

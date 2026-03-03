@@ -13,9 +13,13 @@ extension AppState {
 
     func startCore(trigger: StartTrigger = .manual) async {
         guard !isCoreActionProcessing else { return }
+        if trigger == .manual {
+            shouldResumeCoreAfterNetworkRecovery = false
+        }
         coreActionState = .starting
         defer { coreActionState = .idle }
         var settingsOverlay = currentEditableSettingsSnapshot()
+        settingsOverlay = self.overlayApplyingPendingCoreFeatureRecovery(settingsOverlay)
         preserveLocalSettingsOnNextSync = true
         do {
             guard let configPath = await resolveSelectedConfigPath() else {
@@ -61,10 +65,14 @@ extension AppState {
         }
     }
 
-    func stopCore() async {
+    func stopCore(trigger: StopTrigger = .manual) async {
         guard !isCoreActionProcessing else { return }
+        if trigger == .manual {
+            shouldResumeCoreAfterNetworkRecovery = false
+        }
         coreActionState = .stopping
         defer { coreActionState = .idle }
+        await self.prepareCoreFeatureRecoveryBeforeStop()
         cancelProviderRefresh(reason: "stop requested")
         processManager.stop()
         cancelPolling()
@@ -77,7 +85,7 @@ extension AppState {
         guard !isCoreActionProcessing else { return }
         coreActionState = .restarting
         defer { coreActionState = .idle }
-        let settingsOverlay = currentEditableSettingsSnapshot()
+        let settingsOverlay = self.overlayApplyingPendingCoreFeatureRecovery(currentEditableSettingsSnapshot())
         preserveLocalSettingsOnNextSync = true
         cancelProviderRefresh(reason: "restart requested")
         do {
@@ -131,6 +139,8 @@ extension AppState {
     }
 
     func shutdownForTermination() {
+        shouldResumeCoreAfterNetworkRecovery = false
+        stopNetworkReachabilityMonitoring(resetState: true)
         cancelProviderRefresh(reason: "quit requested")
         cancelPolling()
         if processManager.isRunning {
@@ -214,5 +224,95 @@ extension AppState {
 
         defaults.set(configPath, forKey: lastSuccessfulConfigPathKey)
         startupErrorMessage = nil
+        await self.restoreCoreFeaturesAfterStartupIfNeeded(startedWithTunEnabled: settingsOverlay.tunEnabled)
+        enforceNetworkManagedCorePolicyIfNeeded()
+    }
+
+    private func overlayApplyingPendingCoreFeatureRecovery(_ overlay: EditableSettingsSnapshot)
+        -> EditableSettingsSnapshot
+    {
+        guard let recovery = self.pendingCoreFeatureRecoveryState else { return overlay }
+        guard recovery.tunEnabled else { return overlay }
+        return overlay.withTunEnabled(true)
+    }
+
+    private func prepareCoreFeatureRecoveryBeforeStop() async {
+        let runtimeRunningBeforeStop = self.isRuntimeRunning
+        let recovery = CoreFeatureRecoveryState(
+            systemProxyEnabled: runtimeRunningBeforeStop && self.isSystemProxyEnabled,
+            tunEnabled: runtimeRunningBeforeStop && self.isTunEnabled)
+
+        self.pendingCoreFeatureRecoveryState = recovery.shouldRecoverAnyFeature ? recovery : nil
+
+        if runtimeRunningBeforeStop, recovery.tunEnabled {
+            self.isTunEnabled = false
+            self.appendLog(level: "info", message: self.tr("log.tun.toggled", self.tr("log.tun.disabled")))
+        }
+
+        guard self.isSystemProxyEnabled else { return }
+        self.isProxySyncing = true
+        defer { self.isProxySyncing = false }
+
+        do {
+            try await self.applySystemProxy(enabled: false, host: self.controllerHost(), ports: .disabled)
+            self.isSystemProxyEnabled = false
+            self.appendLog(
+                level: "info",
+                message: self.tr("log.system_proxy.toggled", self.tr("log.system_proxy.disabled")))
+        } catch {
+            self.appendLog(
+                level: "error",
+                message: self.tr("log.system_proxy.toggle_failed", self.systemProxyErrorMessage(error)))
+            await self.refreshSystemProxyStatus()
+        }
+    }
+
+    private func restoreCoreFeaturesAfterStartupIfNeeded(startedWithTunEnabled: Bool) async {
+        guard let recovery = self.pendingCoreFeatureRecoveryState else { return }
+        guard recovery.shouldRecoverAnyFeature else {
+            self.pendingCoreFeatureRecoveryState = nil
+            return
+        }
+        guard self.isRuntimeRunning else { return }
+
+        if self.autoManageCoreOnNetworkChangeEnabled, self.networkReachabilityStatus == .offline {
+            return
+        }
+
+        var remainingSystemProxyRecovery = recovery.systemProxyEnabled
+        var remainingTunRecovery = recovery.tunEnabled
+
+        if recovery.tunEnabled, startedWithTunEnabled {
+            if !self.isTunEnabled {
+                self.isTunEnabled = true
+            }
+            remainingTunRecovery = false
+            self.appendLog(level: "info", message: self.tr("log.tun.toggled", self.tr("log.tun.enabled")))
+        }
+
+        if recovery.systemProxyEnabled {
+            self.isProxySyncing = true
+            defer { self.isProxySyncing = false }
+
+            do {
+                let target = try await self.resolveSystemProxyTargetFromRuntimeConfig()
+                try await self.applySystemProxy(enabled: true, host: target.host, ports: target.ports)
+                self.isSystemProxyEnabled = true
+                remainingSystemProxyRecovery = false
+                self.appendLog(
+                    level: "info",
+                    message: self.tr("log.system_proxy.toggled", self.tr("log.system_proxy.enabled")))
+            } catch {
+                self.appendLog(
+                    level: "error",
+                    message: self.tr("log.system_proxy.toggle_failed", self.systemProxyErrorMessage(error)))
+                await self.refreshSystemProxyStatus()
+            }
+        }
+
+        let remaining = CoreFeatureRecoveryState(
+            systemProxyEnabled: remainingSystemProxyRecovery,
+            tunEnabled: remainingTunRecovery)
+        self.pendingCoreFeatureRecoveryState = remaining.shouldRecoverAnyFeature ? remaining : nil
     }
 }

@@ -2,29 +2,26 @@ import AppKit
 import SwiftUI
 
 extension MenuBarRoot {
-    var activityTopLineSpacing: CGFloat {
-        2
+    private enum ActivityLayout {
+        static let topLineSpacing: CGFloat = 2
+        static let topMetaSpacing: CGFloat = 1
+        static let secondLineSpacing: CGFloat = 2
+        static let rowLineHeight: CGFloat = 15
+        static let topRuleMinWidth: CGFloat = 26
+        static let topPayloadMinWidth: CGFloat = 14
     }
 
-    var activityTopMetaSpacing: CGFloat {
-        1
-    }
+    private static let activityISO8601WithFractional: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
 
-    var activitySecondLineSpacing: CGFloat {
-        2
-    }
-
-    var activityRowLineHeight: CGFloat {
-        15
-    }
-
-    var activityTopRuleMinWidth: CGFloat {
-        26
-    }
-
-    var activityTopPayloadMinWidth: CGFloat {
-        14
-    }
+    private static let activityISO8601Basic: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
 
     var activityTabBody: some View {
         let connections = self.filteredConnections
@@ -81,19 +78,168 @@ extension MenuBarRoot {
                 .textFieldStyle(.roundedBorder)
                 .font(.system(size: 12, weight: .regular))
                 .foregroundStyle(nativePrimaryLabel)
+
+            HStack(spacing: MenuBarLayoutTokens.hDense) {
+                self.activityFilterMenu
+                self.activitySortMenu
+
+                self.logsControlIconButton(
+                    "line.3.horizontal.decrease.circle",
+                    helpText: tr("ui.action.reset_network_filters"),
+                    isDisabled: !self.hasActiveNetworkControls)
+                {
+                    self.resetNetworkControls()
+                }
+
+                Spacer(minLength: 0)
+
+                self.networkCountSummaryBadge
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .menuRowPadding(vertical: MenuBarLayoutTokens.vDense + 2)
         .background(nativeSectionCard())
     }
 
-    var filteredConnections: [ConnectionSummary] {
-        let keyword = networkFilterText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let source = Array(appState.connections.prefix(120))
-        guard !keyword.isEmpty else { return source }
-
-        return source.filter { conn in
-            self.connectionSearchText(for: conn).localizedStandardContains(keyword)
+    var activityFilterMenu: some View {
+        Menu {
+            ForEach(NetworkTransportFilter.allCases) { filter in
+                Button {
+                    self.networkTransportFilter = filter
+                } label: {
+                    if self.networkTransportFilter == filter {
+                        Label(self.tr(filter.titleKey), systemImage: "checkmark")
+                    } else {
+                        Text(self.tr(filter.titleKey))
+                    }
+                }
+            }
+        } label: {
+            Label(self.tr(self.networkTransportFilter.titleKey), systemImage: "line.3.horizontal.decrease.circle")
+                .font(.system(size: 11, weight: .medium))
+                .lineLimit(1)
         }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .help(tr("ui.network.filter.transport"))
+    }
+
+    var activitySortMenu: some View {
+        Menu {
+            ForEach(NetworkSortOption.allCases) { option in
+                Button {
+                    self.networkSortOption = option
+                } label: {
+                    if self.networkSortOption == option {
+                        Label(self.tr(option.titleKey), systemImage: "checkmark")
+                    } else {
+                        Text(self.tr(option.titleKey))
+                    }
+                }
+            }
+        } label: {
+            Label(self.tr(self.networkSortOption.titleKey), systemImage: "arrow.up.arrow.down")
+                .font(.system(size: 11, weight: .medium))
+                .lineLimit(1)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .help(tr("ui.network.sort.label"))
+    }
+
+    var networkCountSummaryBadge: some View {
+        HStack(spacing: MenuBarLayoutTokens.hMicro) {
+            Text("\(self.filteredConnections.count)")
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+            Text("/")
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+            Text("\(self.networkSourceConnections.count)")
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
+        }
+        .foregroundStyle(nativeSecondaryLabel)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(nativeBadgeCapsule())
+    }
+
+    var trimmedNetworkKeyword: String {
+        self.networkFilterText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var hasActiveNetworkControls: Bool {
+        !self.trimmedNetworkKeyword.isEmpty || self.networkTransportFilter != .all || self.networkSortOption != .default
+    }
+
+    func resetNetworkControls() {
+        self.networkFilterText = ""
+        self.networkTransportFilter = .all
+        self.networkSortOption = .default
+    }
+
+    var networkSourceConnections: [ConnectionSummary] {
+        Array(appState.connections.prefix(120))
+    }
+
+    var filteredConnections: [ConnectionSummary] {
+        let keyword = self.trimmedNetworkKeyword
+        let filtered = self.networkSourceConnections.filter { conn in
+            guard self.networkTransportFilter.matches(conn.metadata?.network) else { return false }
+            guard keyword.isEmpty || self.connectionSearchText(for: conn).localizedStandardContains(keyword) else {
+                return false
+            }
+            return true
+        }
+        return self.sortedConnections(filtered)
+    }
+
+    func sortedConnections(_ source: [ConnectionSummary]) -> [ConnectionSummary] {
+        switch self.networkSortOption {
+        case .default:
+            source
+        case .newest:
+            source.sorted { lhs, rhs in
+                let left = self.connectionSortTimestamp(lhs.start) ?? -1
+                let right = self.connectionSortTimestamp(rhs.start) ?? -1
+                if left != right { return left > right }
+                return lhs.id.localizedStandardCompare(rhs.id) == .orderedAscending
+            }
+        case .oldest:
+            source.sorted { lhs, rhs in
+                let left = self.connectionSortTimestamp(lhs.start) ?? .greatestFiniteMagnitude
+                let right = self.connectionSortTimestamp(rhs.start) ?? .greatestFiniteMagnitude
+                if left != right { return left < right }
+                return lhs.id.localizedStandardCompare(rhs.id) == .orderedAscending
+            }
+        case .uploadDesc:
+            source.sorted { lhs, rhs in
+                let left = lhs.upload ?? 0
+                let right = rhs.upload ?? 0
+                if left != right { return left > right }
+                return (self.connectionSortTimestamp(lhs.start) ?? -1) > (self.connectionSortTimestamp(rhs.start) ?? -1)
+            }
+        case .downloadDesc:
+            source.sorted { lhs, rhs in
+                let left = lhs.download ?? 0
+                let right = rhs.download ?? 0
+                if left != right { return left > right }
+                return (self.connectionSortTimestamp(lhs.start) ?? -1) > (self.connectionSortTimestamp(rhs.start) ?? -1)
+            }
+        case .totalDesc:
+            source.sorted { lhs, rhs in
+                let left = (lhs.upload ?? 0) + (lhs.download ?? 0)
+                let right = (rhs.upload ?? 0) + (rhs.download ?? 0)
+                if left != right { return left > right }
+                return (self.connectionSortTimestamp(lhs.start) ?? -1) > (self.connectionSortTimestamp(rhs.start) ?? -1)
+            }
+        }
+    }
+
+    func connectionSortTimestamp(_ start: String?) -> TimeInterval? {
+        guard let value = self.trimmedNonEmpty(start) else { return nil }
+        if let date = Self.activityISO8601WithFractional.date(from: value) {
+            return date.timeIntervalSince1970
+        }
+        return Self.activityISO8601Basic.date(from: value)?.timeIntervalSince1970
     }
 
     func connectionRow(_ conn: ConnectionSummary) -> some View {
@@ -101,14 +247,14 @@ extension MenuBarRoot {
         let hovered = hoveredConnectionID == conn.id
         let host = conn.metadata?.host?.trimmingCharacters(in: .whitespacesAndNewlines)
         let destinationIP = conn.metadata?.destinationIP?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let hostText = self.connectionHostText(host: host, destinationIP: destinationIP)
-        let networkType = self.connectionNetworkTypeText(conn.metadata?.network)
+        let hostText = self.trimmedNonEmpty(host) ?? self.trimmedNonEmpty(destinationIP) ?? tr("ui.common.na")
+        let networkType = self.trimmedNonEmpty(conn.metadata?.network)?.uppercased() ?? "--"
         let timeText = self.connectionTimeOnly(conn.start)
         let upText = ValueFormatter.bytesCompactNoSpace(conn.upload ?? 0)
         let downText = ValueFormatter.bytesCompactNoSpace(conn.download ?? 0)
         let parsedRule = self.parseConnectionRule(conn.rule)
         let ruleTypeText = self.connectionRuleTypeText(conn.rule, fallback: parsedRule?.type)
-        let rulePayloadText = self.connectionRulePayloadText(conn.rulePayload, fallback: parsedRule?.payload)
+        let rulePayloadText = self.trimmedNonEmpty(conn.rulePayload) ?? self.trimmedNonEmpty(parsedRule?.payload) ?? "--"
         let chainParts = self.connectionChainsParts(conn.chains)
 
         return HStack(spacing: MenuBarLayoutTokens.hDense) {
@@ -124,7 +270,7 @@ extension MenuBarRoot {
                         ruleText: ruleTypeText,
                         payloadText: rulePayloadText)
 
-                    HStack(spacing: self.activityTopLineSpacing) {
+                    HStack(spacing: ActivityLayout.topLineSpacing) {
                         Text(hostText)
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(nativePrimaryLabel)
@@ -132,24 +278,24 @@ extension MenuBarRoot {
                             .truncationMode(.tail)
                             .frame(width: layout.hostWidth, alignment: .leading)
 
-                        HStack(spacing: self.activityTopMetaSpacing) {
+                        HStack(spacing: ActivityLayout.topMetaSpacing) {
                             self.activityTopBadge(text: ruleTypeText)
                                 .frame(width: layout.ruleWidth, alignment: .trailing)
                             self.activityTopPayload(text: rulePayloadText)
                                 .frame(width: layout.payloadWidth, alignment: .trailing)
                         }
                         .frame(
-                            width: layout.ruleWidth + self.activityTopMetaSpacing + layout.payloadWidth,
+                            width: layout.ruleWidth + ActivityLayout.topMetaSpacing + layout.payloadWidth,
                             alignment: .trailing)
                     }
                 }
-                .frame(height: self.activityRowLineHeight)
+                .frame(height: ActivityLayout.rowLineHeight)
 
                 GeometryReader { proxy in
                     let totalWidth = max(proxy.size.width, 0)
-                    let columnWidth = max((totalWidth - (activitySecondLineSpacing * 3)) / 4, 0)
+                    let columnWidth = max((totalWidth - (ActivityLayout.secondLineSpacing * 3)) / 4, 0)
 
-                    HStack(spacing: self.activitySecondLineSpacing) {
+                    HStack(spacing: ActivityLayout.secondLineSpacing) {
                         self.activityMetricColumn(
                             symbol: "clock",
                             text: timeText,
@@ -179,7 +325,7 @@ extension MenuBarRoot {
                             width: columnWidth)
                     }
                 }
-                .frame(height: self.activityRowLineHeight)
+                .frame(height: ActivityLayout.rowLineHeight)
 
                 self.activityChainsLine(parts: chainParts)
             }
@@ -278,6 +424,7 @@ extension MenuBarRoot {
 
     func activityChainsLine(parts: [String]) -> some View {
         let chainText = parts.joined(separator: " > ")
+        let displayText = parts.isEmpty ? tr("ui.common.na") : chainText
 
         return HStack(spacing: 2) {
             Image(systemName: "point.3.connected.trianglepath.dotted")
@@ -285,23 +432,14 @@ extension MenuBarRoot {
                 .foregroundStyle(nativeSecondaryLabel)
                 .frame(width: 10, alignment: .leading)
 
-            if parts.isEmpty {
-                Text(tr("ui.common.na"))
-                    .font(.system(size: 10, weight: .regular, design: .monospaced))
-                    .foregroundStyle(nativeSecondaryLabel)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            } else {
-                Text(chainText)
-                    .font(.system(size: 10, weight: .regular, design: .monospaced))
-                    .foregroundStyle(nativeSecondaryLabel)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
+            Text(displayText)
+                .font(.system(size: 10, weight: .regular, design: .monospaced))
+                .foregroundStyle(nativeSecondaryLabel)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(height: self.activityRowLineHeight, alignment: .leading)
+        .frame(height: ActivityLayout.rowLineHeight, alignment: .leading)
     }
 
     func activityTopLineLayout(
@@ -312,29 +450,33 @@ extension MenuBarRoot {
         guard totalWidth > 0 else { return (0, 0, 0) }
 
         let hostMinWidth = floor(totalWidth * 0.5)
-        let metaMaxWidth = max(totalWidth - self.activityTopLineSpacing - hostMinWidth, 0)
+        let metaMaxWidth = max(totalWidth - ActivityLayout.topLineSpacing - hostMinWidth, 0)
 
-        var ruleWidth = self.activityTopRuleNaturalWidth(ruleText)
-        var payloadWidth = self.activityTopPayloadNaturalWidth(payloadText)
-        let desiredMetaWidth = ruleWidth + self.activityTopMetaSpacing + payloadWidth
+        var ruleWidth = max(
+            ActivityLayout.topRuleMinWidth,
+            self.activityMonospacedTextWidth(ruleText, size: 9, weight: .semibold) + 4)
+        var payloadWidth = max(
+            ActivityLayout.topPayloadMinWidth,
+            self.activityMonospacedTextWidth(payloadText, size: 9, weight: .medium))
+        let desiredMetaWidth = ruleWidth + ActivityLayout.topMetaSpacing + payloadWidth
 
         if desiredMetaWidth > metaMaxWidth {
             var overflow = desiredMetaWidth - metaMaxWidth
 
-            let payloadReducible = max(payloadWidth - self.activityTopPayloadMinWidth, 0)
+            let payloadReducible = max(payloadWidth - ActivityLayout.topPayloadMinWidth, 0)
             let payloadReduction = min(overflow, payloadReducible)
             payloadWidth -= payloadReduction
             overflow -= payloadReduction
 
             if overflow > 0 {
-                let ruleReducible = max(ruleWidth - self.activityTopRuleMinWidth, 0)
+                let ruleReducible = max(ruleWidth - ActivityLayout.topRuleMinWidth, 0)
                 let ruleReduction = min(overflow, ruleReducible)
                 ruleWidth -= ruleReduction
                 overflow -= ruleReduction
             }
 
             if overflow > 0 {
-                let metaContentWidth = max(metaMaxWidth - self.activityTopMetaSpacing, 0)
+                let metaContentWidth = max(metaMaxWidth - ActivityLayout.topMetaSpacing, 0)
                 if metaContentWidth <= 0 {
                     ruleWidth = 0
                     payloadWidth = 0
@@ -347,32 +489,16 @@ extension MenuBarRoot {
             }
         }
 
-        let metaWidth = ruleWidth + self.activityTopMetaSpacing + payloadWidth
-        let hostWidth = max(totalWidth - self.activityTopLineSpacing - metaWidth, hostMinWidth)
+        let metaWidth = ruleWidth + ActivityLayout.topMetaSpacing + payloadWidth
+        let hostWidth = max(totalWidth - ActivityLayout.topLineSpacing - metaWidth, hostMinWidth)
         return (hostWidth, ruleWidth, payloadWidth)
     }
 
-    func activityTopRuleNaturalWidth(_ text: String) -> CGFloat {
-        let textWidth = self.activityMonospacedTextWidth(text, size: 9, weight: .semibold)
-        return max(self.activityTopRuleMinWidth, textWidth + 4)
-    }
-
-    func activityTopPayloadNaturalWidth(_ text: String) -> CGFloat {
-        let textWidth = self.activityMonospacedTextWidth(text, size: 9, weight: .medium)
-        return max(self.activityTopPayloadMinWidth, textWidth)
-    }
-
     func activityMonospacedTextWidth(_ text: String, size: CGFloat, weight: NSFont.Weight) -> CGFloat {
-        let attributes = ActivityTextMetrics.attributes(size: size, weight: weight)
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.monospacedSystemFont(ofSize: size, weight: weight),
+        ]
         return ceil((text as NSString).size(withAttributes: attributes).width)
-    }
-
-    func connectionNetworkTypeText(_ raw: String?) -> String {
-        self.trimmedNonEmpty(raw)?.uppercased() ?? "--"
-    }
-
-    func connectionHostText(host: String?, destinationIP: String?) -> String {
-        self.trimmedNonEmpty(host) ?? self.trimmedNonEmpty(destinationIP) ?? tr("ui.common.na")
     }
 
     func connectionRuleTypeText(_ raw: String?, fallback: String?) -> String {
@@ -382,10 +508,6 @@ extension MenuBarRoot {
         let normalized = candidate.uppercased()
         if normalized == "MATCH" || normalized == "FINAL" { return "--" }
         return candidate
-    }
-
-    func connectionRulePayloadText(_ raw: String?, fallback: String?) -> String {
-        self.trimmedNonEmpty(raw) ?? self.trimmedNonEmpty(fallback) ?? "--"
     }
 
     func connectionChainsParts(_ chains: [String]?) -> [String] {
@@ -481,25 +603,5 @@ extension MenuBarRoot {
         let chains = self.connectionChainsParts(conn.chains).joined(separator: " > ")
         let start = conn.start ?? ""
         return "\(host) \(destinationIP) \(sourceIP) \(network) \(id) \(rule) \(rulePayload) \(chains) \(start)"
-    }
-}
-
-@MainActor
-private enum ActivityTextMetrics {
-    static let semibold9Attributes: [NSAttributedString.Key: Any] = [
-        .font: NSFont.monospacedSystemFont(ofSize: 9, weight: .semibold),
-    ]
-    static let medium9Attributes: [NSAttributedString.Key: Any] = [
-        .font: NSFont.monospacedSystemFont(ofSize: 9, weight: .medium),
-    ]
-
-    static func attributes(size: CGFloat, weight: NSFont.Weight) -> [NSAttributedString.Key: Any] {
-        if size == 9, weight == .semibold {
-            return self.semibold9Attributes
-        }
-        if size == 9, weight == .medium {
-            return self.medium9Attributes
-        }
-        return [.font: NSFont.monospacedSystemFont(ofSize: size, weight: weight)]
     }
 }
