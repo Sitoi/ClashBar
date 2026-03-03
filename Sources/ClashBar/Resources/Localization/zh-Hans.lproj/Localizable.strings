@@ -26,6 +26,7 @@
 "ui.action.copy_all_logs" = "复制全部日志";
 "ui.action.clear_all_logs" = "清理全部日志";
 "ui.action.reset_log_filters" = "重置筛选";
+"ui.action.reset_network_filters" = "重置网络筛选";
 "ui.action.copy_host" = "复制 Host";
 "ui.action.copy_connection_id" = "复制连接 ID";
 "ui.action.copy_log_message" = "复制日志消息";
@@ -84,6 +85,19 @@
 "ui.placeholder.filter_connection" = "过滤域名、IP...";
 "ui.placeholder.search_logs" = "搜索日志...";
 "ui.placeholder.port" = "0";
+
+"ui.network.filter.transport" = "网络类型过滤";
+"ui.network.filter.transport.all" = "全部协议";
+"ui.network.filter.transport.tcp" = "仅 TCP";
+"ui.network.filter.transport.udp" = "仅 UDP";
+"ui.network.filter.transport.other" = "其他协议";
+"ui.network.sort.label" = "网络排序";
+"ui.network.sort.default" = "默认顺序";
+"ui.network.sort.newest" = "最新连接";
+"ui.network.sort.oldest" = "最早连接";
+"ui.network.sort.upload_desc" = "上传流量高到低";
+"ui.network.sort.download_desc" = "下载流量高到低";
+"ui.network.sort.total_desc" = "总流量高到低";
 
 "ui.settings.auto_start_core" = "自动启动内核";
 "ui.settings.launch_at_login" = "登录时启动 ClashBar";

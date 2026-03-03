@@ -11,6 +11,18 @@ extension MenuBarRoot {
         static let topPayloadMinWidth: CGFloat = 14
     }
 
+    private static let activityISO8601WithFractional: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    private static let activityISO8601Basic: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+
     var activityTabBody: some View {
         let connections = self.filteredConnections
 
@@ -66,19 +78,168 @@ extension MenuBarRoot {
                 .textFieldStyle(.roundedBorder)
                 .font(.system(size: 12, weight: .regular))
                 .foregroundStyle(nativePrimaryLabel)
+
+            HStack(spacing: MenuBarLayoutTokens.hDense) {
+                self.activityFilterMenu
+                self.activitySortMenu
+
+                self.logsControlIconButton(
+                    "line.3.horizontal.decrease.circle",
+                    helpText: tr("ui.action.reset_network_filters"),
+                    isDisabled: !self.hasActiveNetworkControls)
+                {
+                    self.resetNetworkControls()
+                }
+
+                Spacer(minLength: 0)
+
+                self.networkCountSummaryBadge
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .menuRowPadding(vertical: MenuBarLayoutTokens.vDense + 2)
         .background(nativeSectionCard())
     }
 
-    var filteredConnections: [ConnectionSummary] {
-        let keyword = networkFilterText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let source = Array(appState.connections.prefix(120))
-        guard !keyword.isEmpty else { return source }
-
-        return source.filter { conn in
-            self.connectionSearchText(for: conn).localizedStandardContains(keyword)
+    var activityFilterMenu: some View {
+        Menu {
+            ForEach(NetworkTransportFilter.allCases) { filter in
+                Button {
+                    self.networkTransportFilter = filter
+                } label: {
+                    if self.networkTransportFilter == filter {
+                        Label(self.tr(filter.titleKey), systemImage: "checkmark")
+                    } else {
+                        Text(self.tr(filter.titleKey))
+                    }
+                }
+            }
+        } label: {
+            Label(self.tr(self.networkTransportFilter.titleKey), systemImage: "line.3.horizontal.decrease.circle")
+                .font(.system(size: 11, weight: .medium))
+                .lineLimit(1)
         }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .help(tr("ui.network.filter.transport"))
+    }
+
+    var activitySortMenu: some View {
+        Menu {
+            ForEach(NetworkSortOption.allCases) { option in
+                Button {
+                    self.networkSortOption = option
+                } label: {
+                    if self.networkSortOption == option {
+                        Label(self.tr(option.titleKey), systemImage: "checkmark")
+                    } else {
+                        Text(self.tr(option.titleKey))
+                    }
+                }
+            }
+        } label: {
+            Label(self.tr(self.networkSortOption.titleKey), systemImage: "arrow.up.arrow.down")
+                .font(.system(size: 11, weight: .medium))
+                .lineLimit(1)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .help(tr("ui.network.sort.label"))
+    }
+
+    var networkCountSummaryBadge: some View {
+        HStack(spacing: MenuBarLayoutTokens.hMicro) {
+            Text("\(self.filteredConnections.count)")
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+            Text("/")
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+            Text("\(self.networkSourceConnections.count)")
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
+        }
+        .foregroundStyle(nativeSecondaryLabel)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(nativeBadgeCapsule())
+    }
+
+    var trimmedNetworkKeyword: String {
+        self.networkFilterText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var hasActiveNetworkControls: Bool {
+        !self.trimmedNetworkKeyword.isEmpty || self.networkTransportFilter != .all || self.networkSortOption != .default
+    }
+
+    func resetNetworkControls() {
+        self.networkFilterText = ""
+        self.networkTransportFilter = .all
+        self.networkSortOption = .default
+    }
+
+    var networkSourceConnections: [ConnectionSummary] {
+        Array(appState.connections.prefix(120))
+    }
+
+    var filteredConnections: [ConnectionSummary] {
+        let keyword = self.trimmedNetworkKeyword
+        let filtered = self.networkSourceConnections.filter { conn in
+            guard self.networkTransportFilter.matches(conn.metadata?.network) else { return false }
+            guard keyword.isEmpty || self.connectionSearchText(for: conn).localizedStandardContains(keyword) else {
+                return false
+            }
+            return true
+        }
+        return self.sortedConnections(filtered)
+    }
+
+    func sortedConnections(_ source: [ConnectionSummary]) -> [ConnectionSummary] {
+        switch self.networkSortOption {
+        case .default:
+            return source
+        case .newest:
+            return source.sorted { lhs, rhs in
+                let left = self.connectionSortTimestamp(lhs.start) ?? -1
+                let right = self.connectionSortTimestamp(rhs.start) ?? -1
+                if left != right { return left > right }
+                return lhs.id.localizedStandardCompare(rhs.id) == .orderedAscending
+            }
+        case .oldest:
+            return source.sorted { lhs, rhs in
+                let left = self.connectionSortTimestamp(lhs.start) ?? .greatestFiniteMagnitude
+                let right = self.connectionSortTimestamp(rhs.start) ?? .greatestFiniteMagnitude
+                if left != right { return left < right }
+                return lhs.id.localizedStandardCompare(rhs.id) == .orderedAscending
+            }
+        case .uploadDesc:
+            return source.sorted { lhs, rhs in
+                let left = lhs.upload ?? 0
+                let right = rhs.upload ?? 0
+                if left != right { return left > right }
+                return (self.connectionSortTimestamp(lhs.start) ?? -1) > (self.connectionSortTimestamp(rhs.start) ?? -1)
+            }
+        case .downloadDesc:
+            return source.sorted { lhs, rhs in
+                let left = lhs.download ?? 0
+                let right = rhs.download ?? 0
+                if left != right { return left > right }
+                return (self.connectionSortTimestamp(lhs.start) ?? -1) > (self.connectionSortTimestamp(rhs.start) ?? -1)
+            }
+        case .totalDesc:
+            return source.sorted { lhs, rhs in
+                let left = (lhs.upload ?? 0) + (lhs.download ?? 0)
+                let right = (rhs.upload ?? 0) + (rhs.download ?? 0)
+                if left != right { return left > right }
+                return (self.connectionSortTimestamp(lhs.start) ?? -1) > (self.connectionSortTimestamp(rhs.start) ?? -1)
+            }
+        }
+    }
+
+    func connectionSortTimestamp(_ start: String?) -> TimeInterval? {
+        guard let value = self.trimmedNonEmpty(start) else { return nil }
+        if let date = Self.activityISO8601WithFractional.date(from: value) {
+            return date.timeIntervalSince1970
+        }
+        return Self.activityISO8601Basic.date(from: value)?.timeIntervalSince1970
     }
 
     func connectionRow(_ conn: ConnectionSummary) -> some View {
