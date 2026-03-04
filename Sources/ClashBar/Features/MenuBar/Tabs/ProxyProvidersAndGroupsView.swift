@@ -229,16 +229,21 @@ extension MenuBarRoot {
         let currentNode = group.now ?? tr("ui.common.na")
         let delayText = appState.delayText(group: group.name, node: currentNode)
         let nodeCount = group.all.count
+        let iconURL = self.proxyGroupIconURL(group)
+        let hasLeadingIcon = iconURL != nil
         let rowHorizontalPadding: CGFloat = 4
         let rowVerticalPadding: CGFloat = 1
         let hovered = hoveredProxyGroupName == group.name
 
         return AttachedPopoverMenu(width: 272) {
             GeometryReader { geo in
-                let columns = self.proxyGroupMainColumnWidths(totalWidth: geo.size.width)
+                let columns = self.proxyGroupMainColumnWidths(
+                    totalWidth: geo.size.width,
+                    hasLeadingIcon: hasLeadingIcon)
                 HStack(spacing: MenuBarLayoutTokens.hMicro) {
-                    self.proxyGroupLeadingIcon(group)
-                        .frame(width: 16, alignment: .center)
+                    if let iconURL {
+                        self.proxyGroupLeadingIcon(iconURL)
+                    }
 
                     Text(group.name)
                         .font(.system(size: 12, weight: .semibold))
@@ -287,8 +292,9 @@ extension MenuBarRoot {
             .animation(.easeInOut(duration: 0.14), value: hovered)
         } content: { dismiss in
             HStack(spacing: MenuBarLayoutTokens.hMicro) {
-                self.proxyGroupLeadingIcon(group)
-                    .frame(width: 16, alignment: .center)
+                if let iconURL {
+                    self.proxyGroupLeadingIcon(iconURL)
+                }
 
                 Text(group.name)
                     .font(.system(size: 12, weight: .semibold))
@@ -340,11 +346,15 @@ extension MenuBarRoot {
             isHovering: $0) }
     }
 
-    func proxyGroupMainColumnWidths(totalWidth: CGFloat) -> (name: CGFloat, current: CGFloat, delay: CGFloat) {
-        let iconWidth: CGFloat = 16
+    func proxyGroupMainColumnWidths(
+        totalWidth: CGFloat,
+        hasLeadingIcon: Bool) -> (name: CGFloat, current: CGFloat, delay: CGFloat)
+    {
+        let iconWidth: CGFloat = hasLeadingIcon ? 16 : 0
         let actionWidth: CGFloat = 16
         let chevronWidth: CGFloat = 8
-        let spacing = MenuBarLayoutTokens.hMicro * 4
+        let spacingCount: CGFloat = hasLeadingIcon ? 4 : 3
+        let spacing = MenuBarLayoutTokens.hMicro * spacingCount
         let available = max(0, totalWidth - iconWidth - actionWidth - chevronWidth - spacing)
         let name = floor(available * 0.34)
         let delay = floor(available * 0.17)
@@ -352,25 +362,24 @@ extension MenuBarRoot {
         return (name, current, delay)
     }
 
-    func proxyGroupLeadingIcon(_ group: ProxyGroup) -> some View {
-        let tone = groupColor(for: group)
+    @ViewBuilder
+    func proxyGroupLeadingIcon(_ iconURL: URL) -> some View {
+        AsyncImage(url: iconURL) { phase in
+            if case let .success(image) = phase {
+                image
+                    .resizable()
+                    .interpolation(.high)
+                    .antialiased(true)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(maxWidth: 16, maxHeight: 16)
+            }
+        }
+        .frame(width: 16, height: 16)
+    }
 
-        return RoundedRectangle(cornerRadius: 4, style: .continuous)
-            .fill(
-                LinearGradient(
-                    colors: [tone.opacity(0.26), tone.opacity(0.14)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing))
-            .frame(width: 16, height: 16)
-            .overlay {
-                Image(systemName: groupSymbol(for: group))
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(tone.opacity(0.95))
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .stroke(tone.opacity(0.30), lineWidth: 0.65)
-            }
+    func proxyGroupIconURL(_ group: ProxyGroup) -> URL? {
+        guard let icon = group.icon else { return nil }
+        return URL(string: icon)
     }
 
     func compactGroupAction(

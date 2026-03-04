@@ -340,6 +340,7 @@ extension AppState {
                     type: group.type,
                     now: group.now,
                     all: group.all,
+                    icon: group.icon,
                     hidden: group.hidden,
                     latestDelay: nil)
             }
