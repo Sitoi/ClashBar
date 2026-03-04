@@ -219,6 +219,7 @@ struct MenuBarRoot: View {
             .frame(height: tabScrollAreaHeight)
 
             footerBar
+                .padding(.top, MenuBarLayoutTokens.sectionGap)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .reportHeight { updateSectionHeight($0, target: .footer) }
         }

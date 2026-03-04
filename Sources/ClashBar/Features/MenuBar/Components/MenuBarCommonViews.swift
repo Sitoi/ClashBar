@@ -122,8 +122,7 @@ extension MenuBarRoot {
                     iconSystemName: gitHubSymbol)
                     .fixedSize(horizontal: true, vertical: false)
             }
-            .padding(.horizontal, MenuBarLayoutTokens.hRow)
-            .padding(.vertical, MenuBarLayoutTokens.vDense + 2)
+            .menuRowPadding(vertical: MenuBarLayoutTokens.vDense + 2)
             .background(self.footerSurfaceBackground)
         }
     }
