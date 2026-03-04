@@ -130,6 +130,23 @@ rm -f "$HOME/Library/Application Support/clashbar/cache.db"
 
 ## ❓ 常见问题
 
+- 打开 ClashBar 时提示 **"ClashBar.app" Not Opened** / Apple could not verify…？  
+  这是 macOS Gatekeeper 对未经 Apple 公证的应用的默认拦截，有以下几种解决方式：
+
+  **方式一（推荐）：** 在系统设置中点击「仍要打开」  
+  1. 尝试双击打开 ClashBar，出现弹窗后点击「完成」关闭。  
+  2. 打开 **系统设置 → 隐私与安全性**，在「安全性」区域找到关于 ClashBar 的提示，点击「仍要打开（Open Anyway）」。  
+  3. 再次弹出确认对话框时点击「打开」即可。
+
+  **方式二：** 在访达（Finder）中右键打开  
+  在访达中找到 ClashBar.app，按住 `Control` 键单击（或右键），选择「打开」，在弹出的对话框中再次点击「打开」。
+
+  **方式三：** 使用终端命令去除隔离标记  
+  ```bash
+  xattr -cr /Applications/ClashBar.app
+  ```
+  执行后即可正常双击打开。
+
 - 为什么开启系统代理失败？  
   请在 macOS 系统设置中批准 ClashBar 所需权限后重试。
 
