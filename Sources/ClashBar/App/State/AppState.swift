@@ -185,6 +185,11 @@ final class AppState: ObservableObject {
         }
     }
 
+    var proxyNodeOrderingType: ProxyNodeOrderingType {
+        get { ProxyNodeOrderingType(rawValue: self.proxyNodeOrderingRaw) ?? .orderNatural }
+        set { self.proxyNodeOrderingRaw = newValue.rawValue }
+    }
+
     var menuBarSpeedLines: MenuBarSpeedLines {
         guard self.isRuntimeRunning else { return .zero }
 
@@ -209,8 +214,13 @@ final class AppState: ObservableObject {
     }
 
     func compactMenuBarRate(_ bytesPerSecond: Int64) -> String {
-        var value = Double(max(0, bytesPerSecond))
-        let units = ["B", "K", "M", "G", "T"]
+        let normalizedBytes = max(0, bytesPerSecond)
+        if normalizedBytes == 0 {
+            return "0K"
+        }
+
+        var value = Double(normalizedBytes) / 1024
+        let units = ["K", "M", "G", "T"]
         var unitIndex = 0
 
         while value >= 1000, unitIndex < units.count - 1 {
@@ -218,7 +228,7 @@ final class AppState: ObservableObject {
             unitIndex += 1
         }
 
-        let integer = min(999, Int(value))
+        let integer = min(999, max(1, Int(value)))
         return "\(integer)\(units[unitIndex])"
     }
 
@@ -294,15 +304,21 @@ final class AppState: ObservableObject {
     var networkAutoStopTask: Task<Void, Never>?
     var networkAutoStartTask: Task<Void, Never>?
     var deferredEditableSettingsOverlayTask: Task<Void, Never>?
+    var configDirectoryMonitorTask: Task<Void, Never>?
     var providerRefreshGeneration: Int = 0
     var lastTrafficSampleAt: Date?
     var modeSwitchInFlight = false
+    var configFileSignatureSnapshot: [String: String] = [:]
+    var pendingConfigChangeRestart = false
 
     let defaults = UserDefaults.standard
     @AppStorage("clashbar.auto.start.core") private var autoStartCore: Bool = false
     @AppStorage("clashbar.auto.core.network.recovery") private var autoCoreControlOnNetworkChange: Bool = true
     @AppStorage("clashbar.statusbar.display.mode") private var statusBarDisplayModeRaw: String = StatusBarDisplayMode
         .iconOnly.rawValue
+    @AppStorage("clashbar.proxy.node.ordering") private var proxyNodeOrderingRaw: String = ProxyNodeOrderingType
+        .orderNatural.rawValue
+    @AppStorage("clashbar.proxy.node.hide_unavailable") var hideUnavailableProxyNodes: Bool = false
     let selectedConfigKey = "clashbar.config.selected.filename"
     let legacySelectedConfigKey = "clashbar.config.selected"
     let remoteConfigSourcesKey = "clashbar.config.remote.sources.v1"
@@ -439,6 +455,8 @@ final class AppState: ObservableObject {
                 await refreshSystemProxyStatus()
                 await ensureSystemProxyConsistencyOnFirstLaunchIfNeeded()
             }
+
+            self.startConfigDirectoryMonitoringIfNeeded()
         }
         if startBackgroundRefresh, self.autoStartCore {
             Task { [weak self] in
@@ -454,6 +472,7 @@ final class AppState: ObservableObject {
         networkAutoStopTask?.cancel()
         networkAutoStartTask?.cancel()
         deferredEditableSettingsOverlayTask?.cancel()
+        configDirectoryMonitorTask?.cancel()
         mediumFrequencyTask?.cancel()
         lowFrequencyTask?.cancel()
         for task in streamReceiveTasks.values {

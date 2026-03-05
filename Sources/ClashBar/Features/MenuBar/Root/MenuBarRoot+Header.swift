@@ -70,8 +70,15 @@ extension MenuBarRoot {
                 .disabled(!appState.isPrimaryCoreActionEnabled)
                 .opacity(appState.isPrimaryCoreActionEnabled ? 1 : 0.6)
 
-                self.compactTopIcon("stop.circle", label: tr("ui.action.stop")) {
-                    await appState.stopCore()
+                self.compactTopIcon(
+                    appState.isRuntimeRunning ? "stop.circle" : "play.circle",
+                    label: appState.isRuntimeRunning ? tr("ui.action.stop") : tr("app.primary.start"))
+                {
+                    if appState.isRuntimeRunning {
+                        await appState.stopCore()
+                    } else {
+                        await appState.startCore(trigger: .manual)
+                    }
                 }
                 .disabled(appState.isCoreActionProcessing)
                 .opacity(appState.isCoreActionProcessing ? 0.6 : 1)

@@ -7,6 +7,8 @@ struct ProviderSummary: Decodable, Equatable {
 struct ProviderDetail: Decodable, Equatable {
     let name: String?
     let vehicleType: String?
+    let testUrl: String?
+    let timeout: Int?
     let updatedAt: String?
     let ruleCount: Int?
     let subscriptionInfo: ProviderSubscriptionInfo?
@@ -15,6 +17,8 @@ struct ProviderDetail: Decodable, Equatable {
     private enum CodingKeys: String, CodingKey {
         case name
         case vehicleType
+        case testUrl
+        case timeout
         case updatedAt
         case ruleCount
         case rulesCount
@@ -26,6 +30,8 @@ struct ProviderDetail: Decodable, Equatable {
     init(
         name: String?,
         vehicleType: String?,
+        testUrl: String?,
+        timeout: Int?,
         updatedAt: String?,
         ruleCount: Int?,
         subscriptionInfo: ProviderSubscriptionInfo?,
@@ -33,6 +39,8 @@ struct ProviderDetail: Decodable, Equatable {
     {
         self.name = name
         self.vehicleType = vehicleType
+        self.testUrl = Self.normalizedText(testUrl)
+        self.timeout = Self.normalizedTimeout(timeout)
         self.updatedAt = updatedAt
         self.ruleCount = ruleCount
         self.subscriptionInfo = subscriptionInfo
@@ -43,12 +51,41 @@ struct ProviderDetail: Decodable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.name = try container.decodeIfPresent(String.self, forKey: .name)
         self.vehicleType = try container.decodeIfPresent(String.self, forKey: .vehicleType)
+        self.testUrl = Self.normalizedText(try container.decodeIfPresent(String.self, forKey: .testUrl))
+        self.timeout = Self.decodeTimeout(from: container)
         self.updatedAt = try container.decodeIfPresent(String.self, forKey: .updatedAt)
         self.ruleCount = try container.decodeIfPresent(Int.self, forKey: .ruleCount)
             ?? container.decodeIfPresent(Int.self, forKey: .rulesCount)
             ?? container.decodeIfPresent(Int.self, forKey: .count)
         self.subscriptionInfo = try container.decodeIfPresent(ProviderSubscriptionInfo.self, forKey: .subscriptionInfo)
         self.proxies = try container.decodeIfPresent([ProviderProxyNode].self, forKey: .proxies)
+    }
+
+    private static func normalizedText(_ value: String?) -> String? {
+        guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
+            return nil
+        }
+        return trimmed
+    }
+
+    private static func decodeTimeout(from container: KeyedDecodingContainer<CodingKeys>) -> Int? {
+        if let timeout = try? container.decodeIfPresent(Int.self, forKey: .timeout) {
+            return Self.normalizedTimeout(timeout)
+        }
+        if let timeout64 = try? container.decodeIfPresent(Int64.self, forKey: .timeout) {
+            return Self.normalizedTimeout(Int(timeout64))
+        }
+        if let timeoutText = try? container.decodeIfPresent(String.self, forKey: .timeout),
+           let timeout = Int(timeoutText)
+        {
+            return Self.normalizedTimeout(timeout)
+        }
+        return nil
+    }
+
+    private static func normalizedTimeout(_ timeout: Int?) -> Int? {
+        guard let timeout, timeout > 0 else { return nil }
+        return timeout
     }
 }
 

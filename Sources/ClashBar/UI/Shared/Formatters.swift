@@ -11,63 +11,62 @@ enum ValueFormatter {
     private static let iso8601BasicKey = "clashbar.formatter.iso8601.basic"
 
     static func speed(_ value: Int64) -> String {
-        if value >= 1024 * 1024 {
-            return String(format: "%.2f MB/s", Double(value) / (1024 * 1024))
+        let normalized = max(0, value)
+        if normalized >= 1024 * 1024 {
+            return String(format: "%.2f MB/s", Double(normalized) / (1024 * 1024))
         }
-        if value >= 1024 {
-            return String(format: "%.2f KB/s", Double(value) / 1024)
-        }
-        return "\(value) B/s"
+        return String(format: "%.2f KB/s", Double(normalized) / 1024)
     }
 
     static func bytesInteger(_ value: Int64) -> String {
+        let normalized = max(0, value)
         let kb: Int64 = 1024
         let mb = kb * 1024
         let gb = mb * 1024
         let tb = gb * 1024
 
-        if value >= tb {
-            return self.roundedBytesText(value, divisor: Double(tb), unit: "TB")
+        if normalized >= tb {
+            return self.roundedBytesText(normalized, divisor: Double(tb), unit: "TB")
         }
-        if value >= gb {
-            return self.roundedBytesText(value, divisor: Double(gb), unit: "GB")
+        if normalized >= gb {
+            return self.roundedBytesText(normalized, divisor: Double(gb), unit: "GB")
         }
-        if value >= mb {
-            return self.roundedBytesText(value, divisor: Double(mb), unit: "MB")
+        if normalized >= mb {
+            return self.roundedBytesText(normalized, divisor: Double(mb), unit: "MB")
         }
-        if value >= kb {
-            return self.roundedBytesText(value, divisor: Double(kb), unit: "KB")
+        if normalized >= kb {
+            return self.roundedBytesText(normalized, divisor: Double(kb), unit: "KB")
         }
-        return "\(value) B"
+
+        if normalized == 0 {
+            return "0 KB"
+        }
+        return "1 KB"
     }
 
     static func bytesCompact(_ value: Int64) -> String {
-        if value >= 1024 * 1024 * 1024 {
-            return String(format: "%.1f GB", Double(value) / (1024 * 1024 * 1024))
+        let normalized = max(0, value)
+        if normalized >= 1024 * 1024 * 1024 {
+            return String(format: "%.1f GB", Double(normalized) / (1024 * 1024 * 1024))
         }
-        if value >= 1024 * 1024 {
-            return String(format: "%.1f MB", Double(value) / (1024 * 1024))
+        if normalized >= 1024 * 1024 {
+            return String(format: "%.1f MB", Double(normalized) / (1024 * 1024))
         }
-        if value >= 1024 {
-            return String(format: "%.1f KB", Double(value) / 1024)
-        }
-        return "\(value) B"
+        return String(format: "%.1f KB", Double(normalized) / 1024)
     }
 
     static func bytesCompactNoSpace(_ value: Int64) -> String {
-        if value >= 1024 * 1024 * 1024 * 1024 {
-            return self.compactNoSpace(value: Double(value) / (1024 * 1024 * 1024 * 1024), unit: "TB")
+        let normalized = max(0, value)
+        if normalized >= 1024 * 1024 * 1024 * 1024 {
+            return self.compactNoSpace(value: Double(normalized) / (1024 * 1024 * 1024 * 1024), unit: "TB")
         }
-        if value >= 1024 * 1024 * 1024 {
-            return self.compactNoSpace(value: Double(value) / (1024 * 1024 * 1024), unit: "GB")
+        if normalized >= 1024 * 1024 * 1024 {
+            return self.compactNoSpace(value: Double(normalized) / (1024 * 1024 * 1024), unit: "GB")
         }
-        if value >= 1024 * 1024 {
-            return self.compactNoSpace(value: Double(value) / (1024 * 1024), unit: "MB")
+        if normalized >= 1024 * 1024 {
+            return self.compactNoSpace(value: Double(normalized) / (1024 * 1024), unit: "MB")
         }
-        if value >= 1024 {
-            return self.compactNoSpace(value: Double(value) / 1024, unit: "KB")
-        }
-        return "\(value)B"
+        return self.compactNoSpace(value: Double(normalized) / 1024, unit: "KB")
     }
 
     static func bytesOrDash(_ value: Int64?) -> String {

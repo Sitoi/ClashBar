@@ -92,13 +92,10 @@ extension AppState {
         if trigger == .manual {
             shouldResumeCoreAfterNetworkRecovery = false
         }
-        let recoverySnapshotBeforeStop = CoreFeatureRecoveryState(
-            systemProxyEnabled: self.isSystemProxyEnabled,
-            tunEnabled: self.isTunEnabled)
+        let recoverySnapshotBeforeStop = self.currentCoreFeatureRecoverySnapshot()
         coreActionState = .stopping
         defer { coreActionState = .idle }
-        await self.prepareCoreFeatureRecoveryBeforeStop(
-            trigger: trigger,
+        await self.prepareCoreFeatureRecoveryBeforeCoreTransition(
             fallbackRecovery: recoverySnapshotBeforeStop)
         self.cancelDeferredEditableSettingsOverlaySync()
         cancelProviderRefresh(reason: "stop requested")
@@ -113,7 +110,6 @@ extension AppState {
         guard !isCoreActionProcessing else { return }
         coreActionState = .restarting
         defer { coreActionState = .idle }
-        let settingsOverlay = self.overlayApplyingPendingCoreFeatureRecovery(currentEditableSettingsSnapshot())
         preserveLocalSettingsOnNextSync = true
         cancelProviderRefresh(reason: "restart requested")
         do {
@@ -133,6 +129,10 @@ extension AppState {
             }
 
             let launchController = applyExternalControllerFromSelectedConfigFile(configPath: configPath)
+            let recoverySnapshotBeforeRestart = self.currentCoreFeatureRecoverySnapshot()
+            await self.prepareCoreFeatureRecoveryBeforeCoreTransition(
+                fallbackRecovery: recoverySnapshotBeforeRestart)
+            let settingsOverlay = self.overlayApplyingPendingCoreFeatureRecovery(currentEditableSettingsSnapshot())
             _ = try processManager.restart(configPath: configPath, controller: launchController)
             await self.completeCoreBootstrap(
                 configPath: configPath,
@@ -184,6 +184,7 @@ extension AppState {
     func shutdownForTermination() {
         shouldResumeCoreAfterNetworkRecovery = false
         stopNetworkReachabilityMonitoring(resetState: true)
+        stopConfigDirectoryMonitoring()
         self.cancelDeferredEditableSettingsOverlaySync()
         cancelProviderRefresh(reason: "quit requested")
         cancelPolling()
@@ -333,24 +334,42 @@ extension AppState {
         return overlay.withTunEnabled(true)
     }
 
-    private func prepareCoreFeatureRecoveryBeforeStop(
-        trigger: StopTrigger,
+    private func currentCoreFeatureRecoverySnapshot() -> CoreFeatureRecoveryState {
+        self.mergeCoreFeatureRecoveryStates(
+            CoreFeatureRecoveryState(
+                systemProxyEnabled: self.isSystemProxyEnabled,
+                tunEnabled: self.isTunEnabled),
+            self.pendingCoreFeatureRecoveryState)
+    }
+
+    private func mergeCoreFeatureRecoveryStates(
+        _ first: CoreFeatureRecoveryState?,
+        _ second: CoreFeatureRecoveryState?) -> CoreFeatureRecoveryState
+    {
+        CoreFeatureRecoveryState(
+            systemProxyEnabled: (first?.systemProxyEnabled ?? false) || (second?.systemProxyEnabled ?? false),
+            tunEnabled: (first?.tunEnabled ?? false) || (second?.tunEnabled ?? false))
+    }
+
+    private func prepareCoreFeatureRecoveryBeforeCoreTransition(
         fallbackRecovery: CoreFeatureRecoveryState) async
     {
-        let runtimeRunningBeforeStop = self.isRuntimeRunning
+        let runtimeRunningBeforeTransition = self.isRuntimeRunning
         let capturedRecovery = CoreFeatureRecoveryState(
-            systemProxyEnabled: runtimeRunningBeforeStop && self.isSystemProxyEnabled,
-            tunEnabled: runtimeRunningBeforeStop && self.isTunEnabled)
-        let recovery: CoreFeatureRecoveryState = if trigger == .networkLoss, !capturedRecovery.shouldRecoverAnyFeature {
-            // Keep the pre-stop snapshot when network-loss stop races with transient runtime state changes.
-            fallbackRecovery
-        } else {
+            systemProxyEnabled: runtimeRunningBeforeTransition && self.isSystemProxyEnabled,
+            tunEnabled: runtimeRunningBeforeTransition && self.isTunEnabled)
+
+        let baseRecovery: CoreFeatureRecoveryState = if capturedRecovery.shouldRecoverAnyFeature {
             capturedRecovery
+        } else {
+            // Keep the pre-transition snapshot when runtime state changes race with stop/restart actions.
+            fallbackRecovery
         }
 
+        let recovery = self.mergeCoreFeatureRecoveryStates(baseRecovery, self.pendingCoreFeatureRecoveryState)
         self.pendingCoreFeatureRecoveryState = recovery.shouldRecoverAnyFeature ? recovery : nil
 
-        if runtimeRunningBeforeStop, recovery.tunEnabled {
+        if runtimeRunningBeforeTransition, recovery.tunEnabled {
             self.isTunEnabled = false
             self.appendLog(level: "info", message: self.tr("log.tun.toggled", self.tr("log.tun.disabled")))
         }

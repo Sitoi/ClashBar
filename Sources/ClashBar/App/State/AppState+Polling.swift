@@ -190,11 +190,16 @@ extension AppState {
                 async let versionTask: VersionInfo = client.request(.version)
                 async let configTask: ConfigSnapshot = client.request(.getConfigs)
                 async let groupsTask: ProxyGroupsResponse = client.request(.proxies)
+                async let proxyProvidersTask: ProviderSummary? = try? await client.request(.proxyProviders)
 
-                let (version, config, groupsResponse) = try await (versionTask, configTask, groupsTask)
+                let (version, config, groupsResponse, proxyProviders) = try await (
+                    versionTask,
+                    configTask,
+                    groupsTask,
+                    proxyProvidersTask)
                 self.version = version.version
                 self.applyRuntimeConfigSnapshot(config)
-                self.applyProxyGroupsResponse(groupsResponse)
+                self.applyProxyGroupsResponse(groupsResponse, proxyProviders: proxyProviders?.providers ?? [:])
             } else {
                 async let versionTask: VersionInfo = client.request(.version)
                 async let configTask: ConfigSnapshot = client.request(.getConfigs)
@@ -316,34 +321,57 @@ extension AppState {
     func refreshProxyGroups() async {
         await runRefresh {
             let client = try self.clientOrThrow()
-            let groupsResponse: ProxyGroupsResponse = try await client.request(.proxies)
-            self.applyProxyGroupsResponse(groupsResponse)
+            async let groupsTask: ProxyGroupsResponse = client.request(.proxies)
+            async let proxyProvidersTask: ProviderSummary? = try? await client.request(.proxyProviders)
+            let (groupsResponse, proxyProviders) = try await (groupsTask, proxyProvidersTask)
+            self.applyProxyGroupsResponse(groupsResponse, proxyProviders: proxyProviders?.providers ?? [:])
         }
     }
 
-    func applyProxyGroupsResponse(_ response: ProxyGroupsResponse) {
-        proxyGroups = response.proxies.values
+    func applyProxyGroupsResponse(_ response: ProxyGroupsResponse, proxyProviders: [String: ProviderDetail] = [:]) {
+        let providerLookup = proxyProviders.isEmpty ? proxyProvidersDetail : proxyProviders
+        let proxiesWithHealthcheckConfig = response.proxies.values.map { proxy in
+            let provider = providerLookup[proxy.name]
+            let resolvedTestURL = self.normalizedHealthcheckURL(proxy.testUrl)
+                ?? self.normalizedHealthcheckURL(provider?.testUrl)
+            let resolvedTimeout = self.normalizedHealthcheckTimeout(proxy.timeout)
+                ?? self.normalizedHealthcheckTimeout(provider?.timeout)
+
+            return ProxyGroup(
+                name: proxy.name,
+                type: proxy.type,
+                now: proxy.now,
+                all: proxy.all,
+                testUrl: resolvedTestURL,
+                timeout: resolvedTimeout,
+                icon: proxy.icon,
+                hidden: proxy.hidden,
+                latestDelay: proxy.latestDelay)
+        }
+
+        let sortIndex = (response.proxies["GLOBAL"]?.all ?? []) + ["GLOBAL"]
+        var sortIndexMap: [String: Int] = [:]
+        sortIndex.enumerated().forEach { index, name in
+            if sortIndexMap[name] == nil {
+                sortIndexMap[name] = index
+            }
+        }
+
+        proxyGroups = proxiesWithHealthcheckConfig
+            .enumerated()
             .filter {
-                !$0.all
-                    .isEmpty &&
-                    ($0.type == "Selector" || $0.type == "URLTest" || $0.type == "Fallback" || $0.type == nil)
+                !$0.element.all.isEmpty
             }
             .sorted { lhs, rhs in
-                let lhsPriority = self.proxyGroupTypePriority(lhs.type)
-                let rhsPriority = self.proxyGroupTypePriority(rhs.type)
-                if lhsPriority != rhsPriority { return lhsPriority < rhsPriority }
-                return lhs.name < rhs.name
+                let lhsOrder = sortIndexMap[lhs.element.name] ?? -1
+                let rhsOrder = sortIndexMap[rhs.element.name] ?? -1
+
+                if lhsOrder != rhsOrder {
+                    return lhsOrder < rhsOrder
+                }
+                return lhs.offset < rhs.offset
             }
-            .map { group in
-                ProxyGroup(
-                    name: group.name,
-                    type: group.type,
-                    now: group.now,
-                    all: group.all,
-                    icon: group.icon,
-                    hidden: group.hidden,
-                    latestDelay: nil)
-            }
+            .map(\.element)
 
         var historyMap: [String: Int] = [:]
         for proxy in response.proxies.values where proxy.hidden != true {
@@ -354,15 +382,16 @@ extension AppState {
         proxyHistoryLatestDelay = historyMap
     }
 
-    func proxyGroupTypePriority(_ type: String?) -> Int {
-        switch type {
-        case "Selector":
-            0
-        case "URLTest":
-            1
-        default:
-            2
+    func normalizedHealthcheckURL(_ value: String?) -> String? {
+        guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
+            return nil
         }
+        return trimmed
+    }
+
+    func normalizedHealthcheckTimeout(_ value: Int?) -> Int? {
+        guard let value, value > 0 else { return nil }
+        return value
     }
 
     func refreshConnections() async {

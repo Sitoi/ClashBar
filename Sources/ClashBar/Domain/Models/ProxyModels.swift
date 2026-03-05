@@ -9,6 +9,8 @@ struct ProxyGroup: Decodable, Equatable {
     let type: String?
     let now: String?
     let all: [String]
+    let testUrl: String?
+    let timeout: Int?
     let icon: String?
     let hidden: Bool?
     let latestDelay: Int?
@@ -18,6 +20,8 @@ struct ProxyGroup: Decodable, Equatable {
         type: String? = nil,
         now: String? = nil,
         all: [String],
+        testUrl: String? = nil,
+        timeout: Int? = nil,
         icon: String? = nil,
         hidden: Bool? = nil,
         latestDelay: Int? = nil)
@@ -26,6 +30,8 @@ struct ProxyGroup: Decodable, Equatable {
         self.type = type
         self.now = now
         self.all = all
+        self.testUrl = Self.normalizedText(testUrl)
+        self.timeout = Self.normalizedTimeout(timeout)
         self.icon = Self.normalizedIcon(icon)
         self.hidden = hidden
         self.latestDelay = latestDelay
@@ -36,6 +42,8 @@ struct ProxyGroup: Decodable, Equatable {
         case type
         case now
         case all
+        case testUrl
+        case timeout
         case icon
         case hidden
         case history
@@ -47,6 +55,8 @@ struct ProxyGroup: Decodable, Equatable {
         self.type = try container.decodeIfPresent(String.self, forKey: .type)
         self.now = try container.decodeIfPresent(String.self, forKey: .now)
         self.all = try container.decodeIfPresent([String].self, forKey: .all) ?? []
+        self.testUrl = Self.normalizedText(try container.decodeIfPresent(String.self, forKey: .testUrl))
+        self.timeout = Self.decodeTimeout(from: container)
         self.icon = Self.normalizedIcon((try? container.decodeIfPresent(String.self, forKey: .icon)) ?? nil)
         self.hidden = try container.decodeIfPresent(Bool.self, forKey: .hidden)
         self.latestDelay = Self.decodeLatestDelay(from: container)
@@ -70,10 +80,34 @@ struct ProxyGroup: Decodable, Equatable {
     }
 
     private static func normalizedIcon(_ value: String?) -> String? {
+        Self.normalizedText(value)
+    }
+
+    private static func normalizedText(_ value: String?) -> String? {
         guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
             return nil
         }
         return trimmed
+    }
+
+    private static func decodeTimeout(from container: KeyedDecodingContainer<CodingKeys>) -> Int? {
+        if let timeout = try? container.decodeIfPresent(Int.self, forKey: .timeout) {
+            return Self.normalizedTimeout(timeout)
+        }
+        if let timeout64 = try? container.decodeIfPresent(Int64.self, forKey: .timeout) {
+            return Self.normalizedTimeout(Int(timeout64))
+        }
+        if let timeoutText = try? container.decodeIfPresent(String.self, forKey: .timeout),
+           let timeout = Int(timeoutText)
+        {
+            return Self.normalizedTimeout(timeout)
+        }
+        return nil
+    }
+
+    private static func normalizedTimeout(_ timeout: Int?) -> Int? {
+        guard let timeout, timeout > 0 else { return nil }
+        return timeout
     }
 }
 

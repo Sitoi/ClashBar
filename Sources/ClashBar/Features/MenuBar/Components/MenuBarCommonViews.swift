@@ -201,20 +201,104 @@ extension MenuBarRoot {
 
     func sortedProviderNodes(provider: String, detail: ProviderDetail?) -> [String] {
         guard let proxies = detail?.proxies else { return [] }
-
-        let names = Array(Set(proxies.map(\.name)))
-        return names.sorted { lhs, rhs in
-            let left = self.latencySortWeight(self.appState.providerNodeLatencies[provider]?[lhs])
-            let right = self.latencySortWeight(self.appState.providerNodeLatencies[provider]?[rhs])
-            if left != right { return left < right }
+        let names = self.orderedUniqueNames(proxies.map(\.name))
+        let sorted = names.sorted { lhs, rhs in
+            let latencyComparison = self.compareLatency(
+                lhs: self.appState.providerNodeLatencies[provider]?[lhs],
+                rhs: self.appState.providerNodeLatencies[provider]?[rhs],
+                ascending: true)
+            if latencyComparison != .orderedSame {
+                return latencyComparison == .orderedAscending
+            }
             return lhs.localizedStandardCompare(rhs) == .orderedAscending
+        }
+
+        guard self.appState.hideUnavailableProxyNodes else { return sorted }
+        return sorted.filter { name in
+            self.isProxyNodeAvailable(self.appState.providerNodeLatencies[provider]?[name])
         }
     }
 
-    func latencySortWeight(_ value: Int?) -> Int {
-        guard let value else { return Int.max }
-        if value == 0 { return Int.max - 1 }
-        return value
+    func sortedProxyNodeNames(_ names: [String], latencyForName: (String) -> Int?) -> [String] {
+        let deduplicatedNames = self.orderedUniqueNames(names)
+        let orderedNames: [String]
+
+        switch self.appState.proxyNodeOrderingType {
+        case .orderNatural:
+            orderedNames = deduplicatedNames
+        case .orderLatencyAscending:
+            orderedNames = deduplicatedNames.sorted { lhs, rhs in
+                let latencyComparison = self.compareLatency(
+                    lhs: latencyForName(lhs),
+                    rhs: latencyForName(rhs),
+                    ascending: true)
+                if latencyComparison != .orderedSame {
+                    return latencyComparison == .orderedAscending
+                }
+                return lhs.localizedStandardCompare(rhs) == .orderedAscending
+            }
+        case .orderLatencyDescending:
+            orderedNames = deduplicatedNames.sorted { lhs, rhs in
+                let latencyComparison = self.compareLatency(
+                    lhs: latencyForName(lhs),
+                    rhs: latencyForName(rhs),
+                    ascending: false)
+                if latencyComparison != .orderedSame {
+                    return latencyComparison == .orderedAscending
+                }
+                return lhs.localizedStandardCompare(rhs) == .orderedAscending
+            }
+        case .orderNameAscending:
+            orderedNames = deduplicatedNames.sorted { lhs, rhs in
+                lhs.localizedStandardCompare(rhs) == .orderedAscending
+            }
+        case .orderNameDescending:
+            orderedNames = deduplicatedNames.sorted { lhs, rhs in
+                lhs.localizedStandardCompare(rhs) == .orderedDescending
+            }
+        }
+
+        guard self.appState.hideUnavailableProxyNodes else { return orderedNames }
+        return orderedNames.filter { name in
+            self.isProxyNodeAvailable(latencyForName(name))
+        }
+    }
+
+    func orderedUniqueNames(_ names: [String]) -> [String] {
+        var seen: Set<String> = []
+        var ordered: [String] = []
+        ordered.reserveCapacity(names.count)
+
+        for name in names where !name.isEmpty {
+            if seen.insert(name).inserted {
+                ordered.append(name)
+            }
+        }
+
+        return ordered
+    }
+
+    func compareLatency(lhs: Int?, rhs: Int?, ascending: Bool) -> ComparisonResult {
+        let leftAvailable = self.isProxyNodeAvailable(lhs)
+        let rightAvailable = self.isProxyNodeAvailable(rhs)
+
+        if leftAvailable != rightAvailable {
+            return leftAvailable ? .orderedAscending : .orderedDescending
+        }
+
+        guard leftAvailable, rightAvailable, let lhs, let rhs, lhs != rhs else {
+            return .orderedSame
+        }
+
+        if ascending {
+            return lhs < rhs ? .orderedAscending : .orderedDescending
+        }
+        return lhs > rhs ? .orderedAscending : .orderedDescending
+    }
+
+    func isProxyNodeAvailable(_ latency: Int?) -> Bool {
+        guard let latency else { return false }
+        return latency > 0
     }
 
     func latencyColor(_ value: Int?) -> Color {
@@ -227,11 +311,21 @@ extension MenuBarRoot {
     }
 
     func sortedGroupNodes(_ group: ProxyGroup) -> [String] {
-        group.all.sorted { lhs, rhs in
-            let left = self.latencySortWeight(self.appState.delayValue(group: group.name, node: lhs))
-            let right = self.latencySortWeight(self.appState.delayValue(group: group.name, node: rhs))
-            if left != right { return left < right }
+        let names = self.orderedUniqueNames(group.all)
+        let sorted = names.sorted { lhs, rhs in
+            let latencyComparison = self.compareLatency(
+                lhs: self.appState.delayValue(group: group.name, node: lhs),
+                rhs: self.appState.delayValue(group: group.name, node: rhs),
+                ascending: true)
+            if latencyComparison != .orderedSame {
+                return latencyComparison == .orderedAscending
+            }
             return lhs.localizedStandardCompare(rhs) == .orderedAscending
+        }
+
+        guard self.appState.hideUnavailableProxyNodes else { return sorted }
+        return sorted.filter { node in
+            self.isProxyNodeAvailable(self.appState.delayValue(group: group.name, node: node))
         }
     }
 

@@ -53,11 +53,13 @@ resolve_mihomo_asset_candidates() {
   case "$arch" in
     x86_64)
       cat <<EOF
+mihomo-darwin-amd64-v2-go122-${MIHOMO_VERSION}.gz
 mihomo-darwin-amd64-${MIHOMO_VERSION}.gz
 EOF
       ;;
     arm64)
       cat <<EOF
+mihomo-darwin-arm64-go122-${MIHOMO_VERSION}.gz
 mihomo-darwin-arm64-${MIHOMO_VERSION}.gz
 EOF
       ;;

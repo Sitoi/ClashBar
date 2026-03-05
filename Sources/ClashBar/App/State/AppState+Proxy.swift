@@ -63,13 +63,15 @@ extension AppState {
         groupLatencyLoading.insert(group.name)
         defer { groupLatencyLoading.remove(group.name) }
 
+        let testURL = normalizedHealthcheckURL(group.testUrl) ?? defaultHealthcheckURL
+        let timeout = normalizedHealthcheckTimeout(group.timeout) ?? defaultHealthcheckTimeoutMilliseconds
         await runRefresh {
             let client = try self.clientOrThrow()
             let response: GroupDelayMeasurement = try await client.request(
                 .groupDelay(
                     name: group.name,
-                    url: defaultHealthcheckURL,
-                    timeout: defaultHealthcheckTimeoutMilliseconds))
+                    url: testURL,
+                    timeout: timeout))
             let delays = response.values.filter { $0.value > 0 }
 
             self.groupLatencies[group.name] = delays
@@ -77,7 +79,7 @@ extension AppState {
     }
 
     func refreshAllGroupLatencies() async {
-        let groups = proxyGroups
+        let groups = proxyGroups.filter { $0.hidden != true }
         await withTaskGroup(of: Void.self) { taskGroup in
             for group in groups {
                 taskGroup.addTask { [weak self] in

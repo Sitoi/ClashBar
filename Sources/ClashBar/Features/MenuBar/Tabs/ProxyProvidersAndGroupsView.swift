@@ -197,7 +197,7 @@ extension MenuBarRoot {
     }
 
     var proxyGroupsSection: some View {
-        let groups = appState.proxyGroups
+        let groups = appState.proxyGroups.filter { $0.hidden != true }
 
         return VStack(alignment: .leading, spacing: MenuBarLayoutTokens.sectionGap) {
             self.nodesSectionHeader(
@@ -477,11 +477,14 @@ private struct ProxyGroupPopoverNodeItem: View {
 
                 Spacer(minLength: 0)
 
-                if self.isTesting {
-                    RotatingRefreshDelayIndicator()
-                } else {
-                    self.delayMetricView
+                Group {
+                    if self.isTesting {
+                        LatencyLoadingIndicator()
+                    } else {
+                        self.delayMetricView
+                    }
                 }
+                .frame(width: 56, alignment: .trailing)
             }
             .frame(height: 20)
             .padding(.horizontal, 4)
@@ -532,22 +535,14 @@ private struct ProxyGroupPopoverNodeItem: View {
     }
 }
 
-private struct RotatingRefreshDelayIndicator: View {
-    @State private var spinning = false
-
+private struct LatencyLoadingIndicator: View {
     var body: some View {
-        Image(systemName: "arrow.triangle.2.circlepath")
-            .font(.appSystem(size: 10, weight: .semibold))
-            .foregroundStyle(Color(nsColor: .secondaryLabelColor))
-            .rotationEffect(.degrees(self.spinning ? 360 : 0))
-            .animation(
-                self.spinning
-                    ? .linear(duration: 0.9).repeatForever(autoreverses: false)
-                    : .default,
-                value: self.spinning)
-            .frame(width: 24, alignment: .trailing)
-            .onAppear { self.spinning = true }
-            .onDisappear { self.spinning = false }
+        ProgressView()
+            .controlSize(.mini)
+            .frame(width: 30, height: 14, alignment: .center)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color(nsColor: .quaternaryLabelColor).opacity(0.24)))
     }
 }
 

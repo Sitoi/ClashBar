@@ -12,7 +12,7 @@ extension AppState {
     }
 
     var sortedProxyProviderNames: [String] {
-        proxyProvidersDetail.keys.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+        return proxyProvidersDetail.keys.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
     }
 
     func updateRuleProvider(name: String) async {
@@ -62,14 +62,15 @@ extension AppState {
         providerNodeTesting.insert(key)
         defer { providerNodeTesting.remove(key) }
 
+        let healthcheck = self.resolvedProviderHealthcheck(provider: provider)
         do {
             let client = try clientOrThrow()
             let response: DelayMeasurement = try await client.request(
                 .proxyProviderProxyHealthcheck(
                     provider: provider,
                     proxy: node,
-                    url: defaultHealthcheckURL,
-                    timeout: defaultHealthcheckTimeoutMilliseconds))
+                    url: healthcheck.url,
+                    timeout: healthcheck.timeout))
             if let value = response.value {
                 self.setProviderNodeLatency(provider: provider, node: node, value: value)
             }
@@ -96,13 +97,14 @@ extension AppState {
         nodeKeys.forEach { providerNodeTesting.insert($0) }
         defer { nodeKeys.forEach { providerNodeTesting.remove($0) } }
 
+        let healthcheck = self.resolvedProviderHealthcheck(provider: provider)
         do {
             let client = try clientOrThrow()
             try await client.requestNoResponse(
                 .proxyProviderHealthcheck(
                     name: provider,
-                    url: defaultHealthcheckURL,
-                    timeout: defaultHealthcheckTimeoutMilliseconds))
+                    url: healthcheck.url,
+                    timeout: healthcheck.timeout))
             let refreshed: ProviderDetail = try await client.request(.proxyProvider(name: provider))
             self.applyRefreshedProviderDetail(provider: provider, detail: refreshed)
         } catch {
@@ -119,6 +121,14 @@ extension AppState {
         return tr("ui.common.latency_ms", value)
     }
 
+    func resolvedProviderHealthcheck(provider: String) -> (url: String, timeout: Int) {
+        let providerDetail = proxyProvidersDetail[provider]
+        let trimmedURL = providerDetail?.testUrl?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedURL = (trimmedURL?.isEmpty == false) ? (trimmedURL ?? defaultHealthcheckURL) : defaultHealthcheckURL
+        let timeout = providerDetail?.timeout ?? defaultHealthcheckTimeoutMilliseconds
+        return (url: resolvedURL, timeout: max(1, timeout))
+    }
+
     func applyProviderHealthcheckDelays(provider: String, detail: ProviderDetail) {
         detail.proxies?
             .compactMap { proxy in
@@ -133,10 +143,38 @@ extension AppState {
         return ProviderDetail(
             name: detail.name,
             vehicleType: detail.vehicleType,
+            testUrl: detail.testUrl,
+            timeout: detail.timeout,
             updatedAt: detail.updatedAt,
             ruleCount: detail.ruleCount,
             subscriptionInfo: detail.subscriptionInfo,
             proxies: proxies)
+    }
+
+    private func mergedProviderDetailPreservingNodes(previous: ProviderDetail?, incoming: ProviderDetail) -> ProviderDetail {
+        let summary = self.sanitizedProviderDetail(incoming, includeNodes: false)
+        let fallbackNodes = incoming.proxies?.map { ProviderProxyNode(name: $0.name, history: nil) }
+        let preservedNodes = previous?.proxies ?? fallbackNodes
+
+        return ProviderDetail(
+            name: summary.name,
+            vehicleType: summary.vehicleType,
+            testUrl: summary.testUrl,
+            timeout: summary.timeout,
+            updatedAt: summary.updatedAt,
+            ruleCount: summary.ruleCount,
+            subscriptionInfo: summary.subscriptionInfo,
+            proxies: preservedNodes)
+    }
+
+    func shouldIncludeProxyProvider(named key: String, detail: ProviderDetail) -> Bool {
+        let resolvedName = detail.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? key
+        if resolvedName.caseInsensitiveCompare("default") == .orderedSame {
+            return false
+        }
+
+        let vehicleType = detail.vehicleType?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return vehicleType.caseInsensitiveCompare("Compatible") != .orderedSame
     }
 
     func ensureProviderNodesLoaded(provider: String) async {
@@ -337,14 +375,20 @@ extension AppState {
 
             let (proxyProviders, ruleProviders, rules) = try await (proxyProvidersTask, ruleProvidersTask, rulesTask)
 
-            let filteredProxyProviders = proxyProviders.providers.filter { _, detail in
-                let vehicleType = detail.vehicleType?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                return vehicleType.caseInsensitiveCompare("Compatible") != .orderedSame
+            let filteredProxyProviders = proxyProviders.providers.filter { key, detail in
+                self.shouldIncludeProxyProvider(named: key, detail: detail)
             }
 
-            self.proxyProvidersDetail = filteredProxyProviders.mapValues { self.sanitizedProviderDetail(
-                $0,
-                includeNodes: false) }
+            let previousProxyProviders = self.proxyProvidersDetail
+            var nextProxyProviders: [String: ProviderDetail] = [:]
+            nextProxyProviders.reserveCapacity(filteredProxyProviders.count)
+            for (name, detail) in filteredProxyProviders {
+                nextProxyProviders[name] = self.mergedProviderDetailPreservingNodes(
+                    previous: previousProxyProviders[name],
+                    incoming: detail)
+            }
+
+            self.proxyProvidersDetail = nextProxyProviders
             self.ruleProviders = ruleProviders.providers
             self.ruleItems = rules.rules
 
