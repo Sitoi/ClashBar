@@ -12,7 +12,7 @@ extension AppState {
     }
 
     var sortedProxyProviderNames: [String] {
-        return proxyProvidersDetail.keys.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+        proxyProvidersDetail.keys.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
     }
 
     func updateRuleProvider(name: String) async {
@@ -151,7 +151,10 @@ extension AppState {
             proxies: proxies)
     }
 
-    private func mergedProviderDetailPreservingNodes(previous: ProviderDetail?, incoming: ProviderDetail) -> ProviderDetail {
+    private func mergedProviderDetailPreservingNodes(
+        previous: ProviderDetail?,
+        incoming: ProviderDetail) -> ProviderDetail
+    {
         let summary = self.sanitizedProviderDetail(incoming, includeNodes: false)
         let fallbackNodes = incoming.proxies?.map { ProviderProxyNode(name: $0.name, history: nil) }
         let preservedNodes = previous?.proxies ?? fallbackNodes

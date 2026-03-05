@@ -221,13 +221,11 @@ extension MenuBarRoot {
 
     func sortedProxyNodeNames(_ names: [String], latencyForName: (String) -> Int?) -> [String] {
         let deduplicatedNames = self.orderedUniqueNames(names)
-        let orderedNames: [String]
-
-        switch self.appState.proxyNodeOrderingType {
+        let orderedNames: [String] = switch self.appState.proxyNodeOrderingType {
         case .orderNatural:
-            orderedNames = deduplicatedNames
+            deduplicatedNames
         case .orderLatencyAscending:
-            orderedNames = deduplicatedNames.sorted { lhs, rhs in
+            deduplicatedNames.sorted { lhs, rhs in
                 let latencyComparison = self.compareLatency(
                     lhs: latencyForName(lhs),
                     rhs: latencyForName(rhs),
@@ -238,7 +236,7 @@ extension MenuBarRoot {
                 return lhs.localizedStandardCompare(rhs) == .orderedAscending
             }
         case .orderLatencyDescending:
-            orderedNames = deduplicatedNames.sorted { lhs, rhs in
+            deduplicatedNames.sorted { lhs, rhs in
                 let latencyComparison = self.compareLatency(
                     lhs: latencyForName(lhs),
                     rhs: latencyForName(rhs),
@@ -249,11 +247,11 @@ extension MenuBarRoot {
                 return lhs.localizedStandardCompare(rhs) == .orderedAscending
             }
         case .orderNameAscending:
-            orderedNames = deduplicatedNames.sorted { lhs, rhs in
+            deduplicatedNames.sorted { lhs, rhs in
                 lhs.localizedStandardCompare(rhs) == .orderedAscending
             }
         case .orderNameDescending:
-            orderedNames = deduplicatedNames.sorted { lhs, rhs in
+            deduplicatedNames.sorted { lhs, rhs in
                 lhs.localizedStandardCompare(rhs) == .orderedDescending
             }
         }

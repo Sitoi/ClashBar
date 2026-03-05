@@ -67,7 +67,7 @@ extension AppState {
         let involvedSelectedFileNames = Set([
             self.configFileName(fromPath: previousSelectedPath),
             self.configFileName(fromPath: nextSelectedPath),
-        ].compactMap { $0 })
+        ].compactMap(\.self))
         guard !involvedSelectedFileNames.isDisjoint(with: changedFileNames) else { return }
         guard self.isRuntimeRunning else { return }
 

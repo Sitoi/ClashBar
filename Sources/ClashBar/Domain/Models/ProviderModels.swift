@@ -51,7 +51,7 @@ struct ProviderDetail: Decodable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.name = try container.decodeIfPresent(String.self, forKey: .name)
         self.vehicleType = try container.decodeIfPresent(String.self, forKey: .vehicleType)
-        self.testUrl = Self.normalizedText(try container.decodeIfPresent(String.self, forKey: .testUrl))
+        self.testUrl = try Self.normalizedText(container.decodeIfPresent(String.self, forKey: .testUrl))
         self.timeout = Self.decodeTimeout(from: container)
         self.updatedAt = try container.decodeIfPresent(String.self, forKey: .updatedAt)
         self.ruleCount = try container.decodeIfPresent(Int.self, forKey: .ruleCount)
@@ -70,7 +70,7 @@ struct ProviderDetail: Decodable, Equatable {
 
     private static func decodeTimeout(from container: KeyedDecodingContainer<CodingKeys>) -> Int? {
         if let timeout = try? container.decodeIfPresent(Int.self, forKey: .timeout) {
-            return Self.normalizedTimeout(timeout)
+            return self.normalizedTimeout(timeout)
         }
         if let timeout64 = try? container.decodeIfPresent(Int64.self, forKey: .timeout) {
             return Self.normalizedTimeout(Int(timeout64))

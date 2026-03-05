@@ -351,7 +351,7 @@ extension AppState {
 
         let sortIndex = (response.proxies["GLOBAL"]?.all ?? []) + ["GLOBAL"]
         var sortIndexMap: [String: Int] = [:]
-        sortIndex.enumerated().forEach { index, name in
+        for (index, name) in sortIndex.enumerated() {
             if sortIndexMap[name] == nil {
                 sortIndexMap[name] = index
             }

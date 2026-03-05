@@ -55,7 +55,7 @@ struct ProxyGroup: Decodable, Equatable {
         self.type = try container.decodeIfPresent(String.self, forKey: .type)
         self.now = try container.decodeIfPresent(String.self, forKey: .now)
         self.all = try container.decodeIfPresent([String].self, forKey: .all) ?? []
-        self.testUrl = Self.normalizedText(try container.decodeIfPresent(String.self, forKey: .testUrl))
+        self.testUrl = try Self.normalizedText(container.decodeIfPresent(String.self, forKey: .testUrl))
         self.timeout = Self.decodeTimeout(from: container)
         self.icon = Self.normalizedIcon((try? container.decodeIfPresent(String.self, forKey: .icon)) ?? nil)
         self.hidden = try container.decodeIfPresent(Bool.self, forKey: .hidden)
@@ -80,7 +80,7 @@ struct ProxyGroup: Decodable, Equatable {
     }
 
     private static func normalizedIcon(_ value: String?) -> String? {
-        Self.normalizedText(value)
+        self.normalizedText(value)
     }
 
     private static func normalizedText(_ value: String?) -> String? {
@@ -92,7 +92,7 @@ struct ProxyGroup: Decodable, Equatable {
 
     private static func decodeTimeout(from container: KeyedDecodingContainer<CodingKeys>) -> Int? {
         if let timeout = try? container.decodeIfPresent(Int.self, forKey: .timeout) {
-            return Self.normalizedTimeout(timeout)
+            return self.normalizedTimeout(timeout)
         }
         if let timeout64 = try? container.decodeIfPresent(Int64.self, forKey: .timeout) {
             return Self.normalizedTimeout(Int(timeout64))
