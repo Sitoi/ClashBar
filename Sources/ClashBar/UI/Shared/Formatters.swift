@@ -131,7 +131,11 @@ enum ValueFormatter {
     }
 
     static func daysUntilExpiryShort(from unixSeconds: Int64?, language: AppLanguage, now: Date = Date()) -> String {
-        guard let unixSeconds, unixSeconds > 0 else { return L10n.t("fmt.common.unknown", language: language) }
+        guard let unixSeconds else { return L10n.t("fmt.common.unknown", language: language) }
+        if unixSeconds == 0 {
+            return L10n.t("fmt.expiry_short.long_term", language: language)
+        }
+        guard unixSeconds > 0 else { return L10n.t("fmt.common.unknown", language: language) }
 
         let expiryDate = Date(timeIntervalSince1970: TimeInterval(unixSeconds))
         let seconds = expiryDate.timeIntervalSince(now)
