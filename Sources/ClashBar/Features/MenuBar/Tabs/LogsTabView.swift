@@ -24,7 +24,6 @@ extension MenuBarRoot {
                         }
                     }
                 }
-                .background(nativeSectionCard())
             }
         }
     }
@@ -45,60 +44,44 @@ extension MenuBarRoot {
                 .foregroundStyle(nativePrimaryLabel)
         }
         .menuRowPadding(vertical: MenuBarLayoutTokens.vDense + 2)
-        .background(nativeSectionCard())
     }
 
     var logsSecondaryControlRow: some View {
         HStack(spacing: MenuBarLayoutTokens.hDense) {
             self.logsLevelFilterButtons
 
-            self.logsControlIconButton(
+            self.compactTopIcon(
                 "line.3.horizontal.decrease.circle",
-                helpText: tr("ui.action.reset_log_filters"),
-                isDisabled: !self.hasActiveLogFilters)
+                label: tr("ui.action.reset_log_filters"))
             {
                 self.resetLogFilters()
             }
+            .help(tr("ui.action.reset_log_filters"))
+            .disabled(!self.hasActiveLogFilters)
 
             Spacer(minLength: 0)
 
-            self.logsControlIconButton(
+            self.compactTopIcon(
                 "doc.on.doc",
-                helpText: tr("ui.action.copy_all_logs"),
-                isDisabled: appState.errorLogs.isEmpty)
+                label: tr("ui.action.copy_all_logs"),
+                toneOverride: nativeSecondaryLabel)
             {
                 appState.copyAllLogs()
             }
+            .help(tr("ui.action.copy_all_logs"))
+            .disabled(appState.errorLogs.isEmpty)
 
-            self.logsControlIconButton(
+            self.compactTopIcon(
                 "trash",
-                helpText: tr("ui.action.clear_all_logs"),
-                role: .destructive,
-                isDisabled: appState.errorLogs.isEmpty)
+                label: tr("ui.action.clear_all_logs"),
+                warning: true)
             {
                 appState.clearAllLogs()
             }
+            .help(tr("ui.action.clear_all_logs"))
+            .disabled(appState.errorLogs.isEmpty)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    func logsControlIconButton(
-        _ symbol: String,
-        helpText: String,
-        role: ButtonRole? = nil,
-        isDisabled: Bool = false,
-        action: @escaping () -> Void) -> some View
-    {
-        Button(role: role, action: action) {
-            Image(systemName: symbol)
-                .font(.appSystem(size: 11, weight: .semibold))
-                .frame(width: 12, height: 12)
-        }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
-        .help(helpText)
-        .accessibilityLabel(helpText)
-        .disabled(isDisabled)
     }
 
     var logsSourceFilterButtons: some View {
@@ -254,10 +237,12 @@ extension MenuBarRoot {
         let tone = levelInfo.color
         let symbol = levelInfo.symbol
 
-        return HStack(alignment: .top, spacing: MenuBarLayoutTokens.hDense + 1) {
+        return HStack(alignment: .center, spacing: MenuBarLayoutTokens.hDense + 1) {
             RoundedRectangle(cornerRadius: MenuBarLayoutTokens.iconCornerRadius, style: .continuous)
                 .fill(tone.opacity(0.14))
-                .frame(width: 16, height: 16)
+                .frame(
+                    width: MenuBarLayoutTokens.rowLeadingIconColumnWidth,
+                    height: MenuBarLayoutTokens.rowLeadingIconSize)
                 .overlay {
                     Image(systemName: symbol)
                         .font(.appSystem(size: 9, weight: .semibold))

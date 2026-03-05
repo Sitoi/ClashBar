@@ -25,7 +25,6 @@ extension MenuBarRoot {
                         }
                     }
                 }
-                .background(nativeSectionCard())
             }
         }
     }
@@ -40,7 +39,7 @@ extension MenuBarRoot {
         let remaining = ValueFormatter.subscriptionRemaining(total: total, upload: upload, download: download)
         let remainingRatio = ValueFormatter.subscriptionRemainingRatio(total: total, upload: upload, download: download)
         let quotaTextColumnWidth: CGFloat = 124
-        let rowHorizontalPadding: CGFloat = 4
+        let rowHorizontalPadding = MenuBarLayoutTokens.hRow
         let hovered = hoveredProxyProviderName == name
 
         return AttachedPopoverMenu(
@@ -52,7 +51,9 @@ extension MenuBarRoot {
                     HStack(spacing: MenuBarLayoutTokens.hDense) {
                         RoundedRectangle(cornerRadius: MenuBarLayoutTokens.iconCornerRadius, style: .continuous)
                             .fill(nativeTeal.opacity(0.14))
-                            .frame(width: 16, height: 16)
+                            .frame(
+                                width: MenuBarLayoutTokens.rowLeadingIconSize,
+                                height: MenuBarLayoutTokens.rowLeadingIconSize)
                             .overlay {
                                 Image(systemName: "shippingbox.fill")
                                     .font(.appSystem(size: 9, weight: .semibold))
@@ -253,7 +254,7 @@ extension MenuBarRoot {
         let nodeCount = group.all.count
         let iconURL = self.proxyGroupIconURL(group)
         let hasLeadingIcon = iconURL != nil
-        let rowHorizontalPadding: CGFloat = 4
+        let rowHorizontalPadding = MenuBarLayoutTokens.hRow
         let rowVerticalPadding: CGFloat = 1
         let hovered = hoveredProxyGroupName == group.name
 
@@ -364,7 +365,7 @@ extension MenuBarRoot {
         totalWidth: CGFloat,
         hasLeadingIcon: Bool) -> (name: CGFloat, current: CGFloat, delay: CGFloat)
     {
-        let iconWidth: CGFloat = hasLeadingIcon ? 16 : 0
+        let iconWidth: CGFloat = hasLeadingIcon ? MenuBarLayoutTokens.rowLeadingIconColumnWidth : 0
         let actionWidth: CGFloat = 16
         let chevronWidth: CGFloat = 8
         let spacingCount: CGFloat = hasLeadingIcon ? 4 : 3
@@ -384,10 +385,15 @@ extension MenuBarRoot {
                     .interpolation(.high)
                     .antialiased(true)
                     .aspectRatio(contentMode: .fit)
-                    .frame(maxWidth: 16, maxHeight: 16)
+                    .frame(
+                        maxWidth: MenuBarLayoutTokens.rowLeadingIconSize,
+                        maxHeight: MenuBarLayoutTokens.rowLeadingIconSize)
             }
         }
-        .frame(width: 16, height: 16)
+        .frame(
+            width: MenuBarLayoutTokens.rowLeadingIconColumnWidth,
+            height: MenuBarLayoutTokens.rowLeadingIconSize,
+            alignment: .center)
     }
 
     func proxyGroupIconURL(_ group: ProxyGroup) -> URL? {

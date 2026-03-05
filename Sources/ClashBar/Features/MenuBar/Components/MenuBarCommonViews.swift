@@ -58,11 +58,11 @@ extension MenuBarRoot {
     }
 
     var nativeCardFill: Color {
-        Color(nsColor: .controlBackgroundColor).opacity(0.56)
+        Color(nsColor: .controlBackgroundColor).opacity(0.10)
     }
 
     var nativeCardBorder: Color {
-        Color(nsColor: .separatorColor).opacity(0.40)
+        Color(nsColor: .separatorColor).opacity(0.07)
     }
 
     var nativeHoverFill: Color {
@@ -98,7 +98,6 @@ extension MenuBarRoot {
             .foregroundStyle(self.nativeSecondaryLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
             .menuRowPadding()
-            .background(self.nativeSectionCard())
     }
 
     var footerBar: some View {

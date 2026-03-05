@@ -158,6 +158,7 @@ enum NetworkSortOption: String, CaseIterable, Identifiable {
 struct MenuBarRoot: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var popoverLayoutModel: PopoverLayoutModel
+    @Environment(\.colorScheme) var colorScheme
 
     @State var currentTab: RootTab = .proxy
     @State var switchingMode: CoreMode?
@@ -229,6 +230,9 @@ struct MenuBarRoot: View {
         .padding(MenuBarLayoutTokens.hPage)
         .frame(width: self.panelWidth, height: resolvedPanelHeight)
         .background(self.panelBackground)
+        .background(alignment: .topLeading) {
+            self.tabHeightMeasurementLayer
+        }
         .clipShape(RoundedRectangle(cornerRadius: MenuBarLayoutTokens.panelCornerRadius, style: .continuous))
         .onAppear {
             let restoredTab = rootTab(for: appState.activeMenuTab)
@@ -284,6 +288,21 @@ struct MenuBarRoot: View {
             .padding(.top, self.tabContentTopInset)
             .frame(maxWidth: .infinity, alignment: .leading)
             .reportHeight { updateTabContentHeight($0, for: tab) }
+    }
+
+    var tabHeightMeasurementLayer: some View {
+        VStack(spacing: 0) {
+            ForEach(RootTab.allCases, id: \.self) { tab in
+                self.tabBody(for: tab)
+                    .padding(.top, self.tabContentTopInset)
+                    .frame(width: self.contentWidth, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .reportHeight { updateTabContentHeight($0, for: tab) }
+            }
+        }
+        .allowsHitTesting(false)
+        .opacity(0.001)
+        .accessibilityHidden(true)
     }
 
     var panelBackground: some View {

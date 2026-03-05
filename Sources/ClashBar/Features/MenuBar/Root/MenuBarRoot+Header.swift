@@ -89,9 +89,6 @@ extension MenuBarRoot {
             }
         }
         .padding(.vertical, 8)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(nativeSeparator).frame(height: MenuBarLayoutTokens.hairline)
-        }
     }
 
     func headerMetaLabel(symbol: String, text: String) -> some View {
@@ -165,6 +162,7 @@ extension MenuBarRoot {
         label: String,
         warning: Bool = false,
         toneOverride: Color? = nil,
+        isLoading: Bool = false,
         action: @escaping () async -> Void) -> some View
     {
         let tone: Color = if let toneOverride {
@@ -182,6 +180,7 @@ extension MenuBarRoot {
         return TopHeaderIconActionButton(
             symbol: symbol,
             tone: tone.opacity(0.94),
+            isLoading: isLoading,
             action: action)
             .accessibilityLabel(label)
     }
@@ -190,6 +189,7 @@ extension MenuBarRoot {
 private struct TopHeaderIconActionButton: View {
     let symbol: String
     let tone: Color
+    let isLoading: Bool
     let action: () async -> Void
 
     @State private var hovered = false
@@ -198,12 +198,21 @@ private struct TopHeaderIconActionButton: View {
         Button {
             Task { await self.action() }
         } label: {
-            Image(systemName: self.symbol)
-                .font(.appSystem(size: 13, weight: .semibold))
-                .foregroundStyle(self.hovered ? self.tone : Color(nsColor: .secondaryLabelColor))
-                .frame(width: 20, height: 20)
+            ZStack {
+                Image(systemName: self.symbol)
+                    .font(.appSystem(size: 13, weight: .semibold))
+                    .foregroundStyle(self.hovered ? self.tone : Color(nsColor: .secondaryLabelColor))
+                    .opacity(self.isLoading ? 0 : 1)
+
+                ProgressView()
+                    .controlSize(.mini)
+                    .opacity(self.isLoading ? 1 : 0)
+            }
+            .frame(width: 20, height: 20)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.borderless)
+        .disabled(self.isLoading)
         .onHover { self.hovered = $0 }
     }
 }
