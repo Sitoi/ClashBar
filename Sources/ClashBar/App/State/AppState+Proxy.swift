@@ -89,14 +89,27 @@ extension AppState {
         }
     }
 
-    func delayText(group: String, node: String) -> String {
-        guard let value = delayValue(group: group, node: node) else { return tr("ui.common.unknown") }
+    func delayText(group: String, node: String, fallbackToGroupHistory: Bool = false) -> String {
+        guard let value = delayValue(
+            group: group,
+            node: node,
+            fallbackToGroupHistory: fallbackToGroupHistory)
+        else { return tr("ui.common.unknown") }
         if value == 0 { return tr("ui.common.timeout") }
         return tr("ui.common.latency_ms", value)
     }
 
-    func delayValue(group: String, node: String) -> Int? {
-        groupLatencies[group]?[node] ?? proxyHistoryLatestDelay[node]
+    func delayValue(group: String, node: String, fallbackToGroupHistory: Bool = false) -> Int? {
+        if let liveValue = groupLatencies[group]?[node] {
+            return liveValue
+        }
+        if let historyValue = proxyHistoryLatestDelay[node] {
+            return historyValue
+        }
+        if fallbackToGroupHistory {
+            return proxyHistoryLatestDelay[group]
+        }
+        return nil
     }
 
     func controllerHost() -> String {

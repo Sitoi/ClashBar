@@ -185,7 +185,8 @@ extension AppState {
         }
 
         do {
-            let data = try await downloadRemoteConfigData(from: remoteURL)
+            let userAgent = await remoteSubscriptionUserAgent()
+            let data = try await downloadRemoteConfigData(from: remoteURL, userAgent: userAgent)
             try writeConfigData(data, to: targetURL)
 
             self.updateRemoteConfigSource(for: fileName, urlString: remoteURL.absoluteString)
@@ -214,6 +215,7 @@ extension AppState {
             return
         }
 
+        let userAgent = await remoteSubscriptionUserAgent()
         var updatedFileNames: Set<String> = []
         var failedCount = 0
 
@@ -234,7 +236,7 @@ extension AppState {
 
             let targetURL = configDirectory.appendingPathComponent(fileName, isDirectory: false)
             do {
-                let data = try await downloadRemoteConfigData(from: remoteURL)
+                let data = try await downloadRemoteConfigData(from: remoteURL, userAgent: userAgent)
                 try writeConfigData(data, to: targetURL)
                 updatedFileNames.insert(fileName)
             } catch {
@@ -429,8 +431,39 @@ extension AppState {
         configImportService.isSupportedRemoteConfigURL(url)
     }
 
-    private func downloadRemoteConfigData(from remoteURL: URL) async throws -> Data {
-        try await configImportService.downloadRemoteConfigData(from: remoteURL)
+    private func downloadRemoteConfigData(from remoteURL: URL, userAgent: String? = nil) async throws -> Data {
+        try await configImportService.downloadRemoteConfigData(from: remoteURL, userAgent: userAgent)
+    }
+
+    private func remoteSubscriptionUserAgent() async -> String {
+        let version = await resolvedMihomoVersionForSubscriptionUserAgent()
+        return "clash.meta/\(version)"
+    }
+
+    private func resolvedMihomoVersionForSubscriptionUserAgent() async -> String {
+        if let current = normalizedMihomoVersionForUserAgent(self.version) {
+            return current
+        }
+
+        guard let client = try? clientOrThrow() else {
+            return "unknown"
+        }
+
+        guard let fetched: VersionInfo = try? await client.request(.version) else {
+            return "unknown"
+        }
+
+        let normalized = self.normalizedMihomoVersionForUserAgent(fetched.version) ?? "unknown"
+        if normalized != "unknown" {
+            self.version = normalized
+        }
+        return normalized
+    }
+
+    private func normalizedMihomoVersionForUserAgent(_ rawVersion: String) -> String? {
+        let trimmed = rawVersion.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed != "-" else { return nil }
+        return trimmed
     }
 
     private func updateRemoteConfigSource(for fileName: String, urlString: String?) {

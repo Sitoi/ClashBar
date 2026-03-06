@@ -154,6 +154,7 @@ struct EditableSettingsSnapshot: Equatable, Codable {
     let allowLan: Bool
     let ipv6: Bool
     let unifiedDelay: Bool
+    let tcpConcurrent: Bool
     let tunEnabled: Bool
     let logLevel: String
     let port: String
@@ -166,6 +167,7 @@ struct EditableSettingsSnapshot: Equatable, Codable {
         case allowLan
         case ipv6
         case unifiedDelay
+        case tcpConcurrent
         case tunEnabled
         case logLevel
         case port
@@ -179,6 +181,7 @@ struct EditableSettingsSnapshot: Equatable, Codable {
         self.allowLan = config.allowLan ?? false
         self.ipv6 = config.ipv6 ?? false
         self.unifiedDelay = config.unifiedDelay ?? false
+        self.tcpConcurrent = config.tcpConcurrent ?? false
         self.tunEnabled = config.tunEnabled ?? false
         self.logLevel = ConfigLogLevel(rawValue: config.logLevel ?? "")?.rawValue ?? ConfigLogLevel.info.rawValue
         self.port = config.port.map(String.init) ?? ""
@@ -192,6 +195,7 @@ struct EditableSettingsSnapshot: Equatable, Codable {
         allowLan: Bool,
         ipv6: Bool,
         unifiedDelay: Bool,
+        tcpConcurrent: Bool,
         tunEnabled: Bool,
         logLevel: String,
         port: String,
@@ -203,6 +207,7 @@ struct EditableSettingsSnapshot: Equatable, Codable {
         self.allowLan = allowLan
         self.ipv6 = ipv6
         self.unifiedDelay = unifiedDelay
+        self.tcpConcurrent = tcpConcurrent
         self.tunEnabled = tunEnabled
         self.logLevel = logLevel
         self.port = port
@@ -217,6 +222,7 @@ struct EditableSettingsSnapshot: Equatable, Codable {
         self.allowLan = try container.decode(Bool.self, forKey: .allowLan)
         self.ipv6 = try container.decode(Bool.self, forKey: .ipv6)
         self.unifiedDelay = try container.decode(Bool.self, forKey: .unifiedDelay)
+        self.tcpConcurrent = try container.decodeIfPresent(Bool.self, forKey: .tcpConcurrent) ?? false
         self.tunEnabled = try container.decodeIfPresent(Bool.self, forKey: .tunEnabled) ?? false
         self.logLevel = try container.decode(String.self, forKey: .logLevel)
         self.port = try container.decode(String.self, forKey: .port)
@@ -233,6 +239,7 @@ extension EditableSettingsSnapshot {
             allowLan: self.allowLan,
             ipv6: self.ipv6,
             unifiedDelay: self.unifiedDelay,
+            tcpConcurrent: self.tcpConcurrent,
             tunEnabled: enabled,
             logLevel: self.logLevel,
             port: self.port,

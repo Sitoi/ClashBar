@@ -253,7 +253,14 @@ extension MenuBarRoot {
 
     func proxyGroupInlineRow(_ group: ProxyGroup) -> some View {
         let currentNode = group.now ?? tr("ui.common.na")
-        let delayText = appState.delayText(group: group.name, node: currentNode)
+        let delayText = appState.delayText(
+            group: group.name,
+            node: currentNode,
+            fallbackToGroupHistory: true)
+        let delayValue = appState.delayValue(
+            group: group.name,
+            node: currentNode,
+            fallbackToGroupHistory: true)
         let nodeCount = group.all.count
         let iconURL = self.proxyGroupIconURL(group)
         let hasLeadingIcon = iconURL != nil
@@ -292,7 +299,7 @@ extension MenuBarRoot {
 
                     Text(delayText)
                         .font(.appMonospaced(size: 10, weight: .regular))
-                        .foregroundStyle(latencyColor(appState.delayValue(group: group.name, node: currentNode)))
+                        .foregroundStyle(latencyColor(delayValue))
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
                         .frame(width: columns.delay, alignment: .trailing)

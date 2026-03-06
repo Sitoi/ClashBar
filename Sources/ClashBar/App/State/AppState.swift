@@ -93,6 +93,10 @@ final class AppState: ObservableObject {
         didSet { persistEditableSettingsSnapshot() }
     }
 
+    @Published var settingsTCPConcurrent: Bool = false {
+        didSet { persistEditableSettingsSnapshot() }
+    }
+
     @Published var settingsLogLevel: String = ConfigLogLevel.info
         .rawValue
     {

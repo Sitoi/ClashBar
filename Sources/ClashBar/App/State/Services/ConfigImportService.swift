@@ -50,7 +50,7 @@ struct ConfigImportService {
         return scheme == "http" || scheme == "https"
     }
 
-    func downloadRemoteConfigData(from remoteURL: URL) async throws -> Data {
+    func downloadRemoteConfigData(from remoteURL: URL, userAgent: String? = nil) async throws -> Data {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 15
         config.timeoutIntervalForResource = 30
@@ -59,7 +59,15 @@ struct ConfigImportService {
         let session = URLSession(configuration: config)
         defer { session.finishTasksAndInvalidate() }
 
-        let (bytes, response) = try await session.bytes(from: remoteURL)
+        var request = URLRequest(url: remoteURL)
+        if let userAgent {
+            let trimmed = userAgent.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                request.setValue(trimmed, forHTTPHeaderField: "User-Agent")
+            }
+        }
+
+        let (bytes, response) = try await session.bytes(for: request)
         guard let http = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }

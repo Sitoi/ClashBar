@@ -1,6 +1,10 @@
 import SwiftUI
 
 extension MenuBarRoot {
+    var isDarkAppearance: Bool {
+        self.colorScheme == .dark
+    }
+
     var nativeAccent: Color {
         Color(nsColor: .controlAccentColor)
     }
@@ -38,31 +42,43 @@ extension MenuBarRoot {
     }
 
     var nativeSecondaryLabel: Color {
-        Color(nsColor: .secondaryLabelColor)
+        if self.isDarkAppearance {
+            Color(nsColor: .labelColor).opacity(0.88)
+        } else {
+            Color(nsColor: .labelColor).opacity(0.80)
+        }
     }
 
     var nativeTertiaryLabel: Color {
-        Color(nsColor: .tertiaryLabelColor)
+        if self.isDarkAppearance {
+            Color(nsColor: .labelColor).opacity(0.72)
+        } else {
+            Color(nsColor: .labelColor).opacity(0.64)
+        }
     }
 
     var nativeSeparator: Color {
-        Color(nsColor: .separatorColor).opacity(0.55)
+        Color(nsColor: .separatorColor).opacity(self.isDarkAppearance ? 0.70 : 0.55)
     }
 
     var nativeControlFill: Color {
-        Color(nsColor: .controlBackgroundColor).opacity(0.62)
+        if self.isDarkAppearance {
+            Color(nsColor: .controlBackgroundColor).opacity(0.78)
+        } else {
+            Color(nsColor: .windowBackgroundColor).opacity(0.92)
+        }
     }
 
     var nativeControlBorder: Color {
-        Color(nsColor: .separatorColor).opacity(0.45)
+        Color(nsColor: .separatorColor).opacity(self.isDarkAppearance ? 0.60 : 0.42)
     }
 
     var nativeHoverFill: Color {
-        Color(nsColor: .selectedContentBackgroundColor).opacity(0.20)
+        Color(nsColor: .selectedContentBackgroundColor).opacity(self.isDarkAppearance ? 0.28 : 0.20)
     }
 
     var nativeBadgeFill: Color {
-        Color(nsColor: .quaternaryLabelColor).opacity(0.16)
+        Color(nsColor: .quaternaryLabelColor).opacity(self.isDarkAppearance ? 0.30 : 0.16)
     }
 
     func nativeHoverRowBackground(_ hovered: Bool, cornerRadius: CGFloat = 6) -> some View {
@@ -270,6 +286,7 @@ extension MenuBarRoot {
         symbol: String,
         label: String,
         tint: Color,
+        baseTint: Color? = nil,
         role: ButtonRole? = nil,
         isLoading: Bool = false,
         size: CGFloat = 20,
@@ -280,6 +297,7 @@ extension MenuBarRoot {
         CompactAsyncIconButton(
             symbol: symbol,
             tint: tint,
+            baseTint: baseTint ?? self.nativeSecondaryLabel,
             role: role,
             isLoading: isLoading,
             size: size,
@@ -293,6 +311,7 @@ extension MenuBarRoot {
 private struct CompactAsyncIconButton: View {
     let symbol: String
     let tint: Color
+    let baseTint: Color
     let role: ButtonRole?
     let isLoading: Bool
     let size: CGFloat
@@ -310,13 +329,13 @@ private struct CompactAsyncIconButton: View {
                 if self.hierarchicalSymbol {
                     Image(systemName: self.symbol)
                         .font(.appSystem(size: self.fontSize, weight: .semibold))
-                        .foregroundStyle(self.hovered ? self.tint : Color(nsColor: .secondaryLabelColor))
+                        .foregroundStyle(self.hovered ? self.tint : self.baseTint)
                         .symbolRenderingMode(.hierarchical)
                         .opacity(self.isLoading ? 0 : 1)
                 } else {
                     Image(systemName: self.symbol)
                         .font(.appSystem(size: self.fontSize, weight: .semibold))
-                        .foregroundStyle(self.hovered ? self.tint : Color(nsColor: .secondaryLabelColor))
+                        .foregroundStyle(self.hovered ? self.tint : self.baseTint)
                         .opacity(self.isLoading ? 0 : 1)
                 }
 

@@ -2,25 +2,89 @@ import Foundation
 
 @MainActor
 extension AppState {
-    func applySettingAllowLan(_ value: Bool) async {
-        await self.applyBooleanSetting(\.settingsAllowLan, configKey: "allow-lan", value: value)
+    enum EditableCoreSetting: String, CaseIterable, Identifiable {
+        case allowLan = "allow-lan"
+        case ipv6 = "ipv6"
+        case unifiedDelay = "unified-delay"
+        case tcpConcurrent = "tcp-concurrent"
+        case logLevel = "log-level"
+
+        var id: String {
+            self.rawValue
+        }
+
+        var configKey: String {
+            self.rawValue
+        }
     }
 
-    func applySettingIPv6(_ value: Bool) async {
-        await self.applyBooleanSetting(\.settingsIPv6, configKey: "ipv6", value: value)
+    private func boolStateKeyPath(for setting: EditableCoreSetting) -> ReferenceWritableKeyPath<AppState, Bool>? {
+        switch setting {
+        case .allowLan:
+            \.settingsAllowLan
+        case .ipv6:
+            \.settingsIPv6
+        case .unifiedDelay:
+            \.settingsUnifiedDelay
+        case .tcpConcurrent:
+            \.settingsTCPConcurrent
+        case .logLevel:
+            nil
+        }
     }
 
-    func applySettingUnifiedDelay(_ value: Bool) async {
-        await self.applyBooleanSetting(\.settingsUnifiedDelay, configKey: "unified-delay", value: value)
+    private func stringStateKeyPath(for setting: EditableCoreSetting) -> ReferenceWritableKeyPath<AppState, String>? {
+        switch setting {
+        case .logLevel:
+            \.settingsLogLevel
+        case .allowLan, .ipv6, .unifiedDelay, .tcpConcurrent:
+            nil
+        }
+    }
+
+    func boolValue(for setting: EditableCoreSetting) -> Bool {
+        guard let keyPath = self.boolStateKeyPath(for: setting) else {
+            assertionFailure("Setting \(setting.configKey) does not store a Bool")
+            return false
+        }
+        return self[keyPath: keyPath]
+    }
+
+    func stringValue(for setting: EditableCoreSetting) -> String {
+        guard let keyPath = self.stringStateKeyPath(for: setting) else {
+            assertionFailure("Setting \(setting.configKey) does not store a String")
+            return ""
+        }
+        return self[keyPath: keyPath]
+    }
+
+    func applyEditableCoreSetting(_ setting: EditableCoreSetting, to value: Bool) async {
+        guard let keyPath = self.boolStateKeyPath(for: setting) else {
+            assertionFailure("Setting \(setting.configKey) does not accept Bool updates")
+            return
+        }
+        await self.applyBooleanSetting(keyPath, configKey: setting.configKey, value: value)
+    }
+
+    func applyEditableCoreSetting(_ setting: EditableCoreSetting, to value: String) async {
+        guard let keyPath = self.stringStateKeyPath(for: setting) else {
+            assertionFailure("Setting \(setting.configKey) does not accept String updates")
+            return
+        }
+
+        let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        if setting == .logLevel, ConfigLogLevel(rawValue: normalized) == nil {
+            settingsErrorMessage = tr("app.settings.error.invalid_log_level", value)
+            settingsSavedMessage = nil
+            return
+        }
+
+        self[keyPath: keyPath] = normalized
+        await self.patchSingleConfig(setting.configKey, value: .string(normalized))
     }
 
     func applySettingTunMode(_ value: Bool) async {
         await toggleTunMode(value)
-    }
-
-    func applySettingLogLevel(_ value: String) async {
-        settingsLogLevel = value
-        await self.applySettingEnumLogLevel(value)
     }
 
     func applyProxyPorts(autoSaved: Bool = false) async {
@@ -85,6 +149,7 @@ extension AppState {
                 (\.settingsAllowLan, \.allowLan),
                 (\.settingsIPv6, \.ipv6),
                 (\.settingsUnifiedDelay, \.unifiedDelay),
+                (\.settingsTCPConcurrent, \.tcpConcurrent),
                 (\.isTunEnabled, \.tunEnabled),
             ])
 
@@ -110,6 +175,7 @@ extension AppState {
             allowLan: settingsAllowLan,
             ipv6: settingsIPv6,
             unifiedDelay: settingsUnifiedDelay,
+            tcpConcurrent: settingsTCPConcurrent,
             tunEnabled: isTunEnabled,
             logLevel: settingsLogLevel,
             port: settingsPort,
@@ -187,6 +253,7 @@ extension AppState {
             "allow-lan": .bool(overlay.allowLan),
             "ipv6": .bool(overlay.ipv6),
             "unified-delay": .bool(overlay.unifiedDelay),
+            "tcp-concurrent": .bool(overlay.tcpConcurrent),
             "tun": .object(["enable": .bool(overlay.tunEnabled)]),
             "log-level": .string(resolvedLogLevel),
         ]
@@ -213,6 +280,7 @@ extension AppState {
         settingsAllowLan = snapshot.allowLan
         settingsIPv6 = snapshot.ipv6
         settingsUnifiedDelay = snapshot.unifiedDelay
+        settingsTCPConcurrent = snapshot.tcpConcurrent
         isTunEnabled = snapshot.tunEnabled
         settingsLogLevel = snapshot.logLevel
         settingsPort = snapshot.port
@@ -225,15 +293,6 @@ extension AppState {
 
     func applySettingBool(key: String, value: Bool) async {
         await self.patchSingleConfig(key, value: .bool(value))
-    }
-
-    func applySettingEnumLogLevel(_ value: String) async {
-        guard ConfigLogLevel(rawValue: value) != nil else {
-            settingsErrorMessage = tr("app.settings.error.invalid_log_level", value)
-            settingsSavedMessage = nil
-            return
-        }
-        await self.patchSingleConfig("log-level", value: .string(value))
     }
 
     func patchSingleConfig(_ key: String, value: ConfigPatchValue) async {

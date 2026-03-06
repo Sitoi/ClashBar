@@ -39,6 +39,14 @@ extension MenuBarRoot {
         return nil
     }
 
+    func editableCoreSettingBinding(_ setting: AppState.EditableCoreSetting) -> Binding<Bool> {
+        Binding(
+            get: { self.appState.boolValue(for: setting) },
+            set: { value in
+                Task { await self.appState.applyEditableCoreSetting(setting, to: value) }
+            })
+    }
+
     var systemTabBody: some View {
         let proxyPortFields: [(titleKey: String, symbol: String, text: Binding<String>)] = [
             ("ui.settings.port.port", "network", $appState.settingsPort),
@@ -47,10 +55,17 @@ extension MenuBarRoot {
             ("ui.settings.port.redir", "arrowshape.turn.up.right", $appState.settingsRedirPort),
             ("ui.settings.port.tproxy", "shield.lefthalf.filled", $appState.settingsTProxyPort),
         ]
+        let editableCoreToggleItems: [(setting: AppState.EditableCoreSetting, titleKey: String, symbol: String)] = [
+            (.allowLan, "ui.settings.allow_lan", "network"),
+            (.ipv6, "ui.settings.ipv6", "globe"),
+            (.unifiedDelay, "ui.settings.unified_delay", "gauge.with.dots.needle.50percent"),
+            (.tcpConcurrent, "ui.settings.tcp_concurrent", "point.3.connected.trianglepath.dotted"),
+        ]
         let maintenanceActions: [(titleKey: String, symbol: String, action: @MainActor () async -> Void)] = [
             ("ui.action.flush_fakeip_cache", "externaldrive.badge.minus", { await appState.flushFakeIPCache() }),
             ("ui.action.flush_dns_cache", "network.badge.shield.half.filled", { await appState.flushDNSCache() }),
         ]
+        let selectedLogLevel = appState.stringValue(for: .logLevel)
 
         return VStack(alignment: .leading, spacing: MenuBarLayoutTokens.sectionGap) {
             if let feedback = settingsFeedbackState {
@@ -66,6 +81,13 @@ extension MenuBarRoot {
                     symbol: "slider.horizontal.3")
                 settingsDivider
                 settingsToggleRow(
+                    tr("ui.settings.launch_at_login"),
+                    symbol: "person.crop.circle.badge.checkmark",
+                    isOn: Binding(
+                        get: { appState.launchAtLoginEnabled },
+                        set: { appState.applyLaunchAtLogin($0) }))
+                settingsDivider
+                settingsToggleRow(
                     tr("ui.settings.auto_start_core"),
                     symbol: "power.circle",
                     isOn: Binding(
@@ -79,13 +101,13 @@ extension MenuBarRoot {
                         get: { appState.autoManageCoreOnNetworkChangeEnabled },
                         set: { appState.autoManageCoreOnNetworkChangeEnabled = $0 }))
                 settingsDivider
-                settingsToggleRow(
-                    tr("ui.settings.launch_at_login"),
-                    symbol: "person.crop.circle.badge.checkmark",
-                    isOn: Binding(
-                        get: { appState.launchAtLoginEnabled },
-                        set: { appState.applyLaunchAtLogin($0) }))
-                settingsDivider
+                ForEach(editableCoreToggleItems, id: \.setting.id) { item in
+                    settingsToggleRow(
+                        tr(item.titleKey),
+                        symbol: item.symbol,
+                        isOn: self.editableCoreSettingBinding(item.setting))
+                    settingsDivider
+                }
                 settingsMenuRow(
                     tr("ui.settings.menu_bar_style"),
                     symbol: "menubar.rectangle",
@@ -140,48 +162,18 @@ extension MenuBarRoot {
                     }
                 }
                 settingsDivider
-                settingsToggleRow(
-                    tr("ui.settings.allow_lan"),
-                    symbol: "network",
-                    isOn: Binding(
-                        get: { appState.settingsAllowLan },
-                        set: { value in Task { await appState.applySettingAllowLan(value) } }))
-                settingsDivider
-                settingsToggleRow(
-                    tr("ui.settings.ipv6"),
-                    symbol: "globe",
-                    isOn: Binding(
-                        get: { appState.settingsIPv6 },
-                        set: { value in Task { await appState.applySettingIPv6(value) } }))
-                settingsDivider
-                settingsToggleRow(
-                    tr("ui.settings.unified_delay"),
-                    symbol: "gauge.with.dots.needle.50percent",
-                    isOn: Binding(
-                        get: { appState.settingsUnifiedDelay },
-                        set: { value in Task { await appState.applySettingUnifiedDelay(value) } }))
-                settingsDivider
-                settingsToggleRow(
-                    tr("ui.settings.tun_mode"),
-                    symbol: "shield.lefthalf.filled",
-                    isOn: Binding(
-                        get: { appState.isTunEnabled },
-                        set: { value in Task { await appState.applySettingTunMode(value) } }))
-                    .disabled(!appState.isTunToggleEnabled)
-                settingsDivider
                 settingsMenuRow(
                     tr("ui.settings.log_level"),
                     symbol: "text.alignleft",
-                    valueText: appState.settingsLogLevel)
+                    valueText: selectedLogLevel)
                 { dismiss in
                     ForEach(ConfigLogLevel.allCases, id: \.rawValue) { level in
                         AttachedPopoverMenuItem(
                             title: level.rawValue,
-                            selected: appState.settingsLogLevel
-                                .caseInsensitiveCompare(level.rawValue) == .orderedSame)
+                            selected: selectedLogLevel.caseInsensitiveCompare(level.rawValue) == .orderedSame)
                         {
                             dismiss()
-                            Task { await appState.applySettingLogLevel(level.rawValue) }
+                            Task { await appState.applyEditableCoreSetting(.logLevel, to: level.rawValue) }
                         }
                     }
                 }

@@ -397,7 +397,7 @@ extension AppState {
             .map(\.element)
 
         var historyMap: [String: Int] = [:]
-        for proxy in response.proxies.values where proxy.hidden != true {
+        for proxy in response.proxies.values {
             if let latest = proxy.latestDelay {
                 historyMap[proxy.name] = latest
             }
