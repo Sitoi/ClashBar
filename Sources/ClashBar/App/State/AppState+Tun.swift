@@ -138,6 +138,27 @@ extension AppState {
         }
     }
 
+    func verifyTunAfterOverlayIfNeeded(overlay: EditableSettingsSnapshot) async {
+        guard overlay.tunEnabled, isRuntimeRunning else { return }
+        guard pendingCoreFeatureRecoveryState == nil else { return }
+
+        do {
+            let config = try await fetchRuntimeConfigSnapshot()
+            if config.tunEnabled == true {
+                isTunEnabled = true
+                persistEditableSettingsSnapshot()
+                return
+            }
+
+            try await self.patchTunConfig(enable: true)
+            try await self.verifyTunRuntimeState(expectedEnabled: true)
+            persistEditableSettingsSnapshot()
+            appendLog(level: "info", message: tr("log.tun.toggled", tr("log.tun.enabled")))
+        } catch {
+            appendLog(level: "error", message: tr("log.tun.toggle_failed", self.tunErrorMessage(error)))
+        }
+    }
+
     func applyTunRuntimeChange(enabled: Bool) async throws {
         guard isRuntimeRunning else { return }
         try await self.patchTunConfig(enable: enabled)
@@ -150,7 +171,10 @@ extension AppState {
             do {
                 let config = try await fetchRuntimeConfigSnapshot()
                 let current = config.tunEnabled ?? false
-                isTunEnabled = current
+                if isTunEnabled != current {
+                    isTunEnabled = current
+                    persistEditableSettingsSnapshot()
+                }
                 if current == expectedEnabled {
                     return
                 }
@@ -263,8 +287,9 @@ extension AppState {
     func refreshTunStatusFromRuntimeConfig() async {
         do {
             let config = try await fetchRuntimeConfigSnapshot()
-            if let tunEnabled = config.tunEnabled {
+            if let tunEnabled = config.tunEnabled, isTunEnabled != tunEnabled {
                 isTunEnabled = tunEnabled
+                persistEditableSettingsSnapshot()
             }
         } catch {
             // Keep current UI state when runtime config refresh is unavailable.

@@ -325,6 +325,7 @@ extension AppState {
             syncingKey: options.overlaySyncingKey)
         await validateTunPermissionsOnStartup()
         await ensureTunMixedStackOnStartupIfNeeded()
+        await self.verifyTunAfterOverlayIfNeeded(overlay: settingsOverlay)
         enqueueProviderRefresh(trigger: options.providerTrigger)
 
         if options.refreshProxyGroupsAfterBootstrap {

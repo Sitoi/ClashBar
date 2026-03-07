@@ -27,8 +27,8 @@ extension MenuBarRoot {
                 mode: .direct,
                 symbol: "paperplane")
         }
-        .frame(width: contentWidth)
         .padding(2)
+        .frame(width: contentWidth)
         .background(
             nativeControlFill,
             in: RoundedRectangle(cornerRadius: MenuBarLayoutTokens.cardCornerRadius, style: .continuous))
