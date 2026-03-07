@@ -3,7 +3,7 @@ import SwiftUI
 enum MenuBarLayoutTokens {
     static let panelWidth: CGFloat = 360
 
-    static let hPage: CGFloat = 6
+    static let hPage: CGFloat = 8
     static let hRow: CGFloat = 4
     static let hDense: CGFloat = 6
     static let hMicro: CGFloat = 3
