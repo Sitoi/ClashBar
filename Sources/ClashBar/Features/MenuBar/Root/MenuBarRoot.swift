@@ -182,11 +182,6 @@ struct MenuBarRoot: View {
             Spacer(minLength: 0)
         }
         .frame(width: MenuBarLayoutTokens.panelWidth, alignment: .topLeading)
-        .overlay(alignment: .topLeading) {
-            if !self.panelMeasurementMode {
-                self.currentTabMeasurementLayer
-            }
-        }
     }
 
     var panelContent: some View {
@@ -202,13 +197,13 @@ struct MenuBarRoot: View {
             ScrollView(.vertical) {
                 self.tabContent(for: self.currentTab)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .reportHeight { updateCurrentTabContentHeight($0, for: self.currentTab) }
             }
             .scrollIndicators(.hidden)
             .frame(maxWidth: .infinity, alignment: .topLeading)
             .frame(height: tabScrollAreaHeight, alignment: .top)
 
             footerBar
-                .padding(.top, MenuBarLayoutTokens.sectionGap)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .reportHeight { updateSectionHeight($0, target: .footer) }
         }
@@ -281,19 +276,6 @@ struct MenuBarRoot: View {
         self.tabBody(for: tab)
             .padding(.top, MenuBarLayoutTokens.vDense)
             .fixedSize(horizontal: false, vertical: true)
-    }
-
-    var currentTabMeasurementLayer: some View {
-        let measuredTab = self.currentTab
-
-        return self.tabContent(for: measuredTab)
-            .frame(width: self.contentWidth, alignment: .topLeading)
-            .reportHeight { updateCurrentTabContentHeight($0, for: measuredTab) }
-            .hidden()
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
-            .environment(\.panelMeasurementMode, true)
-            .id(measuredTab)
     }
 
     var panelBackground: some View {

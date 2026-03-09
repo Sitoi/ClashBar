@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 extension MenuBarRoot {
@@ -89,19 +90,62 @@ extension MenuBarRoot {
     }
 
     var topTabs: some View {
-        Picker(
-            "",
-            selection: Binding(
-                get: { self.currentTab },
-                set: { self.setCurrentTabWithoutAnimation($0) }))
-        {
-            ForEach(RootTab.allCases, id: \.self) { tab in
-                Text(self.tr(tab.titleKey))
-                    .tag(tab)
+        let tabs = RootTab.allCases
+        let labels = tabs.map { self.tr($0.titleKey) }
+        let selectedIndex = Binding<Int>(
+            get: { tabs.firstIndex(of: self.currentTab) ?? 0 },
+            set: { index in
+                guard tabs.indices.contains(index) else { return }
+                self.setCurrentTabWithoutAnimation(tabs[index])
+            })
+
+        return EqualWidthSegmentedControl(labels: labels, selectedIndex: selectedIndex)
+            .frame(width: contentWidth, height: 24)
+    }
+}
+
+@MainActor
+private struct EqualWidthSegmentedControl: NSViewRepresentable {
+    let labels: [String]
+    @Binding var selectedIndex: Int
+
+    func makeNSView(context: Context) -> NSSegmentedControl {
+        let control = NSSegmentedControl(
+            labels: labels,
+            trackingMode: .selectOne,
+            target: context.coordinator,
+            action: #selector(Coordinator.segmentChanged(_:)))
+        control.segmentDistribution = .fillEqually
+        control.selectedSegment = selectedIndex
+        return control
+    }
+
+    func updateNSView(_ control: NSSegmentedControl, context: Context) {
+        for (i, label) in labels.enumerated() {
+            if control.label(forSegment: i) != label {
+                control.setLabel(label, forSegment: i)
             }
         }
-        .labelsHidden()
-        .pickerStyle(.segmented)
-        .frame(width: contentWidth, height: 24, alignment: .leading)
+        if control.selectedSegment != selectedIndex {
+            control.selectedSegment = selectedIndex
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    final class Coordinator: NSObject {
+        var parent: EqualWidthSegmentedControl
+
+        init(_ parent: EqualWidthSegmentedControl) {
+            self.parent = parent
+        }
+
+        @MainActor @objc func segmentChanged(_ sender: NSSegmentedControl) {
+            let index = sender.selectedSegment
+            guard index >= 0, index < parent.labels.count else { return }
+            parent.selectedIndex = index
+        }
     }
 }

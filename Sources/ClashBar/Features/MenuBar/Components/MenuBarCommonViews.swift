@@ -209,7 +209,7 @@ extension MenuBarRoot {
                 self.footerVersionInfo
                     .fixedSize(horizontal: true, vertical: false)
             }
-            .menuRowPadding(vertical: MenuBarLayoutTokens.vDense + 2)
+            .menuRowPadding(vertical: MenuBarLayoutTokens.vDense)
             .background(self.footerSurfaceBackground)
         }
         .task {
