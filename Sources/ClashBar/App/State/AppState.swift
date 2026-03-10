@@ -338,6 +338,7 @@ final class AppState: ObservableObject {
     let remoteConfigSourcesKey = "clashbar.config.remote.sources.v1"
     let lastSuccessfulConfigPathKey = "clashbar.last.success.config.path"
     let editableSettingsSnapshotKey = "clashbar.settings.editable.snapshot.v1"
+    let systemProxyEnabledOnQuitKey = "clashbar.system_proxy.enabled_on_quit"
     let uiLanguageKey = "clashbar.ui.language"
     let appearanceModeKey = "clashbar.ui.appearance.mode"
     let maxLogEntries = 200

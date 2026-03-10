@@ -370,6 +370,38 @@ struct SystemProxyService {
         }
     }
 
+    /// Synchronously clears system proxy settings via XPC.
+    ///
+    /// Designed for use in `applicationWillTerminate` where async calls are not
+    /// possible. The call blocks (on a background queue) up to `timeout` seconds
+    /// and silently does nothing when the helper is unreachable.
+    func clearSystemProxyBlocking(timeout: TimeInterval = 2.0) {
+        let semaphore = DispatchSemaphore(value: 0)
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            let connection = NSXPCConnection(
+                machServiceName: ProxyHelperConstants.machServiceName,
+                options: .privileged)
+            connection.remoteObjectInterface = NSXPCInterface(with: ProxyHelperProtocol.self)
+            connection.activate()
+
+            guard let helper = connection.remoteObjectProxyWithErrorHandler({ _ in
+                semaphore.signal()
+            }) as? ProxyHelperProtocol else {
+                connection.invalidate()
+                semaphore.signal()
+                return
+            }
+
+            helper.clearSystemProxy { _, _ in
+                connection.invalidate()
+                semaphore.signal()
+            }
+        }
+
+        _ = semaphore.wait(timeout: .now() + timeout)
+    }
+
     private func makeConnection() -> NSXPCConnection {
         let connection = NSXPCConnection(
             machServiceName: ProxyHelperConstants.machServiceName,
