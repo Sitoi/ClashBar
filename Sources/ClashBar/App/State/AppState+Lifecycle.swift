@@ -9,6 +9,7 @@ extension AppState {
         let refreshProxyGroupsAfterBootstrap: Bool
         let refreshSystemProxyBeforeOverlay: Bool
         let refreshSystemProxyAfterBootstrap: Bool
+        let autoTestGroupLatencies: Bool
     }
 
     func startCore(trigger: StartTrigger = .manual) async {
@@ -65,7 +66,8 @@ extension AppState {
                     providerTrigger: .start,
                     refreshProxyGroupsAfterBootstrap: false,
                     refreshSystemProxyBeforeOverlay: true,
-                    refreshSystemProxyAfterBootstrap: false))
+                    refreshSystemProxyAfterBootstrap: false,
+                    autoTestGroupLatencies: true))
         } catch {
             let errorMessage = self.coreErrorMessage(error)
             preserveLocalSettingsOnNextSync = false
@@ -141,7 +143,8 @@ extension AppState {
                     providerTrigger: trigger,
                     refreshProxyGroupsAfterBootstrap: true,
                     refreshSystemProxyBeforeOverlay: false,
-                    refreshSystemProxyAfterBootstrap: true))
+                    refreshSystemProxyAfterBootstrap: true,
+                    autoTestGroupLatencies: false))
         } catch {
             let errorMessage = self.coreErrorMessage(error)
             preserveLocalSettingsOnNextSync = false
@@ -348,6 +351,12 @@ extension AppState {
         self.seedCoreFeatureRecoveryFromPersistedQuitState()
         await self.restoreCoreFeaturesAfterStartupIfNeeded()
         enforceNetworkManagedCorePolicyIfNeeded()
+
+        if options.autoTestGroupLatencies {
+            Task { [weak self] in
+                await self?.refreshAllGroupLatencies()
+            }
+        }
     }
 
     private func overlayApplyingPendingCoreFeatureRecovery(_ overlay: EditableSettingsSnapshot)
