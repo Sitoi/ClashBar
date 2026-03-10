@@ -49,10 +49,13 @@ cat >"$output_path" <<EOF
 
 ${changelog_section}
 
-## 下载地址
+### 📥 下载地址 (Downloads)
 
-- Apple Silicon（内置 Mihomo）: [ClashBar-${version}-apple-silicon.dmg](${download_base}/ClashBar-${version}-apple-silicon.dmg)
-- Apple Silicon（无内核）: [ClashBar-${version}-apple-silicon-no-core.dmg](${download_base}/ClashBar-${version}-apple-silicon-no-core.dmg)
-- Intel（内置 Mihomo）: [ClashBar-${version}-intel.dmg](${download_base}/ClashBar-${version}-intel.dmg)
-- Intel（无内核）: [ClashBar-${version}-intel-no-core.dmg](${download_base}/ClashBar-${version}-intel-no-core.dmg)
+请根据您的 Mac 处理器芯片选择对应的版本下载（普通用户建议下载带有 **[内置内核]** 的版本）：
+
+| 🖥 平台架构 (Architecture) | 📦 内置 Mihomo 内核 (默认推荐) | 🛠️ 无内核纯净版 (适合高阶用户) |
+| :--- | :--- | :--- |
+| ![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-M系列芯片-0071E3?style=flat-square&logo=apple&logoColor=white) | [ClashBar-${version}-apple-silicon.dmg](${download_base}/ClashBar-${version}-apple-silicon.dmg) | [ClashBar-${version}-apple-silicon-no-core.dmg](${download_base}/ClashBar-${version}-apple-silicon-no-core.dmg) |
+| ![Intel](https://img.shields.io/badge/Intel-x86__64-0071C5?style=flat-square&logo=intel&logoColor=white) | [ClashBar-${version}-intel.dmg](${download_base}/ClashBar-${version}-intel.dmg) | [ClashBar-${version}-intel-no-core.dmg](${download_base}/ClashBar-${version}-intel-no-core.dmg) |
+
 EOF
