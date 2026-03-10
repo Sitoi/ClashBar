@@ -4,7 +4,7 @@
 
 # ClashBar
 
-原生 macOS 菜单栏代理客户端（SwiftUI + AppKit），以 `mihomo` 为 Core。
+基于 `SwiftUI + AppKit` 构建、由 `mihomo` 驱动的原生 macOS 菜单栏代理客户端，专注轻量、稳定与可观测。
 
 <p>
   <img alt="Platform" src="https://img.shields.io/badge/macOS-14%2B-111111?style=flat-square&logo=apple" />
@@ -38,7 +38,7 @@
 
 ## 👋 项目简介
 
-ClashBar 是一款面向 macOS 的原生菜单栏代理客户端，基于 `mihomo` Core，聚焦于「轻量入口、稳定运行、可观测运维」。  
+ClashBar 是一款基于 `mihomo` 内核的原生 macOS 菜单栏代理客户端，专注于轻量、稳定、可观测的代理管理体验。  
 在不打开复杂主窗口的前提下，你可以在菜单栏中完成配置管理、节点切换、规则刷新、连接排障与系统代理控制。 ✨
 
 ## 🤖 项目说明
@@ -50,7 +50,7 @@ ClashBar 是一个「纯 AI vibe coding」驱动的自用项目。
 
 ClashBar 的设计目标始终围绕两个关键词：**轻量** 与 **稳定**。
 
-- 🪶 轻量化优先：在打包 `mihomo` Core 的前提下，应用体积目标控制在 **40 MB 以内**。
+- 🪶 轻量化优先：在打包 `mihomo` Core 的前提下，应用体积目标控制在 **20 MB 以内**。
 - 📦 可裁剪交付：移除 Core 后，应用体积目标控制在 **10 MB 以内**，便于快速分发与集成。
 - 🛡️ 稳定性优先：优先保证日常可用性与长期运行稳定，避免为短期功能堆叠牺牲可靠性。
 
