@@ -48,35 +48,35 @@ extension MenuBarRoot {
 
             self.compactTopIcon(
                 "line.3.horizontal.decrease.circle",
-                label: tr("ui.action.reset_log_filters"))
+                label: tr("ui.action.reset_log_filters"),
+                isDisabled: !self.hasActiveLogFilters,
+                disabledFeedback: tr("ui.feedback.log_filters.idle"))
             {
                 self.resetLogFilters()
             }
-            .help(tr("ui.action.reset_log_filters"))
-            .disabled(!self.hasActiveLogFilters)
 
             Spacer(minLength: 0)
 
             self.compactTopIcon(
                 "doc.on.doc",
                 label: tr("ui.action.copy_all_logs"),
-                toneOverride: nativeSecondaryLabel)
+                toneOverride: nativeSecondaryLabel,
+                isDisabled: appState.errorLogs.isEmpty,
+                disabledFeedback: tr("ui.feedback.logs.empty"))
             {
                 appState.copyAllLogs()
             }
-            .help(tr("ui.action.copy_all_logs"))
-            .disabled(appState.errorLogs.isEmpty)
 
             self.compactTopIcon(
                 "trash",
                 label: tr("ui.action.clear_all_logs"),
                 role: .destructive,
-                warning: true)
+                warning: true,
+                isDisabled: appState.errorLogs.isEmpty,
+                disabledFeedback: tr("ui.feedback.logs.empty"))
             {
                 appState.clearAllLogs()
             }
-            .help(tr("ui.action.clear_all_logs"))
-            .disabled(appState.errorLogs.isEmpty)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

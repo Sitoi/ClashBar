@@ -92,8 +92,6 @@ extension MenuBarRoot {
         {
             await appState.refreshRuleProviders()
         }
-        .help(tr("ui.action.refresh"))
-        .opacity(appState.isRuleProvidersRefreshing ? 0.6 : 1)
     }
 
     func rulesRow(rule: RuleItem, index: Int, providerLookup: [String: ProviderDetail]) -> some View {

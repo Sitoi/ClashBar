@@ -212,11 +212,6 @@ extension MenuBarRoot {
                     {
                         hideHiddenProxyGroups.toggle()
                     }
-                    .help(
-                        tr(
-                            hideHiddenProxyGroups
-                                ? "ui.action.show_hidden_proxy_groups"
-                                : "ui.action.hide_hidden_proxy_groups"))
 
                     self.compactTopIcon(
                         "gauge",
@@ -225,7 +220,6 @@ extension MenuBarRoot {
                     {
                         await appState.refreshAllGroupLatencies(includeHiddenGroups: !hideHiddenProxyGroups)
                     }
-                    .help(tr("ui.action.test_latency"))
                 }
             }
 

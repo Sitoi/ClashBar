@@ -58,7 +58,6 @@ extension MenuBarRoot {
                 {
                     await appState.refreshConnections()
                 }
-                .help(tr("ui.action.refresh"))
 
                 self.compactTopIcon(
                     "xmark",
@@ -67,7 +66,6 @@ extension MenuBarRoot {
                 {
                     await appState.closeAllConnections()
                 }
-                .help(tr("ui.action.close_all"))
             }
 
             TextField(tr("ui.placeholder.filter_connection"), text: $networkFilterText)
@@ -81,12 +79,12 @@ extension MenuBarRoot {
 
                 self.compactTopIcon(
                     "line.3.horizontal.decrease.circle",
-                    label: tr("ui.action.reset_network_filters"))
+                    label: tr("ui.action.reset_network_filters"),
+                    isDisabled: !self.hasActiveNetworkControls,
+                    disabledFeedback: tr("ui.feedback.network_filters.idle"))
                 {
                     self.resetNetworkControls()
                 }
-                .help(tr("ui.action.reset_network_filters"))
-                .disabled(!self.hasActiveNetworkControls)
 
                 Spacer(minLength: 0)
 
@@ -308,15 +306,16 @@ extension MenuBarRoot {
     }
 
     private func connectionRowCloseButton(id: String, hovered: Bool) -> some View {
-        Button {
-            Task { await appState.closeConnection(id: id) }
-        } label: {
-            Image(systemName: "xmark")
-                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .semibold))
-                .frame(width: 10, height: 10)
+        self.compactAsyncIconButton(
+            symbol: "xmark",
+            label: tr("ui.action.close_connection"),
+            tint: nativeSecondaryLabel,
+            baseTint: nativeTertiaryLabel,
+            size: 12,
+            fontSize: MenuBarLayoutTokens.FontSize.caption)
+        {
+            await appState.closeConnection(id: id)
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(hovered ? nativeSecondaryLabel : nativeTertiaryLabel)
         .frame(width: 12, height: 12)
         .opacity(hovered ? 1 : 0)
         .animation(.easeInOut(duration: 0.14), value: hovered)
