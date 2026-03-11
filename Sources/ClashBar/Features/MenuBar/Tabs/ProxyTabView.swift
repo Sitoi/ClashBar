@@ -175,6 +175,11 @@ extension MenuBarRoot {
 
             Button {
                 appState.copyProxyCommand()
+                self.didCopyTerminalCommand = true
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 1_200_000_000)
+                    self.didCopyTerminalCommand = false
+                }
             } label: {
                 self.quickRowContent(
                     title: tr("ui.quick.copy_terminal"),
@@ -182,13 +187,20 @@ extension MenuBarRoot {
                     foreground: nativeWarning,
                     background: nativeWarning.opacity(T.Opacity.tint))
                 {
-                    Image(systemName: "doc.on.doc")
+                    Image(systemName: self.didCopyTerminalCommand ? "checkmark.circle.fill" : "doc.on.doc")
                         .font(.app(size: T.FontSize.body, weight: .medium))
-                        .foregroundStyle(hoveringCopyRow ? nativeSecondaryLabel : nativeTertiaryLabel.opacity(0.6))
+                        .foregroundStyle(
+                            self.didCopyTerminalCommand
+                                ? nativePositive
+                                : (hoveringCopyRow ? nativeSecondaryLabel : nativeTertiaryLabel.opacity(0.6)))
                 }
             }
             .buttonStyle(.plain)
-            .onHover { hoveringCopyRow = $0 }
+            .help(tr("ui.quick.copy_terminal.help"))
+            .onHover {
+                hoveringCopyRow = $0
+                self.contextualHintText = $0 ? self.tr("ui.quick.copy_terminal.help") : nil
+            }
         }
     }
 

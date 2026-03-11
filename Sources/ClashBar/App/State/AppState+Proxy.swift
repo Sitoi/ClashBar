@@ -47,6 +47,7 @@ extension AppState {
             "http_proxy=http://127.0.0.1:\(httpPort) " +
             "all_proxy=socks5://127.0.0.1:\(socksPort)"
         copyTextToPasteboard(script)
+        showPanelFeedback(tr("ui.feedback.copy_terminal.copied"), style: .success, symbol: "checkmark.circle.fill")
         appendLog(level: "info", message: tr("log.proxy_export.copied"))
     }
 

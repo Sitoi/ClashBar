@@ -45,6 +45,7 @@ extension AppState {
     private func copyAndLog(_ text: String, message: String) {
         // DRY: all copy actions share the same pasteboard + info-log behavior.
         self.copyTextToPasteboard(text)
+        self.showPanelFeedback(message, style: .success, symbol: "checkmark.circle.fill")
         appendLog(level: "info", message: message)
     }
 }

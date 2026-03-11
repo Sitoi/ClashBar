@@ -198,6 +198,49 @@ extension MenuBarRoot {
             .menuRowPadding()
     }
 
+    func panelFeedbackColor(_ style: PanelFeedbackStyle) -> Color {
+        switch style {
+        case .info:
+            self.nativeInfo.opacity(MenuBarLayoutTokens.Opacity.solid)
+        case .success:
+            self.nativePositive.opacity(MenuBarLayoutTokens.Opacity.solid)
+        case .warning:
+            self.nativeWarning.opacity(MenuBarLayoutTokens.Opacity.solid)
+        case .error:
+            self.nativeCritical.opacity(MenuBarLayoutTokens.Opacity.solid)
+        }
+    }
+
+    func panelFeedbackToast(_ feedback: PanelFeedback) -> some View {
+        let color = self.panelFeedbackColor(feedback.style)
+
+        return HStack(spacing: MenuBarLayoutTokens.space6) {
+            Image(systemName: feedback.symbol)
+                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .semibold))
+                .foregroundStyle(color)
+
+            Text(feedback.message)
+                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .medium))
+                .foregroundStyle(self.nativePrimaryLabel)
+                .lineLimit(2)
+
+            Spacer(minLength: 0)
+        }
+        .menuRowPadding(vertical: MenuBarLayoutTokens.space4)
+        .background(
+            RoundedRectangle(cornerRadius: MenuBarLayoutTokens.cornerRadius, style: .continuous)
+                .fill(self.nativeControlFill.opacity(self.isDarkAppearance ? 0.98 : 0.94)))
+        .overlay {
+            RoundedRectangle(cornerRadius: MenuBarLayoutTokens.cornerRadius, style: .continuous)
+                .stroke(color.opacity(self.isDarkAppearance ? 0.34 : 0.22), lineWidth: MenuBarLayoutTokens.stroke)
+        }
+        .shadow(
+            color: Color(nsColor: .shadowColor).opacity(0.14),
+            radius: 10,
+            x: 0,
+            y: 6)
+    }
+
     var footerBar: some View {
         let mihomoRepositoryURL = URL(string: "https://github.com/MetaCubeX/mihomo")
         let mihomoSymbol = "antenna.radiowaves.left.and.right"
@@ -277,14 +320,15 @@ extension MenuBarRoot {
             tint: self.footerCoreUpgradeButtonTint,
             baseTint: self.nativeSecondaryLabel,
             isLoading: self.appState.isCoreUpgradeInFlight,
+            isDisabled: !self.isFooterCoreUpgradeEnabled,
+            helpText: self.footerCoreUpgradeButtonHelp,
+            disabledFeedback: self.footerCoreUpgradeButtonHelp,
             size: 18,
             fontSize: MenuBarLayoutTokens.FontSize.caption,
             hierarchicalSymbol: true)
         {
             await self.appState.upgradeCore()
         }
-        .disabled(!self.isFooterCoreUpgradeEnabled)
-        .help(self.footerCoreUpgradeButtonHelp)
         .padding(.horizontal, MenuBarLayoutTokens.space4)
         .padding(.vertical, MenuBarLayoutTokens.space2)
         .background(
@@ -535,22 +579,41 @@ extension MenuBarRoot {
         baseTint: Color? = nil,
         role: ButtonRole? = nil,
         isLoading: Bool = false,
+        isDisabled: Bool = false,
+        helpText: String? = nil,
+        disabledFeedback: String? = nil,
+        disabledFeedbackStyle: PanelFeedbackStyle = .info,
         size: CGFloat = 20,
         fontSize: CGFloat = MenuBarLayoutTokens.FontSize.body,
         hierarchicalSymbol: Bool = false,
         action: @escaping () async -> Void) -> some View
     {
-        CompactAsyncIconButton(
+        let resolvedHelpText = helpText ?? label
+        let resolvedDisabledFeedback = disabledFeedback ?? (isLoading ? self.tr("ui.feedback.action.processing") : nil)
+
+        return CompactAsyncIconButton(
             symbol: symbol,
             tint: tint,
             baseTint: baseTint ?? self.nativeSecondaryLabel,
             role: role,
             isLoading: isLoading,
+            isDisabled: isDisabled,
             size: size,
             fontSize: fontSize,
             hierarchicalSymbol: hierarchicalSymbol,
+            helpText: resolvedHelpText,
+            onHoverChanged: { hovering in
+                self.contextualHintText = hovering ? resolvedHelpText : nil
+            },
+            onDisabledTap: {
+                guard let resolvedDisabledFeedback else { return }
+                self.appState.showPanelFeedback(
+                    resolvedDisabledFeedback,
+                    style: disabledFeedbackStyle)
+            },
             action: action)
             .accessibilityLabel(label)
+            .help(resolvedHelpText)
     }
 }
 
@@ -560,21 +623,29 @@ private struct CompactAsyncIconButton: View {
     let baseTint: Color
     let role: ButtonRole?
     let isLoading: Bool
+    let isDisabled: Bool
     let size: CGFloat
     let fontSize: CGFloat
     let hierarchicalSymbol: Bool
+    let helpText: String
+    let onHoverChanged: (Bool) -> Void
+    let onDisabledTap: () -> Void
     let action: () async -> Void
 
     @State private var hovered = false
 
     var body: some View {
         Button(role: self.role) {
+            if self.isDisabled || self.isLoading {
+                self.onDisabledTap()
+                return
+            }
             Task { await self.action() }
         } label: {
             ZStack {
                 Image(systemName: self.symbol)
                     .font(.app(size: self.fontSize, weight: .semibold))
-                    .foregroundStyle(self.hovered ? self.tint : self.baseTint)
+                    .foregroundStyle((self.hovered && !self.isDisabled && !self.isLoading) ? self.tint : self.baseTint)
                     .symbolRenderingMode(self.hierarchicalSymbol ? .hierarchical : .monochrome)
                     .opacity(self.isLoading ? 0 : 1)
 
@@ -586,7 +657,10 @@ private struct CompactAsyncIconButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.borderless)
-        .disabled(self.isLoading)
-        .onHover { self.hovered = $0 }
+        .opacity((self.isDisabled || self.isLoading) ? 0.62 : 1)
+        .onHover {
+            self.hovered = $0
+            self.onHoverChanged($0)
+        }
     }
 }

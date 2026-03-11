@@ -51,12 +51,25 @@
 "ui.mode.rule" = "Rule";
 "ui.mode.global" = "Global";
 "ui.mode.direct" = "Direct";
+"ui.mode.help.current" = "Already using %@ mode";
+"ui.mode.help.switch" = "Switch to %@ mode";
+"ui.mode.help.switching" = "Switching to %@ mode";
+"ui.mode.help.start_core" = "Start the core before switching to %@ mode";
+"ui.mode.help.wait_api" = "Wait for the core API to recover before switching to %@ mode";
+"ui.mode.hint.start_core" = "Start the core to switch modes";
+"ui.mode.hint.wait_api" = "Wait for the core API to recover before switching modes";
+"ui.feedback.action.processing" = "Action already in progress. Please wait";
+"ui.feedback.copy_terminal.copied" = "Terminal proxy command copied";
+"ui.feedback.network_filters.idle" = "No active network filters to reset";
+"ui.feedback.log_filters.idle" = "No active log filters to reset";
+"ui.feedback.logs.empty" = "No logs available for this action";
 
 
 "ui.quick.switch_config" = "Switch Config";
 "ui.quick.system_proxy" = "System Proxy";
 "ui.quick.tun_mode" = "TUN Mode";
 "ui.quick.copy_terminal" = "Copy Terminal Command";
+"ui.quick.copy_terminal.help" = "Copy proxy environment variable command for Terminal";
 "ui.quick.reload_config_list" = "Reload Config List";
 "ui.quick.import_local_config" = "Import Local Config";
 "ui.quick.import_remote_config" = "Import Subscription Link";
@@ -130,6 +143,9 @@
 "ui.settings.display_mode.icon_and_speed" = "Icon + Speed";
 "ui.settings.display_mode.icon_only" = "Icon Only";
 "ui.settings.display_mode.speed_only" = "Speed Only";
+
+"ui.header.controller_warning.help" = "external-controller is bound to 0.0.0.0 and can be accessed from your LAN";
+"ui.header.controller_warning.accessibility" = "Warning: external-controller is bound to 0.0.0.0";
 
 "ui.language.zh_hans" = "简体中文";
 "ui.language.en" = "English";

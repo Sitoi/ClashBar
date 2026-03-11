@@ -72,6 +72,7 @@ final class AppState: ObservableObject {
     @Published var coreActionState: CoreActionState = .idle
     @Published var coreUpgradeState: CoreUpgradeState = .idle
     @Published var providerRefreshStatus: ProviderRefreshStatus = .idle
+    @Published var panelFeedback: PanelFeedback?
     @Published var uiLanguage: AppLanguage = .zhHans
     @Published var appearanceMode: AppAppearanceMode = .system
     @Published var isPanelPresented: Bool = false
@@ -308,6 +309,7 @@ final class AppState: ObservableObject {
     var streamLastDisconnectLogMessage: [String: String] = [:]
     var proxyPortsAutoSaveTask: Task<Void, Never>?
     var settingsFeedbackClearTask: Task<Void, Never>?
+    var panelFeedbackClearTask: Task<Void, Never>?
     var providerRefreshTask: Task<Void, Never>?
     var networkAutoStopTask: Task<Void, Never>?
     var networkAutoStartTask: Task<Void, Never>?

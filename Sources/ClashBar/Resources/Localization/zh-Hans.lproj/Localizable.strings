@@ -51,12 +51,25 @@
 "ui.mode.rule" = "规则";
 "ui.mode.global" = "全局";
 "ui.mode.direct" = "直连";
+"ui.mode.help.current" = "当前已处于%@模式";
+"ui.mode.help.switch" = "切换到%@模式";
+"ui.mode.help.switching" = "正在切换到%@模式";
+"ui.mode.help.start_core" = "Core 未启动，启动后才可切换到%@模式";
+"ui.mode.help.wait_api" = "Core API 未就绪，恢复后才可切换到%@模式";
+"ui.mode.hint.start_core" = "启动 Core 后可切换模式";
+"ui.mode.hint.wait_api" = "等待 Core API 恢复后可切换模式";
+"ui.feedback.action.processing" = "当前操作进行中，请稍候";
+"ui.feedback.copy_terminal.copied" = "终端代理命令已复制";
+"ui.feedback.network_filters.idle" = "当前没有可重置的网络筛选";
+"ui.feedback.log_filters.idle" = "当前没有可重置的日志筛选";
+"ui.feedback.logs.empty" = "暂无日志可操作";
 
 
 "ui.quick.switch_config" = "切换配置";
 "ui.quick.system_proxy" = "系统代理";
 "ui.quick.tun_mode" = "TUN 模式";
 "ui.quick.copy_terminal" = "复制终端命令";
+"ui.quick.copy_terminal.help" = "复制适用于终端的代理环境变量命令";
 "ui.quick.reload_config_list" = "重载配置文件";
 "ui.quick.import_local_config" = "导入本地配置";
 "ui.quick.import_remote_config" = "导入订阅链接";
@@ -130,6 +143,9 @@
 "ui.settings.display_mode.icon_and_speed" = "图标 + 速度";
 "ui.settings.display_mode.icon_only" = "仅图标";
 "ui.settings.display_mode.speed_only" = "仅速度";
+
+"ui.header.controller_warning.help" = "external-controller 当前绑定到 0.0.0.0，局域网内设备可访问该接口";
+"ui.header.controller_warning.accessibility" = "警告：external-controller 绑定到了 0.0.0.0";
 
 "ui.language.zh_hans" = "简体中文";
 "ui.language.en" = "English";

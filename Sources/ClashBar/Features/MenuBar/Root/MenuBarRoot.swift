@@ -125,6 +125,7 @@ struct MenuBarRoot: View {
     @EnvironmentObject var popoverLayoutModel: PopoverLayoutModel
     @Environment(\.colorScheme) var colorScheme
 
+    @Namespace var modeSwitcherNamespace
     @State var currentTab: RootTab = .proxy
     @State var switchingMode: CoreMode?
     @State var hoveringCopyRow = false
@@ -136,6 +137,8 @@ struct MenuBarRoot: View {
     @State var hoveredProxyGroupName: String?
     @State var hoveredProxyProviderName: String?
     @State var hoveredMode: CoreMode?
+    @State var contextualHintText: String?
+    @State var didCopyTerminalCommand = false
     @State var selectedLogSources: Set<AppLogSource> = Set(AppLogSource.allCases)
     @State var selectedLogLevels: Set<LogLevelFilter> = [.info, .warning, .error]
     @State var logSearchText: String = ""
@@ -211,6 +214,14 @@ struct MenuBarRoot: View {
         .frame(width: MenuBarLayoutTokens.panelWidth, height: resolvedPanelHeight, alignment: .topLeading)
         .background(self.panelBackground)
         .clipShape(RoundedRectangle(cornerRadius: MenuBarLayoutTokens.cornerRadius, style: .continuous))
+        .overlay(alignment: .top) {
+            if let feedback = self.appState.panelFeedback {
+                self.panelFeedbackToast(feedback)
+                    .padding(.top, MenuBarLayoutTokens.space6)
+                    .padding(.horizontal, MenuBarLayoutTokens.space8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
         .onAppear {
             self.setCurrentTabWithoutAnimation(self.appState.activeMenuTab)
             self.appState.setActiveMenuTab(self.currentTab)

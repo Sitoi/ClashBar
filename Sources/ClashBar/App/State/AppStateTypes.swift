@@ -106,6 +106,19 @@ enum ProviderRefreshPhase {
     case cancelled
 }
 
+enum PanelFeedbackStyle: Equatable {
+    case info
+    case success
+    case warning
+    case error
+}
+
+struct PanelFeedback: Equatable {
+    let message: String
+    let symbol: String
+    let style: PanelFeedbackStyle
+}
+
 struct ProviderRefreshStatus {
     let phase: ProviderRefreshPhase
     let trigger: ProviderRefreshTrigger?

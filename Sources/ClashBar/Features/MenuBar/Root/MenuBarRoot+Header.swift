@@ -38,22 +38,8 @@ extension MenuBarRoot {
                             .font(.app(size: MenuBarLayoutTokens.FontSize.title, weight: .semibold))
                             .foregroundStyle(nativePrimaryLabel)
 
-                        HStack(spacing: MenuBarLayoutTokens.space1) {
-                            Circle()
-                                .fill(statusColor)
-                                .frame(width: MenuBarLayoutTokens.space4, height: MenuBarLayoutTokens.space4)
-                            Text(runtimeBadgeText)
-                                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .medium))
-                                .foregroundStyle(nativeSecondaryLabel)
-                        }
-                        .padding(.horizontal, MenuBarLayoutTokens.space6)
-                        .padding(.vertical, MenuBarLayoutTokens.space2)
-                        .background(nativeControlFill.opacity(MenuBarLayoutTokens.Opacity.solid), in: Capsule())
-                        .overlay {
-                            Capsule().stroke(
-                                nativeControlBorder.opacity(MenuBarLayoutTokens.Theme.Dark.borderEmphasis),
-                                lineWidth: MenuBarLayoutTokens.stroke)
-                        }
+                        self.runtimeStatusBadge
+                        self.currentModeBadge
                     }
 
                     HStack(spacing: MenuBarLayoutTokens.space6) {
@@ -70,15 +56,20 @@ extension MenuBarRoot {
             Spacer(minLength: MenuBarLayoutTokens.space6)
 
             HStack(spacing: MenuBarLayoutTokens.space6) {
-                self.compactTopIcon("arrow.clockwise", label: appState.primaryCoreActionLabel) {
+                self.compactTopIcon(
+                    "arrow.clockwise",
+                    label: appState.primaryCoreActionLabel,
+                    isDisabled: !appState.isPrimaryCoreActionEnabled,
+                    disabledFeedback: tr("ui.feedback.action.processing"))
+                {
                     await appState.performPrimaryCoreAction()
                 }
-                .disabled(!appState.isPrimaryCoreActionEnabled)
-                .opacity(appState.isPrimaryCoreActionEnabled ? 1 : 0.6)
 
                 self.compactTopIcon(
                     appState.isRuntimeRunning ? "stop.circle" : "play.circle",
-                    label: appState.isRuntimeRunning ? tr("ui.action.stop") : tr("app.primary.start"))
+                    label: appState.isRuntimeRunning ? tr("ui.action.stop") : tr("app.primary.start"),
+                    isDisabled: appState.isCoreActionProcessing,
+                    disabledFeedback: tr("ui.feedback.action.processing"))
                 {
                     if appState.isRuntimeRunning {
                         await appState.stopCore()
@@ -86,8 +77,6 @@ extension MenuBarRoot {
                         await appState.startCore(trigger: .manual)
                     }
                 }
-                .disabled(appState.isCoreActionProcessing)
-                .opacity(appState.isCoreActionProcessing ? 0.6 : 1)
 
                 self.compactTopIcon("rectangle.portrait.and.arrow.right", label: tr("ui.action.quit"), warning: true) {
                     await appState.quitApp()
@@ -95,6 +84,48 @@ extension MenuBarRoot {
             }
         }
         .padding(.vertical, MenuBarLayoutTokens.space8)
+    }
+
+    var runtimeStatusBadge: some View {
+        HStack(spacing: MenuBarLayoutTokens.space1) {
+            Circle()
+                .fill(statusColor)
+                .frame(width: MenuBarLayoutTokens.space4, height: MenuBarLayoutTokens.space4)
+            Text(runtimeBadgeText)
+                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .medium))
+                .foregroundStyle(nativeSecondaryLabel)
+        }
+        .padding(.horizontal, MenuBarLayoutTokens.space6)
+        .padding(.vertical, MenuBarLayoutTokens.space2)
+        .background(nativeControlFill.opacity(MenuBarLayoutTokens.Opacity.solid), in: Capsule())
+        .overlay {
+            Capsule().stroke(
+                nativeControlBorder.opacity(MenuBarLayoutTokens.Theme.Dark.borderEmphasis),
+                lineWidth: MenuBarLayoutTokens.stroke)
+        }
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    var currentModeBadge: some View {
+        let tint = self.modeTint(appState.currentMode)
+
+        return HStack(spacing: MenuBarLayoutTokens.space4) {
+            Image(systemName: self.modeSymbol(appState.currentMode))
+                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .semibold))
+            Text(self.modeTitle(appState.currentMode))
+                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .medium))
+        }
+        .foregroundStyle(tint)
+        .padding(.horizontal, MenuBarLayoutTokens.space6)
+        .padding(.vertical, MenuBarLayoutTokens.space2)
+        .background(tint.opacity(self.isDarkAppearance ? 0.22 : 0.10), in: Capsule())
+        .overlay {
+            Capsule().stroke(
+                tint.opacity(self.isDarkAppearance ? 0.46 : 0.20),
+                lineWidth: MenuBarLayoutTokens.stroke)
+        }
+        .help(self.modeTooltip(mode: appState.currentMode))
+        .fixedSize(horizontal: true, vertical: false)
     }
 
     func headerMetaLabel(symbol: String, text: String) -> some View {
@@ -130,8 +161,8 @@ extension MenuBarRoot {
         Image(systemName: "exclamationmark.triangle.fill")
             .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .semibold))
             .foregroundStyle(nativeWarning)
-            .help("external-controller is 0.0.0.0 and can be accessed from your LAN.")
-            .accessibilityLabel("Warning: external-controller is bound to 0.0.0.0")
+            .help(tr("ui.header.controller_warning.help"))
+            .accessibilityLabel(tr("ui.header.controller_warning.accessibility"))
     }
 
     func makeMetaCubeXDSetupURL(controller: String, secret: String?) -> URL? {
@@ -177,6 +208,10 @@ extension MenuBarRoot {
         warning: Bool = false,
         toneOverride: Color? = nil,
         isLoading: Bool = false,
+        isDisabled: Bool = false,
+        helpText: String? = nil,
+        disabledFeedback: String? = nil,
+        disabledFeedbackStyle: PanelFeedbackStyle = .info,
         action: @escaping () async -> Void) -> some View
     {
         let tone: Color = if let toneOverride {
@@ -197,6 +232,10 @@ extension MenuBarRoot {
             tint: tone.opacity(MenuBarLayoutTokens.Opacity.solid),
             role: role,
             isLoading: isLoading,
+            isDisabled: isDisabled,
+            helpText: helpText ?? label,
+            disabledFeedback: disabledFeedback,
+            disabledFeedbackStyle: disabledFeedbackStyle,
             action: action)
     }
 }
