@@ -237,7 +237,7 @@ final class StatusItemContentView: NSView {
             }
 
             guard rendered.representations.isEmpty == false else { continue }
-            rendered.isTemplate = false
+            rendered.isTemplate = true
             images[theme] = rendered
         }
 
