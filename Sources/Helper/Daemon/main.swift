@@ -370,92 +370,10 @@ private final class ProxyHelperService: NSObject, ProxyHelperProtocol {
     }
 }
 
-private struct SigningIdentity {
-    let identifier: String
-    let teamIdentifier: String?
-}
-
-private final class XPCClientValidator {
-    private lazy var helperIdentity: SigningIdentity? = signingIdentityForCurrentProcess()
-
-    func isValid(connection: NSXPCConnection) -> Bool {
-        guard let clientIdentity = signingIdentity(for: connection.processIdentifier) else {
-            return false
-        }
-
-        guard clientIdentity.identifier == ProxyHelperConstants.allowedClientBundleIdentifier else {
-            return false
-        }
-
-        guard let helperIdentity else {
-            return false
-        }
-
-        if let helperTeamIdentifier = helperIdentity.teamIdentifier,
-           let clientTeamIdentifier = clientIdentity.teamIdentifier
-        {
-            return helperTeamIdentifier == clientTeamIdentifier
-        }
-
-        // Ad-hoc/local builds do not provide Team ID. Keep identifier-based checks active
-        // and rely on launchd registration + code signing requirement gate.
-        return true
-    }
-
-    private func signingIdentityForCurrentProcess() -> SigningIdentity? {
-        var code: SecCode?
-        guard SecCodeCopySelf(SecCSFlags(), &code) == errSecSuccess, let code else {
-            return nil
-        }
-        return self.signingIdentity(for: code)
-    }
-
-    private func signingIdentity(for pid: pid_t) -> SigningIdentity? {
-        let attributes: [String: Any] = [kSecGuestAttributePid as String: pid]
-        var code: SecCode?
-        guard SecCodeCopyGuestWithAttributes(nil, attributes as CFDictionary, SecCSFlags(), &code) == errSecSuccess,
-              let code
-        else {
-            return nil
-        }
-        return self.signingIdentity(for: code)
-    }
-
-    private func signingIdentity(for code: SecCode) -> SigningIdentity? {
-        var staticCode: SecStaticCode?
-        guard SecCodeCopyStaticCode(code, SecCSFlags(), &staticCode) == errSecSuccess,
-              let staticCode
-        else {
-            return nil
-        }
-        return self.signingIdentity(for: staticCode)
-    }
-
-    private func signingIdentity(for staticCode: SecStaticCode) -> SigningIdentity? {
-        var signingInformation: CFDictionary?
-        guard SecCodeCopySigningInformation(
-            staticCode,
-            SecCSFlags(rawValue: kSecCSSigningInformation),
-            &signingInformation) == errSecSuccess,
-            let signingInformation = signingInformation as? [String: Any],
-            let identifier = signingInformation[kSecCodeInfoIdentifier as String] as? String
-        else {
-            return nil
-        }
-
-        let teamIdentifier = signingInformation[kSecCodeInfoTeamIdentifier as String] as? String
-        return SigningIdentity(identifier: identifier, teamIdentifier: teamIdentifier)
-    }
-}
-
 private final class ProxyHelperListenerDelegate: NSObject, NSXPCListenerDelegate {
     private let service = ProxyHelperService()
-    private let validator = XPCClientValidator()
 
     func listener(_ listener: NSXPCListener, shouldAcceptNewConnection newConnection: NSXPCConnection) -> Bool {
-        guard self.validator.isValid(connection: newConnection) else {
-            return false
-        }
         newConnection.exportedInterface = NSXPCInterface(with: ProxyHelperProtocol.self)
         newConnection.exportedObject = self.service
         newConnection.resume()
@@ -469,8 +387,33 @@ private struct ClashBarProxyHelperMain {
         let delegate = ProxyHelperListenerDelegate()
         let listener = NSXPCListener(machServiceName: ProxyHelperConstants.machServiceName)
         listener.delegate = delegate
-        listener.setConnectionCodeSigningRequirement(ProxyHelperConstants.allowedClientRequirement)
+        listener.setConnectionCodeSigningRequirement(self.buildClientRequirement())
         listener.resume()
         dispatchMain()
+    }
+
+    private static func buildClientRequirement() -> String {
+        let base = ProxyHelperConstants.allowedClientRequirement
+        guard let teamID = selfTeamIdentifier(), !teamID.isEmpty else {
+            return base
+        }
+        return "\(base) and certificate leaf[subject.OU] = \"\(teamID)\""
+    }
+
+    private static func selfTeamIdentifier() -> String? {
+        var code: SecCode?
+        guard SecCodeCopySelf(SecCSFlags(), &code) == errSecSuccess, let code else { return nil }
+        var staticCode: SecStaticCode?
+        guard SecCodeCopyStaticCode(code, SecCSFlags(), &staticCode) == errSecSuccess,
+              let staticCode
+        else { return nil }
+        var info: CFDictionary?
+        guard SecCodeCopySigningInformation(
+            staticCode,
+            SecCSFlags(rawValue: kSecCSSigningInformation),
+            &info) == errSecSuccess,
+            let dict = info as? [String: Any]
+        else { return nil }
+        return dict[kSecCodeInfoTeamIdentifier as String] as? String
     }
 }

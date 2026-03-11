@@ -74,7 +74,6 @@ struct SystemProxyService {
 
         if enabled {
             let resolvedPorts = try validateAndResolvePorts(ports, requiresEnabledPort: true)
-            // Match clash-party's "disable then enable" sequence to avoid stale proxy residue.
             try await invokeMutationWithRecovery { helper, completion in
                 helper.clearSystemProxy(completion: completion)
             }
@@ -160,8 +159,6 @@ struct SystemProxyService {
 
         let daemonService = self.helperService()
         do {
-            // Always refresh daemon registration. This updates launch constraints
-            // when users replace the app bundle (for example, after a DMG upgrade).
             try daemonService.register()
         } catch {
             if daemonService.status == .enabled {
@@ -256,11 +253,9 @@ struct SystemProxyService {
                 return try await self.invokeBooleanQuery(invoke)
             } catch {
                 lastError = error
-                let shouldRetry = self.shouldRetryAfterRecovery(error)
-                if !shouldRetry || attempt == self.helperRecoveryMaxAttempts - 1 {
-                    throw error
-                }
-                try await self.recoverHelperForRetry(error: error)
+                guard self.shouldRetryAfterRecovery(error) else { throw error }
+                guard attempt < self.helperRecoveryMaxAttempts - 1 else { throw error }
+                try? await Task.sleep(nanoseconds: self.helperRecoveryDelayNanoseconds)
                 attempt += 1
             }
         }
@@ -370,11 +365,6 @@ struct SystemProxyService {
         }
     }
 
-    /// Synchronously clears system proxy settings via XPC.
-    ///
-    /// Designed for use in `applicationWillTerminate` where async calls are not
-    /// possible. The call blocks (on a background queue) up to `timeout` seconds
-    /// and silently does nothing when the helper is unreachable.
     func clearSystemProxyBlocking(timeout: TimeInterval = 2.0) {
         let semaphore = DispatchSemaphore(value: 0)
 
