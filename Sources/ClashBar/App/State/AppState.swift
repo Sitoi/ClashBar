@@ -279,11 +279,6 @@ final class AppState: ObservableObject {
         return self.isRuntimeRunning ? tr("app.primary.restart") : tr("app.primary.start")
     }
 
-    var primaryCoreActionIconName: String {
-        if self.isCoreActionProcessing { return "hourglass" }
-        return self.isRuntimeRunning ? "arrow.clockwise" : "play.fill"
-    }
-
     var isPrimaryCoreActionEnabled: Bool {
         !self.isCoreActionProcessing
     }
