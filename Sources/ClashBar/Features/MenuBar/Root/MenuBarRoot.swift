@@ -139,6 +139,7 @@ struct MenuBarRoot: View {
     @State var hoveredMode: CoreMode?
     @State var contextualHintText: String?
     @State var didCopyTerminalCommand = false
+    @State var isTestingAllProxyGroups = false
     @State var selectedLogSources: Set<AppLogSource> = Set(AppLogSource.allCases)
     @State var selectedLogLevels: Set<LogLevelFilter> = [.info, .warning, .error]
     @State var logSearchText: String = ""
@@ -238,6 +239,9 @@ struct MenuBarRoot: View {
             self.setCurrentTabWithoutAnimation(tab)
             self.currentTabContentHeight = 0
             self.refreshDerivedData(for: tab)
+        }
+        .onChange(of: self.appState.uiLanguage) { _ in
+            self.contextualHintText = nil
         }
         .onChange(of: resolvedPanelHeight) { _ in
             publishPreferredPanelHeight()

@@ -194,7 +194,6 @@ extension MenuBarRoot {
         let groups = hideHiddenProxyGroups
             ? appState.proxyGroups.filter { $0.hidden != true }
             : appState.proxyGroups
-        let isTestingAllGroups = !appState.groupLatencyLoading.isEmpty
 
         return VStack(alignment: .leading, spacing: T.space6) {
             self.nodesSectionHeader(
@@ -225,11 +224,13 @@ extension MenuBarRoot {
                         "gauge",
                         label: tr("ui.action.test_latency"),
                         toneOverride: nativeTeal,
-                        isLoading: isTestingAllGroups,
+                        isLoading: self.isTestingAllProxyGroups,
                         isDisabled: groups.isEmpty,
                         disabledFeedback: tr("ui.feedback.proxy_groups.empty"),
                         disabledFeedbackStyle: .warning)
                     {
+                        self.isTestingAllProxyGroups = true
+                        defer { self.isTestingAllProxyGroups = false }
                         appState.showPanelFeedback(
                             tr("ui.feedback.proxy_groups.testing"),
                             style: .info,
