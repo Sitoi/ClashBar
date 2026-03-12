@@ -192,22 +192,22 @@ extension MenuBarRoot {
             {
                 HStack(spacing: T.space6) {
                     self.compactTopIcon(
-                        sortGroupsByLatency
+                        sortGroupNodesByLatency
                             ? "line.3.horizontal.decrease.circle.fill"
                             : "line.3.horizontal.decrease.circle",
                         label: tr(
-                            sortGroupsByLatency
-                                ? "ui.action.sort_default"
-                                : "ui.action.sort_by_latency"),
-                        toneOverride: sortGroupsByLatency ? nativeTeal : nil)
+                            sortGroupNodesByLatency
+                                ? "ui.action.sort_nodes_default"
+                                : "ui.action.sort_nodes_by_latency"),
+                        toneOverride: sortGroupNodesByLatency ? nativeTeal : nil)
                     {
-                        sortGroupsByLatency.toggle()
+                        sortGroupNodesByLatency.toggle()
                     }
                     .help(
                         tr(
-                            sortGroupsByLatency
-                                ? "ui.action.sort_default"
-                                : "ui.action.sort_by_latency"))
+                            sortGroupNodesByLatency
+                                ? "ui.action.sort_nodes_default"
+                                : "ui.action.sort_nodes_by_latency"))
 
                     self.compactTopIcon(
                         hideHiddenProxyGroups ? "eye.slash" : "eye",
@@ -328,7 +328,7 @@ extension MenuBarRoot {
                 }
             }
 
-            let nodes = sortGroupsByLatency
+            let nodes = sortGroupNodesByLatency
                 ? sortedGroupNodes(group)
                 : defaultGroupNodes(group)
             self.popoverNodesList(nodes) { node in

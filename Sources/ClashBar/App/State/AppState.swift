@@ -49,10 +49,6 @@ final class AppState: ObservableObject {
     @Published var providerRuleCount: Int = 0
     @Published var rulesCount: Int = 0
     @Published var proxyProvidersDetail: [String: ProviderDetail] = [:]
-    @Published var expandedProxyProviders: Set<String> = []
-    @Published var providerNodeLatencies: [String: [String: Int]] = [:]
-    @Published var providerNodeTesting: Set<ProviderNodeKey> = []
-    @Published var providerBatchTesting: Set<String> = []
     @Published var providerUpdating: Set<String> = []
     @Published var ruleProviders: [String: ProviderDetail] = [:]
     @Published var ruleItems: [RuleItem] = []

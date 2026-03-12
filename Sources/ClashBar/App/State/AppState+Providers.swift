@@ -54,90 +54,6 @@ extension AppState {
             request: .updateProxyProvider(name: name))
     }
 
-    func testProxyProviderNode(provider: String, node: String) async {
-        let key = self.providerNodeKey(provider: provider, node: node)
-        providerNodeTesting.insert(key)
-        defer { providerNodeTesting.remove(key) }
-
-        let healthcheck = self.resolvedProviderHealthcheck(provider: provider)
-        do {
-            let client = try clientOrThrow()
-            let response: DelayMeasurement = try await client.request(
-                .proxyProviderProxyHealthcheck(
-                    provider: provider,
-                    proxy: node,
-                    url: healthcheck.url,
-                    timeout: healthcheck.timeout))
-            if let value = response.value {
-                self.setProviderNodeLatency(provider: provider, node: node, value: value)
-            }
-        } catch {
-            appendLog(
-                level: "error",
-                message: tr("log.provider.node_test_failed", provider, node, error.localizedDescription))
-        }
-    }
-
-    func testAllProxyProviderNodes(provider: String) async {
-        providerBatchTesting.insert(provider)
-        defer { providerBatchTesting.remove(provider) }
-
-        if proxyProvidersDetail[provider]?.proxies == nil {
-            await self.ensureProviderNodesLoaded(provider: provider)
-        }
-
-        guard let nodes = proxyProvidersDetail[provider]?.proxies, !nodes.isEmpty else {
-            return
-        }
-
-        let nodeKeys = nodes.map { self.providerNodeKey(provider: provider, node: $0.name) }
-        nodeKeys.forEach { providerNodeTesting.insert($0) }
-        defer { nodeKeys.forEach { providerNodeTesting.remove($0) } }
-
-        let healthcheck = self.resolvedProviderHealthcheck(provider: provider)
-        do {
-            let client = try clientOrThrow()
-            try await client.requestNoResponse(
-                .proxyProviderHealthcheck(
-                    name: provider,
-                    url: healthcheck.url,
-                    timeout: healthcheck.timeout))
-            let refreshed: ProviderDetail = try await client.request(.proxyProvider(name: provider))
-            self.applyRefreshedProviderDetail(provider: provider, detail: refreshed)
-        } catch {
-            appendLog(
-                level: "error",
-                message: tr("log.provider.healthcheck_failed", provider, error.localizedDescription))
-        }
-    }
-
-    func providerNodeDelayText(provider: String, node: String) -> String {
-        let key = self.providerNodeKey(provider: provider, node: node)
-        guard !providerNodeTesting.contains(key) else { return tr("ui.common.testing") }
-        guard let value = providerNodeLatencies[provider]?[node] else { return tr("ui.common.unknown") }
-        return tr("ui.common.latency_ms", value)
-    }
-
-    private func resolvedProviderHealthcheck(provider: String) -> (url: String, timeout: Int) {
-        let providerDetail = proxyProvidersDetail[provider]
-        let url = normalizedHealthcheckURL(providerDetail?.testUrl) ?? defaultHealthcheckURL
-        let timeout = normalizedHealthcheckTimeout(providerDetail?.timeout) ?? defaultHealthcheckTimeoutMilliseconds
-        return (url: url, timeout: timeout)
-    }
-
-    private func applyProviderHealthcheckDelays(provider: String, detail: ProviderDetail) {
-        detail.proxies?
-            .compactMap { proxy in proxy.latestDelay.map { (name: proxy.name, delay: $0) } }
-            .forEach { self.setProviderNodeLatency(provider: provider, node: $0.name, value: $0.delay) }
-    }
-
-    private func sanitizedProviderDetail(_ detail: ProviderDetail, includeNodes: Bool) -> ProviderDetail {
-        let proxies = includeNodes ? detail.proxies?.map {
-            ProviderProxyNode(name: $0.name, latestDelay: $0.latestDelay)
-        } : nil
-        return detail.with(proxies: proxies)
-    }
-
     private func mergedProviderDetailPreservingNodes(
         previous: ProviderDetail?,
         incoming: ProviderDetail) -> ProviderDetail
@@ -156,30 +72,6 @@ extension AppState {
 
         let vehicleType = detail.vehicleType.trimmedOrEmpty
         return vehicleType.caseInsensitiveCompare("Compatible") != .orderedSame
-    }
-
-    func ensureProviderNodesLoaded(provider: String) async {
-        guard let current = proxyProvidersDetail[provider], current.proxies?.isEmpty != false else { return }
-
-        do {
-            let client = try clientOrThrow()
-            let refreshed: ProviderDetail = try await client.request(.proxyProvider(name: provider))
-            self.applyRefreshedProviderDetail(provider: provider, detail: refreshed)
-        } catch {
-            appendLog(level: "error", message: tr("log.providers.fetch_proxy_failed", error.localizedDescription))
-        }
-    }
-
-    private func pruneProviderNodeLatencies(provider: String, allowedNodes: Set<String>) {
-        guard var existing = providerNodeLatencies[provider] else { return }
-        existing = existing.filter { allowedNodes.contains($0.key) }
-        providerNodeLatencies[provider] = existing
-    }
-
-    private func applyRefreshedProviderDetail(provider: String, detail: ProviderDetail) {
-        proxyProvidersDetail[provider] = self.sanitizedProviderDetail(detail, includeNodes: true)
-        self.applyProviderHealthcheckDelays(provider: provider, detail: detail)
-        self.pruneProviderNodeLatencies(provider: provider, allowedNodes: Set(detail.proxies?.map(\.name) ?? []))
     }
 
     func enqueueProviderRefresh(trigger: ProviderRefreshTrigger) {
@@ -369,23 +261,8 @@ extension AppState {
             self.rulesCount = rules.totalCount
 
             let currentNames = Set(filteredProxyProviders.keys)
-            self.expandedProxyProviders = self.expandedProxyProviders.intersection(currentNames)
-            self.providerBatchTesting = self.providerBatchTesting.intersection(currentNames)
             self.providerUpdating = self.providerUpdating.intersection(currentNames)
-            self.providerNodeLatencies = self.providerNodeLatencies.filter { currentNames.contains($0.key) }
-            self.providerNodeTesting = Set(self.providerNodeTesting.filter { currentNames.contains($0.provider) })
         }
-    }
-
-    func providerNodeKey(provider: String, node: String) -> ProviderNodeKey {
-        ProviderNodeKey(provider: provider, node: node)
-    }
-
-    private func setProviderNodeLatency(provider: String, node: String, value: Int) {
-        // DRY: centralize map upsert logic for provider-node latency writes.
-        var map = providerNodeLatencies[provider] ?? [:]
-        map[node] = value
-        providerNodeLatencies[provider] = map
     }
 
     private func updateProvidersSequential(

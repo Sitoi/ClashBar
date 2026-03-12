@@ -134,7 +134,6 @@ struct MenuBarRoot: View {
     @State var networkSortOption: NetworkSortOption = .default
     @State var hoveredConnectionID: String?
     @State var hoveredProxyGroupName: String?
-    @State var hoveredProxyProviderName: String?
     @State var hoveredMode: CoreMode?
     @State var selectedLogSources: Set<AppLogSource> = Set(AppLogSource.allCases)
     @State var selectedLogLevels: Set<LogLevelFilter> = [.info, .warning, .error]
@@ -148,7 +147,7 @@ struct MenuBarRoot: View {
     @State var visibleRules: [RuleItem] = []
     @State var ruleProviderLookup: [String: ProviderDetail] = [:]
     @AppStorage("clashbar.proxy.group.hide_hidden") var hideHiddenProxyGroups: Bool = true
-    @AppStorage("clashbar.proxy.group.sort_by_latency") var sortGroupsByLatency: Bool = false
+    @AppStorage("clashbar.proxy.group.sort_nodes_by_latency") var sortGroupNodesByLatency: Bool = false
 
     var contentWidth: CGFloat {
         MenuBarLayoutTokens.panelWidth - (MenuBarLayoutTokens.space8 * 2)

@@ -458,13 +458,6 @@ extension MenuBarRoot {
         self.appState.currentAppVersionText
     }
 
-    func sortedProviderNodes(provider: String, detail: ProviderDetail?) -> [String] {
-        guard let proxies = detail?.proxies else { return [] }
-        return self.sortedNodes(
-            names: proxies.map(\.name),
-            latencyForNode: { self.appState.providerNodeLatencies[provider]?[$0] })
-    }
-
     func orderedUniqueNames(_ names: [String]) -> [String] {
         var seen: Set<String> = []
         var ordered: [String] = []

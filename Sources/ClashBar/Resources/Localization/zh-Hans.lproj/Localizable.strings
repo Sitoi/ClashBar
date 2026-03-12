@@ -22,8 +22,8 @@
 "ui.action.test_latency" = "延迟测试";
 "ui.action.show_hidden_proxy_groups" = "显示 hidden 代理组";
 "ui.action.hide_hidden_proxy_groups" = "隐藏 hidden 代理组";
-"ui.action.sort_by_latency" = "按延迟排序";
-"ui.action.sort_default" = "默认排序";
+"ui.action.sort_nodes_by_latency" = "节点按延迟排序";
+"ui.action.sort_nodes_default" = "节点默认排序";
 "ui.action.refresh" = "刷新";
 "ui.action.close_all" = "关闭全部";
 "ui.action.close_connection" = "关闭连接";

@@ -285,10 +285,6 @@ extension AppState {
         providerRuleCount = 0
         rulesCount = 0
         proxyProvidersDetail.removeAll(keepingCapacity: false)
-        expandedProxyProviders.removeAll(keepingCapacity: false)
-        providerNodeLatencies.removeAll(keepingCapacity: false)
-        providerNodeTesting.removeAll(keepingCapacity: false)
-        providerBatchTesting.removeAll(keepingCapacity: false)
         providerUpdating.removeAll(keepingCapacity: false)
         ruleProviders.removeAll(keepingCapacity: false)
         ruleItems.removeAll(keepingCapacity: false)

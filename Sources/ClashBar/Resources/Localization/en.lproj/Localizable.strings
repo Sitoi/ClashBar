@@ -22,8 +22,8 @@
 "ui.action.test_latency" = "Test Latency";
 "ui.action.show_hidden_proxy_groups" = "Show hidden proxy groups";
 "ui.action.hide_hidden_proxy_groups" = "Hide hidden proxy groups";
-"ui.action.sort_by_latency" = "Sort by Latency";
-"ui.action.sort_default" = "Default Order";
+"ui.action.sort_nodes_by_latency" = "Sort Nodes by Latency";
+"ui.action.sort_nodes_default" = "Default Node Order";
 "ui.action.refresh" = "Refresh";
 "ui.action.close_all" = "Close All";
 "ui.action.close_connection" = "Close Connection";
