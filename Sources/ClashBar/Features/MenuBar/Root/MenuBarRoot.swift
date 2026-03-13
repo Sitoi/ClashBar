@@ -138,6 +138,8 @@ struct MenuBarRoot: View {
     @State var selectedLogSources: Set<AppLogSource> = Set(AppLogSource.allCases)
     @State var selectedLogLevels: Set<LogLevelFilter> = [.info, .warning, .error]
     @State var logSearchText: String = ""
+    @State var openingProxyGroupName: String?
+    @State var openingProxyGroupGeneration = 0
     @State var topHeaderHeight: CGFloat = 0
     @State var modeAndTabSectionHeight: CGFloat = 0
     @State var footerBarHeight: CGFloat = 0
@@ -165,8 +167,15 @@ struct MenuBarRoot: View {
         L10n.t(key, language: self.language, args: args)
     }
 
-    func setCurrentTabWithoutAnimation(_ tab: RootTab) {
+    func setCurrentTab(_ tab: RootTab, animated: Bool) {
         guard self.currentTab != tab else { return }
+
+        if animated {
+            withAnimation(.easeOut(duration: 0.14)) {
+                self.currentTab = tab
+            }
+            return
+        }
 
         var transaction = Transaction(animation: nil)
         transaction.disablesAnimations = true
@@ -194,13 +203,17 @@ struct MenuBarRoot: View {
                 .reportHeight { updateSectionHeight($0, target: .modeAndTab) }
 
             ScrollView(.vertical) {
-                self.tabContent(for: self.currentTab)
+                ZStack(alignment: .topLeading) {
+                    self.tabContent(for: self.currentTab)
+                        .id(self.currentTab)
+                        .transition(.opacity)
+                }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .reportHeight { updateCurrentTabContentHeight($0, for: self.currentTab) }
             }
             .scrollIndicators(.hidden)
             .frame(maxWidth: .infinity, alignment: .topLeading)
             .frame(height: tabScrollAreaHeight, alignment: .top)
+            .animation(.easeOut(duration: 0.14), value: self.currentTab)
 
             footerBar
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -212,20 +225,18 @@ struct MenuBarRoot: View {
         .background(self.panelBackground)
         .clipShape(RoundedRectangle(cornerRadius: MenuBarLayoutTokens.cornerRadius, style: .continuous))
         .onAppear {
-            self.setCurrentTabWithoutAnimation(self.appState.activeMenuTab)
+            self.setCurrentTab(self.appState.activeMenuTab, animated: false)
             self.appState.setActiveMenuTab(self.currentTab)
             self.refreshDerivedData(for: self.currentTab)
             publishPreferredPanelHeight()
         }
         .onChange(of: self.currentTab) { tab in
-            self.currentTabContentHeight = 0
             self.appState.setActiveMenuTab(tab)
             self.refreshDerivedData(for: tab)
         }
         .onChange(of: self.appState.activeMenuTab) { tab in
             guard self.currentTab != tab else { return }
-            self.setCurrentTabWithoutAnimation(tab)
-            self.currentTabContentHeight = 0
+            self.setCurrentTab(tab, animated: self.appState.isPanelPresented)
             self.refreshDerivedData(for: tab)
         }
         .onChange(of: resolvedPanelHeight) { _ in
@@ -278,6 +289,7 @@ struct MenuBarRoot: View {
         self.tabBody(for: tab)
             .padding(.top, MenuBarLayoutTokens.space2)
             .fixedSize(horizontal: false, vertical: true)
+            .reportHeight { updateCurrentTabContentHeight($0, for: tab) }
     }
 
     var panelBackground: some View {
