@@ -6,19 +6,26 @@ final class StatusItemContentView: NSView {
         case dark
     }
 
-    // Keep a 1pt optical inset to stabilize status-item width across icon/text mode switches.
-    private let statusItemHorizontalPadding: CGFloat = MenuBarLayoutTokens.space1
+    // No horizontal padding; icon and text sit flush against each other.
+    private let statusItemHorizontalPadding: CGFloat = 0
     private let iconSize: CGFloat = 24
     private let brandIconRenderSize: CGFloat = 24
     private let symbolPointSize: CGFloat = 20
-    private let iconTextSpacing: CGFloat = 1
-    private let textContainerWidth: CGFloat = 42
+    private let iconTextSpacing: CGFloat = 0
+    private let textContainerWidth: CGFloat = 34
     private let textLineHeight: CGFloat = 11
 
     private let iconView: NSImageView = {
         let imageView = NSImageView()
         imageView.imageScaling = .scaleNone
         imageView.contentTintColor = NSColor.labelColor
+        imageView.translatesAutoresizingMaskIntoConstraints = true
+        return imageView
+    }()
+
+    private let speedImageView: NSImageView = {
+        let imageView = NSImageView()
+        imageView.imageScaling = .scaleNone
         imageView.translatesAutoresizingMaskIntoConstraints = true
         return imageView
     }()
@@ -31,16 +38,6 @@ final class StatusItemContentView: NSView {
     private lazy var sleepBrandStatusIconImages: [BrandStatusIconTheme: NSImage] = Self.makeBrandStatusIconImages(
         source: BrandIcon.sleepImage, size: brandIconRenderSize)
     private static let brandIconRenderScales: [CGFloat] = [1, 2, 3]
-    private static let speedTextAttributes: [NSAttributedString.Key: Any] = {
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.alignment = .right
-        paragraph.lineBreakMode = .byTruncatingHead
-        return [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .medium),
-            .foregroundColor: NSColor.labelColor,
-            .paragraphStyle: paragraph,
-        ]
-    }()
 
     var usesBrandIcon: Bool {
         self.runBrandStatusIconImages.isEmpty == false || self.sleepBrandStatusIconImages.isEmpty == false
@@ -50,6 +47,7 @@ final class StatusItemContentView: NSView {
         super.init(frame: frameRect)
         wantsLayer = false
         self.addSubview(self.iconView)
+        self.addSubview(self.speedImageView)
     }
 
     @available(*, unavailable)
@@ -127,21 +125,26 @@ final class StatusItemContentView: NSView {
         switch display.mode {
         case .iconOnly:
             self.iconView.isHidden = false
+            self.speedImageView.isHidden = true
         case .iconAndSpeed:
             self.iconView.isHidden = false
+            self.speedImageView.isHidden = false
         case .speedOnly:
             self.iconView.isHidden = true
+            self.speedImageView.isHidden = false
         }
 
         let modeChanged = previousMode != display.mode
         let iconVisibilityChanged = previousIconHidden != self.iconView.isHidden
         let speedTextChanged = previousUpLine != self.cachedUpLine || previousDownLine != self.cachedDownLine
 
+        if speedTextChanged || modeChanged, display.mode != .iconOnly {
+            self.speedImageView.image = self.makeSpeedTemplateImage(
+                upLine: self.cachedUpLine, downLine: self.cachedDownLine)
+        }
+
         if modeChanged || iconVisibilityChanged {
             self.needsLayout = true
-        }
-        if modeChanged || speedTextChanged {
-            self.needsDisplay = true
         }
         if modeChanged {
             self.invalidateIntrinsicContentSize()
@@ -164,41 +167,23 @@ final class StatusItemContentView: NSView {
         } else {
             self.iconView.frame = .zero
         }
+
+        if self.speedImageView.isHidden == false {
+            let originX = floor(
+                self.statusItemHorizontalPadding +
+                    ((self.currentDisplay?.mode == .iconAndSpeed) ? (self.iconSize + self.iconTextSpacing) : 0))
+            let stackHeight = self.textLineHeight * 2
+            let stackOriginY = floor(centerY - stackHeight / 2)
+            self.speedImageView.frame = CGRect(
+                x: originX, y: stackOriginY,
+                width: self.textContainerWidth, height: stackHeight)
+        } else {
+            self.speedImageView.frame = .zero
+        }
     }
 
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
-        guard let display = self.currentDisplay else { return }
-        guard display.mode != .iconOnly else { return }
-
-        let originX = floor(
-            self.statusItemHorizontalPadding +
-                (display.mode == .iconAndSpeed ? (self.iconSize + self.iconTextSpacing) : 0))
-        let centerY = floor(self.bounds.height / 2)
-        let stackHeight = self.textLineHeight * 2
-        let stackOriginY = floor(centerY - stackHeight / 2)
-
-        let upRect = CGRect(
-            x: originX,
-            y: floor(stackOriginY + self.textLineHeight),
-            width: self.textContainerWidth,
-            height: self.textLineHeight)
-        let downRect = CGRect(
-            x: originX,
-            y: stackOriginY,
-            width: self.textContainerWidth,
-            height: self.textLineHeight)
-
-        if !dirtyRect.intersects(upRect), !dirtyRect.intersects(downRect) {
-            return
-        }
-
-        (self.cachedUpLine as NSString).draw(
-            in: upRect,
-            withAttributes: Self.speedTextAttributes)
-        (self.cachedDownLine as NSString).draw(
-            in: downRect,
-            withAttributes: Self.speedTextAttributes)
     }
 
     private func brandStatusIconImage(isRunning: Bool) -> NSImage? {
@@ -217,6 +202,73 @@ final class StatusItemContentView: NSView {
         self.iconView.contentTintColor = nil
         self.iconView.needsDisplay = true
         self.needsDisplay = true
+    }
+
+    private func makeSpeedTemplateImage(upLine: String, downLine: String) -> NSImage {
+        let width = self.textContainerWidth
+        let height = self.textLineHeight * 2
+        let pointSize = NSSize(width: width, height: height)
+
+        let image = NSImage(size: pointSize)
+        for scale in Self.brandIconRenderScales {
+            guard let rep = Self.makeSpeedTextRepresentation(
+                upLine: upLine, downLine: downLine,
+                pointSize: pointSize, textLineHeight: self.textLineHeight,
+                scale: scale)
+            else { continue }
+            image.addRepresentation(rep)
+        }
+        image.isTemplate = true
+        return image
+    }
+
+    private static func makeSpeedTextRepresentation(
+        upLine: String,
+        downLine: String,
+        pointSize: NSSize,
+        textLineHeight: CGFloat,
+        scale: CGFloat
+    ) -> NSBitmapImageRep? {
+        let pixelWidth = max(1, Int((pointSize.width * scale).rounded(.up)))
+        let pixelHeight = max(1, Int((pointSize.height * scale).rounded(.up)))
+
+        guard let rep = NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: pixelWidth,
+            pixelsHigh: pixelHeight,
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: .deviceRGB,
+            bytesPerRow: 0,
+            bitsPerPixel: 0)
+        else { return nil }
+
+        rep.size = pointSize
+        guard let context = NSGraphicsContext(bitmapImageRep: rep) else { return nil }
+
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = context
+
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .right
+        paragraph.lineBreakMode = .byTruncatingHead
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .medium),
+            .foregroundColor: NSColor.black,
+            .paragraphStyle: paragraph,
+        ]
+
+        // Non-flipped context: y=0 is bottom.
+        let upRect = CGRect(x: 0, y: textLineHeight, width: pointSize.width, height: textLineHeight)
+        let downRect = CGRect(x: 0, y: 0, width: pointSize.width, height: textLineHeight)
+
+        (upLine as NSString).draw(in: upRect, withAttributes: attributes)
+        (downLine as NSString).draw(in: downRect, withAttributes: attributes)
+
+        NSGraphicsContext.restoreGraphicsState()
+        return rep
     }
 
     private static func makeBrandStatusIconImages(source: NSImage?, size: CGFloat) -> [BrandStatusIconTheme: NSImage] {
