@@ -150,7 +150,9 @@ final class StatusItemController: NSObject {
 
     private func ensurePopoverContent() {
         if self.popoverHostingController == nil {
-            self.popoverHostingController = NSHostingController(rootView: self.popoverRootView)
+            let hc = NSHostingController(rootView: self.popoverRootView)
+            hc.sizingOptions = [.standardBounds]
+            self.popoverHostingController = hc
         } else {
             self.popoverHostingController?.rootView = self.popoverRootView
         }

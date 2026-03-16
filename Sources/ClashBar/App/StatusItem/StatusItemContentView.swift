@@ -1,11 +1,6 @@
 import AppKit
 
 final class StatusItemContentView: NSView {
-    private enum BrandStatusIconTheme: Hashable {
-        case light
-        case dark
-    }
-
     // No horizontal padding; icon and text sit flush against each other.
     private let statusItemHorizontalPadding: CGFloat = 0
     private let iconSize: CGFloat = 24
@@ -18,7 +13,6 @@ final class StatusItemContentView: NSView {
     private let iconView: NSImageView = {
         let imageView = NSImageView()
         imageView.imageScaling = .scaleNone
-        imageView.contentTintColor = NSColor.labelColor
         imageView.translatesAutoresizingMaskIntoConstraints = true
         return imageView
     }()
@@ -33,14 +27,14 @@ final class StatusItemContentView: NSView {
     private var currentDisplay: MenuBarDisplay?
     private var cachedUpLine: String = ""
     private var cachedDownLine: String = ""
-    private lazy var runBrandStatusIconImages: [BrandStatusIconTheme: NSImage] = Self.makeBrandStatusIconImages(
+    private lazy var runBrandStatusIconImage: NSImage? = Self.makeBrandStatusIconImage(
         source: BrandIcon.runImage, size: brandIconRenderSize)
-    private lazy var sleepBrandStatusIconImages: [BrandStatusIconTheme: NSImage] = Self.makeBrandStatusIconImages(
+    private lazy var sleepBrandStatusIconImage: NSImage? = Self.makeBrandStatusIconImage(
         source: BrandIcon.sleepImage, size: brandIconRenderSize)
     private static let brandIconRenderScales: [CGFloat] = [1, 2, 3]
 
     var usesBrandIcon: Bool {
-        self.runBrandStatusIconImages.isEmpty == false || self.sleepBrandStatusIconImages.isEmpty == false
+        self.runBrandStatusIconImage != nil || self.sleepBrandStatusIconImage != nil
     }
 
     override init(frame frameRect: NSRect) {
@@ -53,16 +47,6 @@ final class StatusItemContentView: NSView {
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-
-    override func viewDidMoveToWindow() {
-        super.viewDidMoveToWindow()
-        self.refreshBrandIconForCurrentAppearance()
-    }
-
-    override func viewDidChangeEffectiveAppearance() {
-        super.viewDidChangeEffectiveAppearance()
-        self.refreshBrandIconForCurrentAppearance()
     }
 
     override func hitTest(_ point: NSPoint) -> NSView? {
@@ -105,8 +89,6 @@ final class StatusItemContentView: NSView {
             if self.iconView.image !== brandIcon {
                 self.iconView.image = brandIcon
             }
-            // Brand icon is pre-rendered into menu-bar monochrome variants.
-            self.iconView.contentTintColor = nil
         } else if let symbolName = display.symbolName {
             if self.iconView.image == nil ||
                 previousSymbolName != symbolName ||
@@ -116,10 +98,8 @@ final class StatusItemContentView: NSView {
                 let config = NSImage.SymbolConfiguration(pointSize: self.symbolPointSize, weight: .semibold)
                 self.iconView.image = image?.withSymbolConfiguration(config)
             }
-            self.iconView.contentTintColor = NSColor.labelColor
         } else {
             self.iconView.image = nil
-            self.iconView.contentTintColor = nil
         }
 
         switch display.mode {
@@ -187,21 +167,7 @@ final class StatusItemContentView: NSView {
     }
 
     private func brandStatusIconImage(isRunning: Bool) -> NSImage? {
-        let images = isRunning ? self.runBrandStatusIconImages : self.sleepBrandStatusIconImages
-        guard images.isEmpty == false else { return nil }
-        let theme = Self.brandStatusIconTheme(for: self.effectiveAppearance)
-        return images[theme] ?? images.values.first
-    }
-
-    private func refreshBrandIconForCurrentAppearance() {
-        guard self.currentDisplay?.mode != .speedOnly else { return }
-        let isRunning = self.currentDisplay?.isRunning ?? false
-        guard let image = self.brandStatusIconImage(isRunning: isRunning) else { return }
-        guard self.iconView.image !== image || self.iconView.contentTintColor != nil else { return }
-        self.iconView.image = image
-        self.iconView.contentTintColor = nil
-        self.iconView.needsDisplay = true
-        self.needsDisplay = true
+        isRunning ? self.runBrandStatusIconImage : self.sleepBrandStatusIconImage
     }
 
     private func makeSpeedTemplateImage(upLine: String, downLine: String) -> NSImage {
@@ -271,40 +237,31 @@ final class StatusItemContentView: NSView {
         return rep
     }
 
-    private static func makeBrandStatusIconImages(source: NSImage?, size: CGFloat) -> [BrandStatusIconTheme: NSImage] {
-        guard let source else { return [:] }
+    private static func makeBrandStatusIconImage(source: NSImage?, size: CGFloat) -> NSImage? {
+        guard let source else { return nil }
         let targetSize = NSSize(width: size, height: size)
-        var images: [BrandStatusIconTheme: NSImage] = [:]
+        let rendered = NSImage(size: targetSize)
 
-        for theme in [BrandStatusIconTheme.light, .dark] {
-            let rendered = NSImage(size: targetSize)
-            let color = self.brandStatusIconColor(for: theme)
-
-            for scale in Self.brandIconRenderScales {
-                guard let representation = self.makeBrandStatusIconRepresentation(
-                    source: source,
-                    pointSize: targetSize,
-                    scale: scale,
-                    color: color)
-                else {
-                    continue
-                }
-                rendered.addRepresentation(representation)
+        for scale in Self.brandIconRenderScales {
+            guard let representation = self.makeBrandStatusIconRepresentation(
+                source: source,
+                pointSize: targetSize,
+                scale: scale)
+            else {
+                continue
             }
-
-            guard rendered.representations.isEmpty == false else { continue }
-            rendered.isTemplate = true
-            images[theme] = rendered
+            rendered.addRepresentation(representation)
         }
 
-        return images
+        guard rendered.representations.isEmpty == false else { return nil }
+        rendered.isTemplate = true
+        return rendered
     }
 
     private static func makeBrandStatusIconRepresentation(
         source: NSImage,
         pointSize: NSSize,
-        scale: CGFloat,
-        color: NSColor) -> NSBitmapImageRep?
+        scale: CGFloat) -> NSBitmapImageRep?
     {
         let pixelWidth = max(1, Int((pointSize.width * scale).rounded(.up)))
         let pixelHeight = max(1, Int((pointSize.height * scale).rounded(.up)))
@@ -341,37 +298,9 @@ final class StatusItemContentView: NSView {
             respectFlipped: true,
             hints: nil)
         context.cgContext.setBlendMode(.sourceIn)
-        context.cgContext.setFillColor((color.usingColorSpace(.deviceRGB) ?? color).cgColor)
+        context.cgContext.setFillColor(NSColor.black.cgColor)
         context.cgContext.fill(CGRect(origin: .zero, size: pointSize))
         NSGraphicsContext.restoreGraphicsState()
         return representation
-    }
-
-    private static func brandStatusIconTheme(for appearance: NSAppearance) -> BrandStatusIconTheme {
-        let match = appearance.bestMatch(from: [.darkAqua, .vibrantDark, .aqua, .vibrantLight])
-        switch match {
-        case .some(.darkAqua), .some(.vibrantDark):
-            return BrandStatusIconTheme.dark
-        default:
-            return BrandStatusIconTheme.light
-        }
-    }
-
-    private static func brandStatusIconColor(for theme: BrandStatusIconTheme) -> NSColor {
-        let appearanceName: NSAppearance.Name = switch theme {
-        case .light:
-            .aqua
-        case .dark:
-            .darkAqua
-        }
-
-        if let appearance = NSAppearance(named: appearanceName) {
-            var resolved = NSColor.labelColor
-            appearance.performAsCurrentDrawingAppearance {
-                resolved = NSColor.labelColor.usingColorSpace(.deviceRGB) ?? NSColor.labelColor
-            }
-            return resolved
-        }
-        return NSColor.labelColor
     }
 }
