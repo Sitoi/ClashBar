@@ -23,20 +23,18 @@ jobs:
         run: swiftformat --lint .
 
   build:
-    env:
-      MIHOMO_VERSION: v1.19.20
     strategy:
       fail-fast: false
       matrix:
         include:
           - target_arch: arm64
-            bundle_mihomo_binary: "1"
+            bundle_mihomo_binary: '1'
           - target_arch: arm64
-            bundle_mihomo_binary: "0"
+            bundle_mihomo_binary: '0'
           - target_arch: x86_64
-            bundle_mihomo_binary: "1"
+            bundle_mihomo_binary: '1'
           - target_arch: x86_64
-            bundle_mihomo_binary: "0"
+            bundle_mihomo_binary: '0'
     runs-on: macos-15
     permissions:
       contents: read

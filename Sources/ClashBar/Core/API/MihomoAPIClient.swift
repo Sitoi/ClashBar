@@ -13,7 +13,7 @@ enum HTTPMethod: String {
     case delete = "DELETE"
 }
 
-enum JSONValue {
+enum JSONValue: Sendable {
     case string(String)
     case int(Int)
     case bool(Bool)
@@ -250,23 +250,8 @@ final class MihomoAPIClient: MihomoAPITransporting, @unchecked Sendable {
         _ = try await self.send(endpoint)
     }
 
-    func makeTrafficWebSocketTask() throws -> URLSessionWebSocketTask {
-        let request = try buildWebSocketRequest(for: .traffic)
-        return self.session.webSocketTask(with: request)
-    }
-
-    func makeMemoryWebSocketTask() throws -> URLSessionWebSocketTask {
-        let request = try buildWebSocketRequest(for: .memory)
-        return self.session.webSocketTask(with: request)
-    }
-
-    func makeConnectionsWebSocketTask(interval: Int? = nil) throws -> URLSessionWebSocketTask {
-        let request = try buildWebSocketRequest(for: .connections(interval: interval))
-        return self.session.webSocketTask(with: request)
-    }
-
-    func makeLogsWebSocketTask(level: String? = nil) throws -> URLSessionWebSocketTask {
-        let request = try buildWebSocketRequest(for: .logs(level: level))
+    func makeWebSocketTask(for endpoint: Endpoint) throws -> URLSessionWebSocketTask {
+        let request = try buildWebSocketRequest(for: endpoint)
         return self.session.webSocketTask(with: request)
     }
 
@@ -341,23 +326,21 @@ final class MihomoAPIClient: MihomoAPITransporting, @unchecked Sendable {
     }
 
     private func normalizedControllerAddress(_ controller: String, webSocket: Bool) -> String {
-        if webSocket {
-            if controller.hasPrefix("ws://") || controller.hasPrefix("wss://") {
-                return controller
-            }
-            if controller.hasPrefix("https://") {
-                return controller.replacingOccurrences(of: "https://", with: "wss://")
-            }
-            if controller.hasPrefix("http://") {
-                return controller.replacingOccurrences(of: "http://", with: "ws://")
-            }
-            return "ws://\(controller)"
+        let hasHTTPScheme = controller.hasPrefix("http://") || controller.hasPrefix("https://")
+
+        if !webSocket {
+            return hasHTTPScheme ? controller : "http://\(controller)"
         }
 
-        if controller.hasPrefix("http://") || controller.hasPrefix("https://") {
+        if controller.hasPrefix("ws://") || controller.hasPrefix("wss://") {
             return controller
         }
-        return "http://\(controller)"
+        if hasHTTPScheme {
+            return controller
+                .replacingOccurrences(of: "https://", with: "wss://")
+                .replacingOccurrences(of: "http://", with: "ws://")
+        }
+        return "ws://\(controller)"
     }
 }
 

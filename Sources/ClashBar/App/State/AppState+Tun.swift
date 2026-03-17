@@ -62,16 +62,12 @@ extension AppState {
         do {
             try await self.ensureTunPermissions(requestIfMissing: false)
         } catch {
-            do {
-                if isRuntimeRunning {
-                    try await self.patchTunConfig(enable: false)
-                }
-                isTunEnabled = false
-                persistEditableSettingsSnapshot()
-                appendLog(level: "warning", message: tr("log.tun.startup_disabled"))
-            } catch {
-                appendLog(level: "error", message: tr("log.tun.startup_check_failed", self.tunErrorMessage(error)))
+            if isRuntimeRunning {
+                try? await self.patchTunConfig(enable: false)
             }
+            isTunEnabled = false
+            persistEditableSettingsSnapshot()
+            appendLog(level: "warning", message: tr("log.tun.startup_disabled"))
         }
     }
 
@@ -152,6 +148,7 @@ extension AppState {
 
             try await self.patchTunConfig(enable: true)
             try await self.verifyTunRuntimeState(expectedEnabled: true)
+            isTunEnabled = true
             persistEditableSettingsSnapshot()
             appendLog(level: "info", message: tr("log.tun.toggled", tr("log.tun.enabled")))
         } catch {
@@ -171,10 +168,6 @@ extension AppState {
             do {
                 let config = try await fetchRuntimeConfigSnapshot()
                 let current = config.tunEnabled ?? false
-                if isTunEnabled != current {
-                    isTunEnabled = current
-                    persistEditableSettingsSnapshot()
-                }
                 if current == expectedEnabled {
                     return
                 }

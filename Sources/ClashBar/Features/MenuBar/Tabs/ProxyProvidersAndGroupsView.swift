@@ -10,7 +10,7 @@ extension MenuBarRoot {
         return VStack(alignment: .leading, spacing: T.space6) {
             self.nodesSectionHeader(
                 tr("ui.section.proxy_providers"),
-                symbol: "shippingbox.fill",
+                symbol: "externaldrive.fill",
                 count: "\(providers.count)")
 
             if providers.isEmpty {
@@ -53,7 +53,7 @@ extension MenuBarRoot {
                     .fill(nativeTeal.opacity(T.Opacity.tint))
                     .frame(width: T.rowLeadingIcon, height: T.rowLeadingIcon)
                     .overlay {
-                        Image(systemName: "shippingbox.fill")
+                        Image(systemName: "externaldrive.fill")
                             .font(.app(size: T.FontSize.caption, weight: .semibold))
                             .foregroundStyle(nativeTeal.opacity(T.Opacity.solid))
                     }
@@ -128,7 +128,8 @@ extension MenuBarRoot {
                             ZStack(alignment: .leading) {
                                 Capsule().fill(nativeControlFill.opacity(T.Opacity.solid))
                                 Capsule()
-                                    .fill(nativeAccent.opacity(T.Opacity.solid))
+                                    .fill((usedRatio >= 0.9 ? nativeCritical : usedRatio >= 0.75 ? nativeWarning :
+                                            nativeAccent).opacity(T.Opacity.solid))
                                     .frame(width: geo.size.width * usedRatio)
                             }
                         }
@@ -180,9 +181,8 @@ extension MenuBarRoot {
     }
 
     var proxyGroupsSection: some View {
-        let groups = hideHiddenProxyGroups
-            ? appState.proxyGroups.filter { $0.hidden != true }
-            : appState.proxyGroups
+        // Use @State filteredProxyGroups which is updated via .onChange — avoids filtering on every render
+        let groups = filteredProxyGroups
 
         return VStack(alignment: .leading, spacing: T.space6) {
             self.nodesSectionHeader(
@@ -192,14 +192,12 @@ extension MenuBarRoot {
             {
                 HStack(spacing: T.space6) {
                     self.compactTopIcon(
-                        sortGroupNodesByLatency
-                            ? "line.3.horizontal.decrease.circle.fill"
-                            : "line.3.horizontal.decrease.circle",
+                        sortGroupNodesByLatency ? "timer" : "list.number",
                         label: tr(
                             sortGroupNodesByLatency
                                 ? "ui.action.sort_nodes_default"
                                 : "ui.action.sort_nodes_by_latency"),
-                        toneOverride: sortGroupNodesByLatency ? nativeTeal : nil)
+                        toneOverride: nativeTeal)
                     {
                         sortGroupNodesByLatency.toggle()
                     }
@@ -263,9 +261,8 @@ extension MenuBarRoot {
         let hasLeadingIcon = iconURL != nil
         let rowHorizontalPadding = T.space4
         let rowVerticalPadding: CGFloat = T.space1
-        let hovered = hoveredProxyGroupName == group.name
 
-        return AttachedPopoverMenu {
+        return AttachedPopoverMenu { isHovered in
             GeometryReader { geo in
                 let columns = self.proxyGroupMainColumnWidths(
                     totalWidth: geo.size.width,
@@ -319,8 +316,7 @@ extension MenuBarRoot {
             .frame(height: T.compactRowHeight)
             .padding(.horizontal, rowHorizontalPadding)
             .padding(.vertical, rowVerticalPadding)
-            .background(nativeHoverRowBackground(hovered))
-            .animation(.easeInOut(duration: 0.14), value: hovered)
+            .background(nativeHoverRowBackground(isHovered))
         } content: { dismiss in
             self.popoverHeader(name: group.name, count: nodeCount) {
                 if let iconURL {
@@ -345,10 +341,6 @@ extension MenuBarRoot {
                 }
             }
         }
-        .onHover { hoveredProxyGroupName = self.nextHovered(
-            current: hoveredProxyGroupName,
-            target: group.name,
-            isHovering: $0) }
     }
 
     func proxyGroupMainColumnWidths(
@@ -409,6 +401,7 @@ extension MenuBarRoot {
             Text(title)
                 .font(.app(size: T.FontSize.body, weight: .bold))
                 .foregroundStyle(nativeTertiaryLabel)
+                .textCase(.uppercase)
 
             if let count {
                 Text(count)

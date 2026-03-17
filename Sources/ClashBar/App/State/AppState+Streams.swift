@@ -121,11 +121,7 @@ extension AppState {
     }
 
     func setReceiveTask(_ task: Task<Void, Never>?, for kind: StreamKind) {
-        if let task {
-            streamReceiveTasks[kind] = task
-        } else {
-            streamReceiveTasks.removeValue(forKey: kind)
-        }
+        streamReceiveTasks[kind] = task
     }
 
     func webSocketTask(for kind: StreamKind) -> URLSessionWebSocketTask? {
@@ -133,17 +129,13 @@ extension AppState {
     }
 
     func setWebSocketTask(_ task: URLSessionWebSocketTask?, for kind: StreamKind) {
-        if let task {
-            streamWebSocketTasks[kind] = task
-        } else {
-            streamWebSocketTasks.removeValue(forKey: kind)
-        }
+        streamWebSocketTasks[kind] = task
     }
 
     func startTrafficStream() {
         self.startStream(
             kind: .traffic,
-            makeWebSocket: { try $0.makeTrafficWebSocketTask() },
+            makeWebSocket: { try $0.makeWebSocketTask(for: .traffic) },
             onPayload: { [weak self] payload in
                 guard let self else { return }
                 self.pendingTrafficPayload = payload
@@ -161,9 +153,9 @@ extension AppState {
     }
 
     func startMemoryStream() {
-        startDecodableStream(
+        self.startDecodableStream(
             kind: .memory,
-            makeWebSocket: { try $0.makeMemoryWebSocketTask() },
+            makeWebSocket: { try $0.makeWebSocketTask(for: .memory) },
             onDecoded: { [weak self] (snapshot: MemorySnapshot) in
                 guard let self else { return }
                 memory = snapshot
@@ -171,9 +163,9 @@ extension AppState {
     }
 
     func startConnectionsStream(intervalMilliseconds: Int? = nil) {
-        startDecodableStream(
+        self.startDecodableStream(
             kind: .connections,
-            makeWebSocket: { try $0.makeConnectionsWebSocketTask(interval: intervalMilliseconds) },
+            makeWebSocket: { try $0.makeWebSocketTask(for: .connections(interval: intervalMilliseconds)) },
             onDecoded: { [weak self] (snapshot: ConnectionsSnapshot) in
                 guard let self else { return }
                 self.applyConnectionsSnapshot(snapshot)
@@ -184,7 +176,7 @@ extension AppState {
     func startLogsStream() {
         self.startStream(
             kind: .logs,
-            makeWebSocket: { try $0.makeLogsWebSocketTask(level: nil) },
+            makeWebSocket: { try $0.makeWebSocketTask(for: .logs(level: nil)) },
             onPayload: { [weak self] payload in
                 guard let self else { return }
                 if let line = decodeLogLinePayload(payload) {
@@ -257,12 +249,12 @@ extension AppState {
 
     private func applyConnectionsSnapshot(_ snapshot: ConnectionsSnapshot) {
         let totalCount = snapshot.totalCount
-        if connectionsCount != totalCount {
-            connectionsCount = totalCount
+        if connectionsStore.connectionsCount != totalCount {
+            connectionsStore.connectionsCount = totalCount
         }
 
-        if connections != snapshot.connections {
-            connections = snapshot.connections
+        if connectionsStore.connections != snapshot.connections {
+            connectionsStore.connections = snapshot.connections
         }
     }
 
@@ -308,5 +300,68 @@ extension AppState {
             streamLastDisconnectLogMessage[key] = message
         }
         return shouldEmit
+    }
+
+    func normalizedWebSocketPayload(from message: URLSessionWebSocketTask.Message) -> Data? {
+        switch message {
+        case let .data(data):
+            guard !data.isEmpty else { return nil }
+            return data
+        case let .string(text):
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return nil }
+            if trimmed == "null" || trimmed == "{}" {
+                return nil
+            }
+            return Data(trimmed.utf8)
+        @unknown default:
+            return nil
+        }
+    }
+
+    func startDecodableStream<Payload: Decodable>(
+        kind: StreamKind,
+        makeWebSocket: @escaping (MihomoAPIClient) throws -> URLSessionWebSocketTask,
+        onDecoded: @escaping (Payload) -> Void)
+    {
+        self.startStream(
+            kind: kind,
+            makeWebSocket: makeWebSocket,
+            onPayload: { [weak self] payload in
+                guard let self else { return }
+                guard let decoded = try? self.streamJSONDecoder.decode(Payload.self, from: payload) else {
+                    // Ignore malformed/empty payloads without reconnecting to avoid log storms.
+                    return
+                }
+                onDecoded(decoded)
+            })
+    }
+
+    func decodeLogLinePayload(_ payload: Data) -> (level: String, message: String)? {
+        if let log = try? self.streamJSONDecoder.decode(LogLine.self, from: payload) {
+            let level = (log.type?.isEmpty == false) ? (log.type ?? "info") : "info"
+            let message = log.payload?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !message.isEmpty {
+                return (level: level, message: message)
+            }
+        }
+
+        if let response = try? self.streamJSONDecoder.decode(LogsResponse.self, from: payload),
+           let first = response.logs?.first
+        {
+            let level = (first.type?.isEmpty == false) ? (first.type ?? "info") : "info"
+            let message = first.payload?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !message.isEmpty {
+                return (level: level, message: message)
+            }
+        }
+
+        if let text = String(data: payload, encoding: .utf8)?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+            !text.isEmpty
+        {
+            return (level: "info", message: text)
+        }
+        return nil
     }
 }

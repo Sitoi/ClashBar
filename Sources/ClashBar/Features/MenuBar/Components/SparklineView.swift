@@ -43,7 +43,7 @@ struct TrafficSparklineView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(nsColor: .controlAccentColor).opacity(0.22),
+                                Color(nsColor: .controlAccentColor).opacity(0.30),
                                 Color(nsColor: .controlAccentColor).opacity(0.02),
                             ],
                             startPoint: .top,
@@ -53,7 +53,7 @@ struct TrafficSparklineView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(nsColor: .systemGreen).opacity(0.24),
+                                Color(nsColor: .systemGreen).opacity(0.32),
                                 Color(nsColor: .systemGreen).opacity(0.0),
                             ],
                             startPoint: .top,

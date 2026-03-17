@@ -24,8 +24,15 @@ final class AppState: ObservableObject {
     @Published var trafficHistoryUp: [Int64] = []
     @Published var trafficHistoryDown: [Int64] = []
 
-    @Published var connectionsCount: Int = 0
-    @Published var connections: [ConnectionSummary] = []
+    var connectionsCount: Int {
+        self.connectionsStore.connectionsCount
+    }
+
+    var connections: [ConnectionSummary] {
+        self.connectionsStore.connections
+    }
+
+    let connectionsStore = ConnectionsStore()
 
     @Published var currentMode: CoreMode = .rule
     @Published var logLevel: String = "info"
@@ -48,7 +55,15 @@ final class AppState: ObservableObject {
     @Published var providerProxyCount: Int = 0
     @Published var providerRuleCount: Int = 0
     @Published var rulesCount: Int = 0
-    @Published var proxyProvidersDetail: [String: ProviderDetail] = [:]
+    @Published var proxyProvidersDetail: [String: ProviderDetail] = [:] {
+        didSet {
+            self.sortedProxyProviderNames = self.proxyProvidersDetail.keys.sorted {
+                $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
+            }
+        }
+    }
+
+    private(set) var sortedProxyProviderNames: [String] = []
     @Published var providerUpdating: Set<String> = []
     @Published var ruleProviders: [String: ProviderDetail] = [:]
     @Published var ruleItems: [RuleItem] = []

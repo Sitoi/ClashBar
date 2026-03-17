@@ -40,8 +40,29 @@ struct RulesSummary: Decodable, Equatable {
     }
 }
 
-struct RuleItem: Codable, Equatable {
+struct RuleItem: Decodable, Equatable, Identifiable {
+    let rowID: UUID
     let type: String?
     let payload: String?
     let proxy: String?
+
+    var id: UUID {
+        self.rowID
+    }
+
+    static func == (lhs: RuleItem, rhs: RuleItem) -> Bool {
+        lhs.type == rhs.type && lhs.payload == rhs.payload && lhs.proxy == rhs.proxy
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case type, payload, proxy
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.rowID = UUID()
+        self.type = try container.decodeIfPresent(String.self, forKey: .type)
+        self.payload = try container.decodeIfPresent(String.self, forKey: .payload)
+        self.proxy = try container.decodeIfPresent(String.self, forKey: .proxy)
+    }
 }

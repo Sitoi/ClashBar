@@ -59,28 +59,9 @@ struct ProxyGroup: Decodable, Equatable {
         self.timeout = container.decodeFlexibleInt(forKey: .timeout).positiveOrNil
         self.icon = try container.decodeIfPresent(String.self, forKey: .icon).trimmedNonEmpty
         self.hidden = try container.decodeIfPresent(Bool.self, forKey: .hidden)
-        self.latestDelay = Self.decodeLatestDelay(from: container)
-    }
-
-    private static func decodeLatestDelay(from container: KeyedDecodingContainer<CodingKeys>) -> Int? {
-        guard var historyContainer = try? container.nestedUnkeyedContainer(forKey: .history) else {
-            return nil
-        }
-
-        var latest: Int?
-        while !historyContainer.isAtEnd {
-            guard let entry = try? historyContainer.decode(ProxyDelayHistoryEntry.self) else {
-                break
-            }
-            if let delay = entry.delay {
-                latest = delay
-            }
-        }
-        return latest
+        self.latestDelay = container.decodeLatestDelay(forKey: .history)
     }
 }
-
-private typealias ProxyDelayHistoryEntry = FlexibleDelayHistoryEntry
 
 struct ConfigSnapshot: Codable, Equatable {
     struct TunConfig: Codable, Equatable {

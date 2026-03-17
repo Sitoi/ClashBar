@@ -47,6 +47,7 @@ struct ConnectionSummary: Codable, Equatable, Identifiable {
     let upload: Int64?
     let download: Int64?
     let start: String?
+    let startTimestamp: TimeInterval?
     let rule: String?
     let rulePayload: String?
     let chains: [String]?
@@ -63,6 +64,24 @@ struct ConnectionSummary: Codable, Equatable, Identifiable {
         case metadata
     }
 
+    private nonisolated(unsafe) static let iso8601WithFractional: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+
+    private nonisolated(unsafe) static let iso8601Basic: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
+
+    static func parseTimestamp(_ start: String?) -> TimeInterval? {
+        guard let value = start?.trimmingCharacters(in: .whitespaces), !value.isEmpty else { return nil }
+        if let date = iso8601WithFractional.date(from: value) { return date.timeIntervalSince1970 }
+        return self.iso8601Basic.date(from: value)?.timeIntervalSince1970
+    }
+
     init(
         id: String,
         upload: Int64?,
@@ -77,6 +96,7 @@ struct ConnectionSummary: Codable, Equatable, Identifiable {
         self.upload = upload
         self.download = download
         self.start = start
+        self.startTimestamp = Self.parseTimestamp(start)
         self.rule = rule
         self.rulePayload = rulePayload
         self.chains = chains
@@ -91,6 +111,7 @@ struct ConnectionSummary: Codable, Equatable, Identifiable {
         self.upload = try container.decodeIfPresent(Int64.self, forKey: .upload)
         self.download = try container.decodeIfPresent(Int64.self, forKey: .download)
         self.start = try container.decodeIfPresent(String.self, forKey: .start)
+        self.startTimestamp = Self.parseTimestamp(self.start)
         self.rule = try container.decodeIfPresent(String.self, forKey: .rule)
         self.metadata = try container.decodeIfPresent(ConnectionMetadata.self, forKey: .metadata)
         self.rulePayload = ConnectionAnyCodingKey.decodeString(

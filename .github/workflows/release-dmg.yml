@@ -151,8 +151,6 @@ jobs:
 
   build-dmg:
     needs: prepare-version
-    env:
-      MIHOMO_VERSION: v1.19.20
     strategy:
       fail-fast: false
       matrix:

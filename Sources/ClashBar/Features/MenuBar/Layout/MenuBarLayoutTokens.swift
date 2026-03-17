@@ -43,8 +43,8 @@ enum MenuBarLayoutTokens {
 
     enum Theme {
         enum Dark {
-            static let labelSecondary: CGFloat = 0.88
-            static let labelTertiary: CGFloat = 0.72
+            static let labelSecondary: CGFloat = 0.75
+            static let labelTertiary: CGFloat = 0.52
             static let separator: CGFloat = 0.70
             static let controlFill: CGFloat = 0.78
             static let controlBorder: CGFloat = 0.60
@@ -53,8 +53,8 @@ enum MenuBarLayoutTokens {
         }
 
         enum Light {
-            static let labelSecondary: CGFloat = 0.80
-            static let labelTertiary: CGFloat = 0.64
+            static let labelSecondary: CGFloat = 0.62
+            static let labelTertiary: CGFloat = 0.42
             static let separator: CGFloat = 0.55
             static let controlFill: CGFloat = 0.92
             static let controlBorder: CGFloat = 0.42

@@ -61,12 +61,14 @@ extension MenuBarRoot {
         HStack(spacing: MenuBarLayoutTokens.space1) {
             Text("\(current)")
                 .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .bold))
+                .foregroundStyle(self.nativePrimaryLabel)
             Text("/")
                 .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .medium))
+                .foregroundStyle(self.nativeTertiaryLabel)
             Text("\(total)")
                 .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .medium))
+                .foregroundStyle(self.nativeSecondaryLabel)
         }
-        .foregroundStyle(self.nativeSecondaryLabel)
         .padding(.horizontal, MenuBarLayoutTokens.space6)
         .padding(.vertical, MenuBarLayoutTokens.space2)
         .background(self.nativeBadgeCapsule())
@@ -200,7 +202,7 @@ extension MenuBarRoot {
 
     var footerBar: some View {
         let mihomoRepositoryURL = URL(string: "https://github.com/MetaCubeX/mihomo")
-        let mihomoSymbol = "antenna.radiowaves.left.and.right"
+        let mihomoSymbol = "cpu"
 
         return VStack(spacing: 0) {
             HStack(spacing: MenuBarLayoutTokens.space6) {

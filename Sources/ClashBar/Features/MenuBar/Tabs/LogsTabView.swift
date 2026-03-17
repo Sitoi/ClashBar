@@ -251,13 +251,19 @@ extension MenuBarRoot {
 
             VStack(alignment: .leading, spacing: T.space2) {
                 HStack(spacing: T.space2) {
-                    Text("[\(sourceInfo.label)]")
+                    Text(sourceInfo.label)
                         .font(.app(size: T.FontSize.caption, weight: .semibold))
                         .foregroundStyle(sourceInfo.color)
+                        .padding(.horizontal, T.space4)
+                        .padding(.vertical, T.space1)
+                        .background(Capsule().fill(sourceInfo.color.opacity(T.Opacity.tint)))
 
-                    Text("[\(levelInfo.label)]")
+                    Text(levelInfo.label)
                         .font(.app(size: T.FontSize.caption, weight: .semibold))
                         .foregroundStyle(tone)
+                        .padding(.horizontal, T.space4)
+                        .padding(.vertical, T.space1)
+                        .background(Capsule().fill(tone.opacity(T.Opacity.tint)))
 
                     if let protocolTag = parsed.protocolTag {
                         Text(protocolTag)

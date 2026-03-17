@@ -117,28 +117,9 @@ struct ProviderProxyNode: Decodable, Equatable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.name = try container.decodeIfPresent(String.self, forKey: .name) ?? "-"
-        self.latestDelay = Self.decodeLatestDelay(from: container)
-    }
-
-    private static func decodeLatestDelay(from container: KeyedDecodingContainer<CodingKeys>) -> Int? {
-        guard var historyContainer = try? container.nestedUnkeyedContainer(forKey: .history) else {
-            return nil
-        }
-
-        var latest: Int?
-        while !historyContainer.isAtEnd {
-            guard let entry = try? historyContainer.decode(ProviderProxyDelayHistoryEntry.self) else {
-                break
-            }
-            if let delay = entry.delay {
-                latest = delay
-            }
-        }
-        return latest
+        self.latestDelay = container.decodeLatestDelay(forKey: .history)
     }
 }
-
-typealias ProviderProxyDelayHistoryEntry = FlexibleDelayHistoryEntry
 
 struct FlexibleDelayHistoryEntry: Decodable, Equatable {
     let delay: Int?

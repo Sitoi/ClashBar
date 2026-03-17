@@ -452,21 +452,27 @@ extension AppState {
         var remainingTunRecovery = recovery.tunEnabled
 
         if recovery.tunEnabled {
+            var tunRestored = false
             do {
                 let runtimeConfig = try await self.fetchRuntimeConfigSnapshot()
                 if runtimeConfig.tunEnabled != true {
                     try await self.patchTunConfig(enable: true)
                     try await self.verifyTunRuntimeState(expectedEnabled: true)
-                }
-
-                if self.isTunEnabled {
-                    remainingTunRecovery = false
-                    self.appendLog(level: "info", message: self.tr("log.tun.toggled", self.tr("log.tun.enabled")))
+                    tunRestored = true
+                } else if self.isTunEnabled {
+                    tunRestored = true
                 }
             } catch {
                 self.appendLog(
                     level: "error",
                     message: self.tr("log.tun.toggle_failed", self.tunErrorMessage(error)))
+            }
+
+            if tunRestored {
+                self.isTunEnabled = true
+                self.persistEditableSettingsSnapshot()
+                remainingTunRecovery = false
+                self.appendLog(level: "info", message: self.tr("log.tun.toggled", self.tr("log.tun.enabled")))
             }
         }
 

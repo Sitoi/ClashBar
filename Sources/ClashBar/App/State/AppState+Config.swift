@@ -491,6 +491,10 @@ extension AppState {
         guard isRuntimeRunning else { return }
         try await self.patchTunConfig(enable: expectedEnabled)
         try await self.verifyTunRuntimeState(expectedEnabled: expectedEnabled)
+        if isTunEnabled != expectedEnabled {
+            isTunEnabled = expectedEnabled
+            persistEditableSettingsSnapshot()
+        }
     }
 
     private func updateRemoteConfigSource(for fileName: String, urlString: String?) {

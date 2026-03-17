@@ -8,18 +8,20 @@ struct AttachedPopoverMenu<Label: View, Content: View>: View {
     let width: CGFloat?
     let maxHeight: CGFloat?
     let onWillPresent: (() -> Void)?
-    let label: () -> Label
+    let label: (_ isHovered: Bool) -> Label
     let content: (_ dismiss: @escaping () -> Void) -> Content
 
     @State private var isAnchorHovered = false
+    @State private var isPopoverRequested = false
     @State private var suppressAutoOpen = false
     @State private var shouldBuildPopoverContent = false
+    @State private var popoverOpenTask: Task<Void, Never>?
 
     init(
         width: CGFloat? = nil,
         maxHeight: CGFloat? = nil,
         onWillPresent: (() -> Void)? = nil,
-        @ViewBuilder label: @escaping () -> Label,
+        @ViewBuilder label: @escaping (_ isHovered: Bool) -> Label,
         @ViewBuilder content: @escaping (_ dismiss: @escaping () -> Void) -> Content)
     {
         self.width = width
@@ -35,17 +37,37 @@ struct AttachedPopoverMenu<Label: View, Content: View>: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            if hovering, !self.suppressAutoOpen {
-                self.requestOpen()
-            }
             self.isAnchorHovered = hovering
+
+            if hovering, !self.suppressAutoOpen {
+                if self.shouldBuildPopoverContent {
+                    self.isPopoverRequested = true
+                } else {
+                    self.popoverOpenTask?.cancel()
+                    self.popoverOpenTask = Task { @MainActor in
+                        try? await Task.sleep(nanoseconds: 150_000_000)
+                        if !Task.isCancelled, self.isAnchorHovered, !self.suppressAutoOpen {
+                            self.requestOpen()
+                        }
+                    }
+                }
+            } else {
+                self.popoverOpenTask?.cancel()
+                self.popoverOpenTask = nil
+                self.isPopoverRequested = false
+            }
             if !hovering {
                 self.suppressAutoOpen = false
             }
         }
+        .onDisappear {
+            self.popoverOpenTask?.cancel()
+            self.popoverOpenTask = nil
+        }
         .background(
             SideAttachedPopoverHost(
                 anchorHovered: self.$isAnchorHovered,
+                popoverRequested: self.$isPopoverRequested,
                 suppressAutoOpen: self.$suppressAutoOpen,
                 width: self.width,
                 maxHeight: self.maxHeight,
@@ -56,7 +78,7 @@ struct AttachedPopoverMenu<Label: View, Content: View>: View {
     }
 
     var anchorLabel: some View {
-        self.label()
+        self.label(self.isAnchorHovered)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
     }
@@ -91,18 +113,26 @@ struct AttachedPopoverMenu<Label: View, Content: View>: View {
     }
 
     private func requestOpen() {
+        self.popoverOpenTask?.cancel()
+        self.popoverOpenTask = nil
         self.onWillPresent?()
         self.shouldBuildPopoverContent = true
+        self.isPopoverRequested = true
     }
 
     private func activateAnchor() {
+        self.popoverOpenTask?.cancel()
+        self.popoverOpenTask = nil
         self.requestOpen()
         self.suppressAutoOpen = false
         self.isAnchorHovered = true
     }
 
     private func dismissPopover() {
+        self.popoverOpenTask?.cancel()
+        self.popoverOpenTask = nil
         self.shouldBuildPopoverContent = false
+        self.isPopoverRequested = false
         self.suppressAutoOpen = true
         self.isAnchorHovered = false
     }
@@ -174,6 +204,7 @@ private enum SideAttachedPopoverRegistry {
 @MainActor
 private struct SideAttachedPopoverHost<Content: View>: NSViewRepresentable {
     @Binding var anchorHovered: Bool
+    @Binding var popoverRequested: Bool
     @Binding var suppressAutoOpen: Bool
     let width: CGFloat?
     let maxHeight: CGFloat?
@@ -183,6 +214,7 @@ private struct SideAttachedPopoverHost<Content: View>: NSViewRepresentable {
     func makeCoordinator() -> Coordinator {
         Coordinator(
             anchorHovered: self.$anchorHovered,
+            popoverRequested: self.$popoverRequested,
             suppressAutoOpen: self.$suppressAutoOpen,
             onVisibilityChanged: self.onVisibilityChanged,
             content: self.content)
@@ -194,6 +226,7 @@ private struct SideAttachedPopoverHost<Content: View>: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSView, context: Context) {
         context.coordinator.anchorHovered = self.$anchorHovered
+        context.coordinator.popoverRequested = self.$popoverRequested
         context.coordinator.suppressAutoOpen = self.$suppressAutoOpen
         context.coordinator.width = self.width
         context.coordinator.maxHeight = self.maxHeight
@@ -209,6 +242,7 @@ private struct SideAttachedPopoverHost<Content: View>: NSViewRepresentable {
     @MainActor
     final class Coordinator: NSObject, SideAttachedPopoverManaging {
         var anchorHovered: Binding<Bool>
+        var popoverRequested: Binding<Bool>
         var suppressAutoOpen: Binding<Bool>
         var width: CGFloat?
         var maxHeight: CGFloat?
@@ -231,11 +265,13 @@ private struct SideAttachedPopoverHost<Content: View>: NSViewRepresentable {
 
         init(
             anchorHovered: Binding<Bool>,
+            popoverRequested: Binding<Bool>,
             suppressAutoOpen: Binding<Bool>,
             onVisibilityChanged: ((Bool) -> Void)?,
             content: Content)
         {
             self.anchorHovered = anchorHovered
+            self.popoverRequested = popoverRequested
             self.suppressAutoOpen = suppressAutoOpen
             self.onVisibilityChanged = onVisibilityChanged
             self.hostingController = NSHostingController(rootView: content)
@@ -265,7 +301,7 @@ private struct SideAttachedPopoverHost<Content: View>: NSViewRepresentable {
             self.hostWindow = anchorView.window
             self.installTrackingAreaIfNeeded()
 
-            let shouldShow = self.anchorHovered.wrappedValue && !self.suppressAutoOpen.wrappedValue
+            let shouldShow = self.popoverRequested.wrappedValue && !self.suppressAutoOpen.wrappedValue
             if shouldShow {
                 self.cancelPendingClose()
                 self.showOrUpdate()
@@ -365,6 +401,7 @@ private struct SideAttachedPopoverHost<Content: View>: NSViewRepresentable {
 
         func deactivateAndClose() {
             self.anchorHovered.wrappedValue = false
+            self.popoverRequested.wrappedValue = false
             self.closeNow()
         }
 

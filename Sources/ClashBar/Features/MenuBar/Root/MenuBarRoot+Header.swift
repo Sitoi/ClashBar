@@ -41,7 +41,7 @@ extension MenuBarRoot {
                         HStack(spacing: MenuBarLayoutTokens.space1) {
                             Circle()
                                 .fill(statusColor)
-                                .frame(width: MenuBarLayoutTokens.space4, height: MenuBarLayoutTokens.space4)
+                                .frame(width: MenuBarLayoutTokens.space6, height: MenuBarLayoutTokens.space6)
                             Text(runtimeBadgeText)
                                 .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .medium))
                                 .foregroundStyle(nativeSecondaryLabel)
@@ -51,7 +51,10 @@ extension MenuBarRoot {
                         .background(nativeControlFill.opacity(MenuBarLayoutTokens.Opacity.solid), in: Capsule())
                         .overlay {
                             Capsule().stroke(
-                                nativeControlBorder.opacity(MenuBarLayoutTokens.Theme.Dark.borderEmphasis),
+                                nativeControlBorder.opacity(
+                                    isDarkAppearance
+                                        ? MenuBarLayoutTokens.Theme.Dark.borderEmphasis
+                                        : MenuBarLayoutTokens.Theme.Light.borderEmphasis),
                                 lineWidth: MenuBarLayoutTokens.stroke)
                         }
                     }
@@ -70,7 +73,11 @@ extension MenuBarRoot {
             Spacer(minLength: MenuBarLayoutTokens.space6)
 
             HStack(spacing: MenuBarLayoutTokens.space6) {
-                self.compactTopIcon("arrow.clockwise", label: appState.primaryCoreActionLabel) {
+                self.compactTopIcon(
+                    "arrow.clockwise",
+                    label: appState.primaryCoreActionLabel,
+                    toneOverride: nativeInfo)
+                {
                     await appState.performPrimaryCoreAction()
                 }
                 .disabled(!appState.isPrimaryCoreActionEnabled)
@@ -78,7 +85,8 @@ extension MenuBarRoot {
 
                 self.compactTopIcon(
                     appState.isRuntimeRunning ? "stop.circle" : "play.circle",
-                    label: appState.isRuntimeRunning ? tr("ui.action.stop") : tr("app.primary.start"))
+                    label: appState.isRuntimeRunning ? tr("ui.action.stop") : tr("app.primary.start"),
+                    toneOverride: appState.isRuntimeRunning ? nativeWarning : nativePositive)
                 {
                     if appState.isRuntimeRunning {
                         await appState.stopCore()
@@ -89,7 +97,7 @@ extension MenuBarRoot {
                 .disabled(appState.isCoreActionProcessing)
                 .opacity(appState.isCoreActionProcessing ? 0.6 : 1)
 
-                self.compactTopIcon("rectangle.portrait.and.arrow.right", label: tr("ui.action.quit"), warning: true) {
+                self.compactTopIcon("power", label: tr("ui.action.quit"), warning: true) {
                     await appState.quitApp()
                 }
             }
@@ -183,10 +191,6 @@ extension MenuBarRoot {
             toneOverride
         } else if warning {
             nativeCritical
-        } else if symbol.contains("arrow.clockwise") {
-            nativeInfo
-        } else if symbol.contains("stop") {
-            nativeWarning
         } else {
             nativeSecondaryLabel
         }

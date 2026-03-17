@@ -63,6 +63,26 @@ extension KeyedDecodingContainer where K: CodingKey {
     }
 }
 
+extension KeyedDecodingContainer {
+    /// Decodes the latest delay value from a history array keyed by `key`.
+    /// Iterates through all entries and returns the last non-nil delay found.
+    func decodeLatestDelay(forKey key: Key) -> Int? {
+        guard var historyContainer = try? self.nestedUnkeyedContainer(forKey: key) else {
+            return nil
+        }
+        var latest: Int?
+        while !historyContainer.isAtEnd {
+            guard let entry = try? historyContainer.decode(FlexibleDelayHistoryEntry.self) else {
+                break
+            }
+            if let delay = entry.delay {
+                latest = delay
+            }
+        }
+        return latest
+    }
+}
+
 extension Int? {
     var positiveOrNil: Int? {
         guard let value = self, value > 0 else { return nil }

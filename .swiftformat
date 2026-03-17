@@ -48,3 +48,5 @@
 
 # Exclusions
 --exclude .build,.swiftpm,DerivedData,node_modules,dist,coverage,xcuserdata,Core/PeekabooCore/Sources/PeekabooCore/Extensions/NSArray+Extensions.swift
+
+--disable redundantSendable
