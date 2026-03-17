@@ -159,9 +159,18 @@ extension MenuBarRoot {
             Spacer(minLength: 0)
         }
         .menuRowPadding(vertical: T.space4)
-        .overlay {
+        .background {
             RoundedRectangle(cornerRadius: T.cornerRadius, style: .continuous)
-                .stroke(color.opacity(0.26), lineWidth: T.stroke)
+                .fill(nativeControlFill)
+                .overlay {
+                    RoundedRectangle(cornerRadius: T.cornerRadius, style: .continuous)
+                        .stroke(color.opacity(0.26), lineWidth: T.stroke)
+                }
+                .shadow(
+                    color: Color(nsColor: .shadowColor).opacity(T.Shadow.standard.opacity),
+                    radius: T.Shadow.standard.radius,
+                    x: T.Shadow.standard.x,
+                    y: T.Shadow.standard.y)
         }
     }
 
@@ -280,13 +289,6 @@ extension MenuBarRoot {
         let selectedLogLevel = appState.stringValue(for: .logLevel)
 
         return VStack(alignment: .leading, spacing: T.space6) {
-            if let feedback = settingsFeedbackState {
-                settingsFeedbackBanner(
-                    text: feedback.message,
-                    color: feedback.color,
-                    symbol: feedback.symbol)
-            }
-
             VStack(spacing: 0) {
                 settingsCardHeader(
                     tr("ui.section.basic_settings"),
@@ -372,6 +374,14 @@ extension MenuBarRoot {
                     }
                 }
                 .menuRowPadding(vertical: T.space4)
+            }
+        }
+        .overlay(alignment: .top) {
+            if let feedback = settingsFeedbackState {
+                settingsFeedbackBanner(
+                    text: feedback.message,
+                    color: feedback.color,
+                    symbol: feedback.symbol)
             }
         }
     }
