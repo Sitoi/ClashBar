@@ -205,7 +205,7 @@ extension MenuBarRoot {
     }
 
     var maintenanceActionEnabled: Bool {
-        appState.processManager.isRunning || appState.statusText.lowercased() == "running"
+        appState.isRemoteTarget || appState.processManager.isRunning || appState.statusText.lowercased() == "running"
     }
 
     var portAutoSaving: Bool {
@@ -237,6 +237,7 @@ extension MenuBarRoot {
     }
 
     var systemTabBody: some View {
+        let isRemote = appState.isRemoteTarget
         let proxyPortFields: [(titleKey: String, symbol: String, text: Binding<String>)] = [
             ("ui.settings.port.port", "network", $appState.settingsPort),
             ("ui.settings.port.socks", "wave.3.right", $appState.settingsSocksPort),
@@ -244,7 +245,7 @@ extension MenuBarRoot {
             ("ui.settings.port.redir", "arrowshape.turn.up.right", $appState.settingsRedirPort),
             ("ui.settings.port.tproxy", "shield.lefthalf.filled", $appState.settingsTProxyPort),
         ]
-        let toggleItems: [(id: String, title: String, symbol: String, isOn: Binding<Bool>)] = [
+        let localOnlyItems: [(id: String, title: String, symbol: String, isOn: Binding<Bool>)] = [
             (
                 "launch-at-login",
                 tr("ui.settings.launch_at_login"),
@@ -266,6 +267,8 @@ extension MenuBarRoot {
                 Binding(
                     get: { appState.autoManageCoreOnNetworkChangeEnabled },
                     set: { appState.autoManageCoreOnNetworkChangeEnabled = $0 })),
+        ]
+        let coreToggleItems: [(id: String, title: String, symbol: String, isOn: Binding<Bool>)] = [
             (
                 AppState.EditableCoreSetting.allowLan.id,
                 tr("ui.settings.allow_lan"),
@@ -291,10 +294,13 @@ extension MenuBarRoot {
         return VStack(alignment: .leading, spacing: T.space6) {
             VStack(spacing: 0) {
                 self.settingsCardHeader(
-                    tr("ui.section.basic_settings"),
+                    isRemote ? tr("ui.section.local_app_settings") : tr("ui.section.basic_settings"),
                     symbol: "slider.horizontal.3")
-                ForEach(toggleItems, id: \.id) { item in
-                    self.settingsToggleRow(item.title, symbol: item.symbol, isOn: item.isOn)
+                ForEach(localOnlyItems, id: \.id) { item in
+                    self.settingsToggleRow(
+                        isRemote ? "\(item.title) (\(tr("ui.machine.local_label")))" : item.title,
+                        symbol: item.symbol,
+                        isOn: item.isOn)
                 }
                 self.settingsSelectionRow(
                     tr("ui.settings.menu_bar_style"),
@@ -330,6 +336,15 @@ extension MenuBarRoot {
                     onSelect: { level in
                         Task { await appState.applyEditableCoreSetting(.logLevel, to: level.rawValue) }
                     })
+            }
+
+            VStack(spacing: 0) {
+                self.settingsCardHeader(
+                    isRemote ? tr("ui.section.core_settings_remote") : tr("ui.section.core_settings"),
+                    symbol: "gearshape.2")
+                ForEach(coreToggleItems, id: \.id) { item in
+                    self.settingsToggleRow(item.title, symbol: item.symbol, isOn: item.isOn)
+                }
             }
 
             VStack(spacing: 0) {

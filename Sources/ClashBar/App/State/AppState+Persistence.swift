@@ -82,6 +82,7 @@ extension AppState {
 
     func persistEditableSettingsSnapshot() {
         guard !suppressSettingsPersistence else { return }
+        guard !isRemoteTarget else { return }
         let snapshot = currentEditableSettingsSnapshot()
         guard let data = try? JSONEncoder().encode(snapshot) else { return }
         defaults.set(data, forKey: editableSettingsSnapshotKey)

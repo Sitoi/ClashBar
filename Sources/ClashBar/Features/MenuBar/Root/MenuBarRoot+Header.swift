@@ -60,11 +60,17 @@ extension MenuBarRoot {
                     }
 
                     HStack(spacing: MenuBarLayoutTokens.space6) {
+                        if appState.isRemoteTarget {
+                            self.remoteConnectionStatusDot
+                        }
                         self.headerControllerLink(
                             symbol: "network",
                             text: appState.externalControllerDisplay)
                         if appState.isExternalControllerWildcardIPv4 {
                             self.headerControllerWarningIcon
+                        }
+                        if appState.isRemoteTarget {
+                            self.remoteConnectionStatusLabel
                         }
                     }
                 }
@@ -80,8 +86,8 @@ extension MenuBarRoot {
                 {
                     await appState.performPrimaryCoreAction()
                 }
-                .disabled(!appState.isPrimaryCoreActionEnabled)
-                .opacity(appState.isPrimaryCoreActionEnabled ? 1 : 0.6)
+                .disabled(appState.isRemoteTarget || !appState.isPrimaryCoreActionEnabled)
+                .opacity((appState.isRemoteTarget || !appState.isPrimaryCoreActionEnabled) ? 0.6 : 1)
 
                 self.compactTopIcon(
                     appState.isRuntimeRunning ? "stop.circle" : "play.circle",
@@ -94,8 +100,8 @@ extension MenuBarRoot {
                         await appState.startCore(trigger: .manual)
                     }
                 }
-                .disabled(appState.isCoreActionProcessing)
-                .opacity(appState.isCoreActionProcessing ? 0.6 : 1)
+                .disabled(appState.isRemoteTarget || appState.isCoreActionProcessing)
+                .opacity((appState.isRemoteTarget || appState.isCoreActionProcessing) ? 0.6 : 1)
 
                 self.compactTopIcon("power", label: tr("ui.action.quit"), warning: true) {
                     await appState.quitApp()
@@ -131,6 +137,72 @@ extension MenuBarRoot {
             .help(url.absoluteString)
         } else {
             self.headerMetaLabel(symbol: symbol, text: text)
+        }
+    }
+
+    @ViewBuilder
+    var remoteConnectionStatusDot: some View {
+        let status = self.activeRemoteConnectionStatus
+        Circle()
+            .fill(self.remoteStatusDotColor(status))
+            .frame(width: MenuBarLayoutTokens.space6, height: MenuBarLayoutTokens.space6)
+    }
+
+    @ViewBuilder
+    var remoteConnectionStatusLabel: some View {
+        let status = self.activeRemoteConnectionStatus
+        switch status {
+        case .unknown, .checking:
+            ProgressView()
+                .controlSize(.mini)
+        case let .connected(version):
+            Text(version)
+                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .medium))
+                .foregroundStyle(nativePositive)
+                .lineLimit(1)
+        case let .failed(reason):
+            Text(reason)
+                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .medium))
+                .foregroundStyle(nativeCritical)
+                .lineLimit(1)
+        }
+    }
+
+    var activeRemoteConnectionStatus: MachineConnectionStatus {
+        guard let activeID = remoteMachineStore.activeTargetID else { return .unknown }
+        let probeStatus = remoteMachineStore.statusFor(activeID)
+
+        switch appState.apiStatus {
+        case .healthy:
+            if case let .connected(version) = probeStatus {
+                return .connected(version: version)
+            }
+            let runtimeVersion = appState.version.trimmed
+            if !runtimeVersion.isEmpty, runtimeVersion != "-" {
+                return .connected(version: runtimeVersion)
+            }
+            return .connected(version: "OK")
+        case .degraded:
+            if case let .failed(reason) = probeStatus {
+                return .failed(reason: reason)
+            }
+            return .checking
+        case .unknown:
+            return probeStatus
+        case .failed:
+            if case let .failed(reason) = probeStatus {
+                return .failed(reason: reason)
+            }
+            return .failed(reason: tr("ui.machine.status_unreachable"))
+        }
+    }
+
+    func remoteStatusDotColor(_ status: MachineConnectionStatus) -> Color {
+        switch status {
+        case .unknown: nativeSecondaryLabel
+        case .checking: nativeWarning.opacity(MenuBarLayoutTokens.Opacity.solid)
+        case .connected: nativePositive.opacity(MenuBarLayoutTokens.Opacity.solid)
+        case .failed: nativeCritical.opacity(MenuBarLayoutTokens.Opacity.solid)
         }
     }
 

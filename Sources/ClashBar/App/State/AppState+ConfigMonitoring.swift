@@ -34,6 +34,8 @@ extension AppState {
     }
 
     private func handleConfigDirectoryChangesIfNeeded() async {
+        guard !isRemoteTarget else { return }
+
         if self.pendingConfigChangeRestart,
            self.isRuntimeRunning,
            !self.isCoreActionProcessing

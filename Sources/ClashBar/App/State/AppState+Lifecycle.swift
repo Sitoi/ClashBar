@@ -13,6 +13,7 @@ extension AppState {
     }
 
     func startCore(trigger: StartTrigger = .manual) async {
+        guard !isRemoteTarget else { return }
         guard !isCoreActionProcessing else { return }
         if trigger == .manual {
             shouldResumeCoreAfterNetworkRecovery = false
@@ -89,6 +90,7 @@ extension AppState {
     }
 
     func stopCore(trigger: StopTrigger = .manual) async {
+        guard !isRemoteTarget else { return }
         guard !isCoreActionProcessing else { return }
         if trigger == .manual {
             shouldResumeCoreAfterNetworkRecovery = false
@@ -108,6 +110,7 @@ extension AppState {
     }
 
     func restartCore(trigger: ProviderRefreshTrigger = .restart) async {
+        guard !isRemoteTarget else { return }
         guard !isCoreActionProcessing else { return }
         coreActionState = .restarting
         defer { coreActionState = .idle }
