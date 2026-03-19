@@ -70,6 +70,9 @@ extension AppState {
         if kind == .connections {
             currentConnectionsStreamIntervalMilliseconds = nil
         }
+        if kind == .logs {
+            currentLogsStreamLevel = nil
+        }
         if kind == .traffic {
             self.resetPendingTrafficSnapshotState()
         }
@@ -98,14 +101,14 @@ extension AppState {
                 self.webSocketTask(for: kind)?.cancel(with: .goingAway, reason: nil)
                 self.setWebSocketTask(nil, for: kind)
 
-                guard processManager.isRunning else { return }
+                guard isRemoteTarget || processManager.isRunning else { return }
                 do {
                     try await Task.sleep(nanoseconds: self.nextReconnectDelayNanoseconds(for: kind))
                 } catch {
                     return
                 }
                 if Task.isCancelled { return }
-                guard processManager.isRunning else { return }
+                guard isRemoteTarget || processManager.isRunning else { return }
                 restart()
                 return
             }
@@ -174,15 +177,34 @@ extension AppState {
     }
 
     func startLogsStream() {
+        let level = self.logsStreamLevelFilter()
         self.startStream(
             kind: .logs,
-            makeWebSocket: { try $0.makeWebSocketTask(for: .logs(level: nil)) },
+            makeWebSocket: { try $0.makeWebSocketTask(for: .logs(level: level)) },
             onPayload: { [weak self] payload in
                 guard let self else { return }
                 if let line = decodeLogLinePayload(payload) {
                     appendMihomoLog(level: line.level, message: line.message)
                 }
             })
+        currentLogsStreamLevel = level
+    }
+
+    func logsStreamLevelFilter() -> String? {
+        let runtimeLevel = logLevel.trimmed.lowercased()
+        if ConfigLogLevel(rawValue: runtimeLevel) != nil {
+            return runtimeLevel
+        }
+
+        let level = settingsLogLevel.trimmed.lowercased()
+        guard ConfigLogLevel(rawValue: level) != nil else { return nil }
+        return level
+    }
+
+    func refreshLogsStreamLevelIfNeeded() {
+        guard self.webSocketTask(for: .logs) != nil else { return }
+        guard currentLogsStreamLevel != self.logsStreamLevelFilter() else { return }
+        self.startLogsStream()
     }
 
     private func schedulePendingTrafficSnapshotPublishIfNeeded() {

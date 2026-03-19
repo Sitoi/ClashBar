@@ -97,60 +97,76 @@ extension MenuBarRoot {
 
     var proxyQuickRows: some View {
         VStack(spacing: 0) {
-            AttachedPopoverMenu { _ in
+            if appState.isRemoteTarget {
                 self.quickRowContent(
                     title: tr("ui.quick.switch_config"),
                     symbol: "doc.text",
                     foreground: nativePurple,
                     background: nativePurple.opacity(T.Opacity.tint))
                 {
-                    HStack(spacing: T.space2) {
-                        Text(appState.selectedConfigName)
-                            .font(.app(size: T.FontSize.caption, weight: .regular))
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                            .foregroundStyle(nativeSecondaryLabel)
-                        Image(systemName: "chevron.right")
-                            .font(.app(size: T.FontSize.caption, weight: .medium))
-                            .foregroundStyle(nativeTertiaryLabel)
-                    }
+                    Text(tr("ui.machine.remote_readonly"))
+                        .font(.app(size: T.FontSize.caption, weight: .regular))
+                        .lineLimit(1)
+                        .foregroundStyle(nativeTertiaryLabel)
                 }
-            } content: { dismiss in
-                ForEach(appState.availableConfigFileNames, id: \.self) { name in
-                    AttachedPopoverMenuItem(
-                        title: name,
-                        selected: name == appState.selectedConfigName)
+            } else {
+                AttachedPopoverMenu { _ in
+                    self.quickRowContent(
+                        title: tr("ui.quick.switch_config"),
+                        symbol: "doc.text",
+                        foreground: nativePurple,
+                        background: nativePurple.opacity(T.Opacity.tint))
                     {
+                        HStack(spacing: T.space2) {
+                            Text(appState.selectedConfigName)
+                                .font(.app(size: T.FontSize.caption, weight: .regular))
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                                .foregroundStyle(nativeSecondaryLabel)
+                            Image(systemName: "chevron.right")
+                                .font(.app(size: T.FontSize.caption, weight: .medium))
+                                .foregroundStyle(nativeTertiaryLabel)
+                        }
+                    }
+                } content: { dismiss in
+                    ForEach(appState.availableConfigFileNames, id: \.self) { name in
+                        AttachedPopoverMenuItem(
+                            title: name,
+                            selected: name == appState.selectedConfigName)
+                        {
+                            dismiss()
+                            Task { await appState.selectConfigFile(named: name) }
+                        }
+                    }
+                    AttachedPopoverMenuDivider()
+                    AttachedPopoverMenuItem(title: tr("ui.quick.reload_config_list")) {
                         dismiss()
-                        Task { await appState.selectConfigFile(named: name) }
+                        appState.reloadConfigFileList()
+                    }
+                    AttachedPopoverMenuItem(title: tr("ui.quick.import_local_config")) {
+                        dismiss()
+                        appState.importLocalConfigFile()
+                    }
+                    AttachedPopoverMenuItem(title: tr("ui.quick.import_remote_config")) {
+                        dismiss()
+                        Task { await appState.importRemoteConfigFile() }
+                    }
+                    AttachedPopoverMenuItem(title: tr("ui.quick.update_remote_configs")) {
+                        dismiss()
+                        Task { await appState.updateAllRemoteConfigFiles() }
+                    }
+                    AttachedPopoverMenuItem(title: tr("ui.quick.show_in_finder")) {
+                        dismiss()
+                        appState.showSelectedConfigInFinder()
                     }
                 }
-                AttachedPopoverMenuDivider()
-                AttachedPopoverMenuItem(title: tr("ui.quick.reload_config_list")) {
-                    dismiss()
-                    appState.reloadConfigFileList()
-                }
-                AttachedPopoverMenuItem(title: tr("ui.quick.import_local_config")) {
-                    dismiss()
-                    appState.importLocalConfigFile()
-                }
-                AttachedPopoverMenuItem(title: tr("ui.quick.import_remote_config")) {
-                    dismiss()
-                    Task { await appState.importRemoteConfigFile() }
-                }
-                AttachedPopoverMenuItem(title: tr("ui.quick.update_remote_configs")) {
-                    dismiss()
-                    Task { await appState.updateAllRemoteConfigFiles() }
-                }
-                AttachedPopoverMenuItem(title: tr("ui.quick.show_in_finder")) {
-                    dismiss()
-                    appState.showSelectedConfigInFinder()
-                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
 
             self.quickToggleRow(
-                title: tr("ui.quick.system_proxy"),
+                title: appState.isRemoteTarget
+                    ? "\(tr("ui.quick.system_proxy")) (\(tr("ui.machine.local_label")))"
+                    : tr("ui.quick.system_proxy"),
                 symbol: "network",
                 foreground: nativeInfo,
                 background: nativeInfo.opacity(T.Opacity.tint),

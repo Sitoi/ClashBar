@@ -155,7 +155,7 @@ extension AppState {
     }
 
     func updateDataAcquisitionPolicy() {
-        guard processManager.isRunning else {
+        guard isRemoteTarget || processManager.isRunning else {
             self.ensurePeriodicTasksForCurrentVisibility()
             mediumFrequencyIntervalNanoseconds = foregroundMediumFrequencyIntervalNanoseconds
             lowFrequencyIntervalNanoseconds = foregroundLowFrequencyPrimaryTabsIntervalNanoseconds
@@ -173,7 +173,7 @@ extension AppState {
     }
 
     func refreshForActivatedTab(_ tab: RootTab, generation: Int? = nil) async {
-        guard processManager.isRunning else { return }
+        guard isRemoteTarget || processManager.isRunning else { return }
 
         func shouldContinueRefresh() -> Bool {
             guard let generation else { return true }
@@ -198,7 +198,9 @@ extension AppState {
         case .system:
             await self.refreshMediumFrequency()
             guard shouldContinueRefresh() else { return }
-            await self.refreshSystemProxyStatus()
+            if !isRemoteTarget {
+                await self.refreshSystemProxyStatus()
+            }
         }
     }
 
@@ -251,10 +253,13 @@ extension AppState {
         tproxyPort = config.tproxyPort
         mixedPort = config.mixedPort ?? 0
 
-        if let externalController = config.externalController {
-            applyExternalControllerFromConfig(externalController)
+        if !isRemoteTarget {
+            if let externalController = config.externalController {
+                applyExternalControllerFromConfig(externalController)
+            }
         }
         syncEditableSettings(from: config)
+        refreshLogsStreamLevelIfNeeded()
     }
 
     func resetTrafficPresentation() {
@@ -326,11 +331,15 @@ extension AppState {
         switch activeMenuTab {
         case .proxy:
             await refreshProvidersAndRules()
-            await self.refreshSystemProxyStatus()
+            if !isRemoteTarget {
+                await self.refreshSystemProxyStatus()
+            }
         case .rules:
             await refreshProvidersAndRules()
         case .system:
-            await self.refreshSystemProxyStatus()
+            if !isRemoteTarget {
+                await self.refreshSystemProxyStatus()
+            }
         case .activity, .logs:
             break
         }
@@ -445,7 +454,11 @@ extension AppState {
         self.syncConnectionsStream(
             enabled: policy.enableConnectionsStream,
             intervalMilliseconds: policy.connectionsIntervalMilliseconds)
-        self.syncStream(.logs, enabled: policy.enableLogsStream) { startLogsStream() }
+        self.syncStream(
+            .logs,
+            enabled: policy.enableLogsStream,
+            forceRestart: currentLogsStreamLevel != logsStreamLevelFilter())
+        { startLogsStream() }
     }
 
     private func syncConnectionsStream(enabled: Bool, intervalMilliseconds: Int?) {

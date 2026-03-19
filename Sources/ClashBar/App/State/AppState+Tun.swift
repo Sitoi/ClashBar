@@ -18,24 +18,32 @@ extension AppState {
         guard enabled != isTunEnabled else { return }
 
         isTunSyncing = true
-        let previousValue = isTunEnabled
         defer { isTunSyncing = false }
 
         do {
-            if enabled {
+            if enabled, !isRemoteTarget {
                 try await self.ensureTunPermissions(requestIfMissing: true)
             }
 
-            isTunEnabled = enabled
-            persistEditableSettingsSnapshot()
-            try await self.applyTunRuntimeChange(enabled: enabled)
+            guard isRemoteTarget || isRuntimeRunning else { return }
+            try await self.patchTunConfig(enable: enabled)
 
-            appendLog(
-                level: "info",
-                message: tr("log.tun.toggled", enabled ? tr("log.tun.enabled") : tr("log.tun.disabled")))
-        } catch {
-            isTunEnabled = previousValue
+            // Re-fetch config from core and apply the actual state (zashboard pattern).
+            let config = try await fetchRuntimeConfigSnapshot()
+            let actualState = config.tunEnabled ?? false
+            isTunEnabled = actualState
             persistEditableSettingsSnapshot()
+
+            if actualState == enabled {
+                appendLog(
+                    level: "info",
+                    message: tr("log.tun.toggled", enabled ? tr("log.tun.enabled") : tr("log.tun.disabled")))
+            } else {
+                appendLog(
+                    level: "error",
+                    message: tr("log.tun.toggle_failed", tr("app.tun.error.runtime_state_mismatch")))
+            }
+        } catch {
             appendLog(level: "error", message: tr("log.tun.toggle_failed", self.tunErrorMessage(error)))
             await self.refreshTunStatusFromRuntimeConfig()
         }
@@ -157,26 +165,18 @@ extension AppState {
     }
 
     func applyTunRuntimeChange(enabled: Bool) async throws {
-        guard isRuntimeRunning else { return }
+        guard isRemoteTarget || isRuntimeRunning else { return }
         try await self.patchTunConfig(enable: enabled)
         try await self.verifyTunRuntimeState(expectedEnabled: enabled)
     }
 
     func verifyTunRuntimeState(expectedEnabled: Bool) async throws {
-        let maxAttempts = 32
-        for _ in 0..<maxAttempts {
-            do {
-                let config = try await fetchRuntimeConfigSnapshot()
-                let current = config.tunEnabled ?? false
-                if current == expectedEnabled {
-                    return
-                }
-            } catch {
-                // Ignore transient API failures while core is restarting.
-            }
-            try? await Task.sleep(nanoseconds: 250_000_000)
+        // Re-fetch config to confirm actual state (zashboard pattern: trust API response).
+        let config = try await fetchRuntimeConfigSnapshot()
+        let actual = config.tunEnabled ?? false
+        if actual != expectedEnabled {
+            throw TunModeError.runtimeStateMismatch(expected: expectedEnabled)
         }
-        throw TunModeError.runtimeStateMismatch(expected: expectedEnabled)
     }
 
     func patchTunConfig(enable: Bool) async throws {

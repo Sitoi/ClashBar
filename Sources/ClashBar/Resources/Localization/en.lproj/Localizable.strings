@@ -54,6 +54,25 @@
 "ui.mode.global" = "Global";
 "ui.mode.direct" = "Direct";
 
+"ui.machine.local" = "Local";
+"ui.machine.manage" = "Manage Remote Machines";
+"ui.machine.add" = "Add Machine";
+"ui.machine.edit" = "Edit Machine";
+"ui.machine.save" = "Save";
+"ui.machine.empty" = "No remote machines";
+"ui.machine.field.name" = "Name";
+"ui.machine.field.host" = "Host";
+"ui.machine.field.port" = "Port";
+"ui.machine.field.secret" = "Secret";
+"ui.machine.remote_readonly" = "(Remote, read-only)";
+"ui.machine.return_local" = "Return to Local Core";
+"ui.machine.active" = "Active";
+"ui.machine.local_label" = "Local";
+"ui.machine.status_unreachable" = "Unreachable";
+
+"ui.section.local_app_settings" = "App Settings (Local)";
+"ui.section.core_settings" = "Core Settings";
+"ui.section.core_settings_remote" = "Core Settings (Remote)";
 
 "ui.quick.switch_config" = "Switch Config";
 "ui.quick.system_proxy" = "System Proxy";
@@ -296,6 +315,8 @@
 "log.connection.copy_id" = "Copied connection ID: %@";
 "log.logs.copied_message" = "Copied log message";
 "log.logs.copied_entry" = "Copied full log entry";
+"log.remote.switched_to_local" = "Switched to local machine";
+"log.remote.switched_to_remote" = "Switched to remote machine: %@ (%@)";
 
 "log.action_name.reload_config" = "Reload config";
 "log.action_name.switch_proxy" = "Switch proxy %@ -> %@";
