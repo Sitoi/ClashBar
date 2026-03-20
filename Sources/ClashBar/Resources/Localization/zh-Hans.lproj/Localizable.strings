@@ -1,5 +1,6 @@
 "ui.tab.proxy" = "节点";
 "ui.tab.rules" = "分流";
+"ui.tab.connections" = "连接";
 "ui.tab.activity" = "网络";
 "ui.tab.logs" = "日志";
 "ui.tab.system" = "设置";
@@ -54,7 +55,6 @@
 "ui.mode.global" = "全局";
 "ui.mode.direct" = "直连";
 
-
 "ui.quick.switch_config" = "切换配置";
 "ui.quick.system_proxy" = "系统代理";
 "ui.quick.tun_mode" = "TUN 模式";
@@ -86,7 +86,6 @@
 "ui.empty.rules" = "暂无规则数据";
 "ui.empty.connections" = "暂无活动连接";
 "ui.empty.logs" = "暂无日志";
-
 
 "ui.placeholder.filter_connection" = "过滤域名、IP...";
 "ui.placeholder.search_logs" = "搜索日志...";

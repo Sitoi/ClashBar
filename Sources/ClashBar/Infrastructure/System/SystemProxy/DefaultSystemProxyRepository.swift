@@ -1,0 +1,26 @@
+import Foundation
+
+@MainActor
+final class DefaultSystemProxyRepository: SystemProxyRepository {
+    private let service: SystemProxyService
+
+    init(service: SystemProxyService) {
+        self.service = service
+    }
+
+    func apply(enabled: Bool, host: String, ports: SystemProxyPorts) async throws {
+        try await self.service.applySystemProxy(enabled: enabled, host: host, ports: ports)
+    }
+
+    func isEnabled() async throws -> Bool {
+        try await self.service.isSystemProxyEnabled()
+    }
+
+    func isConfigured(host: String, ports: SystemProxyPorts) async throws -> Bool {
+        try await self.service.isSystemProxyConfigured(host: host, ports: ports)
+    }
+
+    func clearBlocking(timeout: TimeInterval = 2.0) {
+        self.service.clearSystemProxyBlocking(timeout: timeout)
+    }
+}

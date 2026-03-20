@@ -34,6 +34,10 @@ help:
 		"  BUILD_NUMBER=...  Build number used for Info.plist" \
 		"  DMG_SUFFIX=...    Optional dmg filename suffix"
 
+format:
+	swiftformat . --config .swiftformat 
+	swiftlint lint --config .swiftlint.yml
+
 build:
 	APP_NAME="$(APP_NAME)" \
 	APP_VERSION="$(APP_VERSION)" \

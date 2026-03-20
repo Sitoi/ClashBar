@@ -1,5 +1,6 @@
 "ui.tab.proxy" = "Nodes";
 "ui.tab.rules" = "Rules";
+"ui.tab.connections" = "Connections";
 "ui.tab.activity" = "Network";
 "ui.tab.logs" = "Logs";
 "ui.tab.system" = "Settings";
@@ -54,7 +55,6 @@
 "ui.mode.global" = "Global";
 "ui.mode.direct" = "Direct";
 
-
 "ui.quick.switch_config" = "Switch Config";
 "ui.quick.system_proxy" = "System Proxy";
 "ui.quick.tun_mode" = "TUN Mode";
@@ -86,7 +86,6 @@
 "ui.empty.rules" = "No rules data";
 "ui.empty.connections" = "No active connections";
 "ui.empty.logs" = "No logs";
-
 
 "ui.placeholder.filter_connection" = "Filter domain, IP...";
 "ui.placeholder.search_logs" = "Search logs...";
