@@ -23,6 +23,7 @@ extension AppSession {
                 self.controller = fallback
                 self.controllerSecret = nil
                 self.externalControllerDisplay = fallback
+                self.localExternalControllerDisplay = fallback
                 self.controllerUIURL = self.makeControllerUIURL(fallback)
                 self.ensureAPIClient()
             }
@@ -55,7 +56,7 @@ extension AppSession {
         }
 
         if case .local = target {
-            await self.applyPendingAppLaunchSettingsOverlayIfNeeded()
+            await self.applyPendingAppLaunchSettingsOverlayIfNeeded(syncSystemProxyPort: false)
         }
 
         if self.apiStatus == .healthy || self.apiStatus == .degraded {

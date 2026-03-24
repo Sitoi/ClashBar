@@ -20,6 +20,7 @@ extension AppSession {
         if externalControllerDisplay != trimmed {
             externalControllerDisplay = trimmed
         }
+        localExternalControllerDisplay = trimmed
 
         if let host = controllerHost(from: trimmed), !isLoopbackHost(host) {
             self.appendExternalControllerWarningOnce(

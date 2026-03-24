@@ -11,6 +11,7 @@ final class AppSession: ObservableObject {
     @Published var version: String = "-"
     @Published var controller: String = "127.0.0.1:9090"
     @Published var externalControllerDisplay: String = "127.0.0.1:9090"
+    var localExternalControllerDisplay: String = "127.0.0.1:9090"
     @Published var controllerUIURL: String = "http://127.0.0.1:9090/ui"
     @Published var controllerSecret: String?
 
@@ -71,6 +72,21 @@ final class AppSession: ObservableObject {
     @Published var isRuleProvidersRefreshing: Bool = false
 
     @Published var isSystemProxyEnabled: Bool = false
+    @Published var systemProxyHelperState: SystemProxyHelperRuntimeState = .unknown
+    @Published var systemProxyHelperActionState: SystemProxyHelperActionState = .idle
+    @Published var systemProxyHelperIssue: SystemProxyHelperIssue = .none
+    @Published var systemProxyHelperFailureMessage: String?
+    @Published var systemProxyHelperActionInFlight: Bool = false
+    @Published var systemProxyActiveDisplay: String?
+    var isSystemProxyActiveNonLocal: Bool {
+        guard let display = systemProxyActiveDisplay,
+              let host = self.hostFromSystemProxyDisplay(display)?
+                  .trimmingCharacters(in: .whitespacesAndNewlines)
+                  .lowercased()
+        else { return false }
+        return host != "127.0.0.1" && host != "localhost" && host != "::1"
+    }
+
     @Published var isProxySyncing: Bool = false
     @Published var isTunEnabled: Bool = false
     @Published var isTunSyncing: Bool = false
@@ -108,6 +124,10 @@ final class AppSession: ObservableObject {
     @Published var settingsTProxyPort: String = "0"
 
     @Published var settingsSyncingKey: String?
+    var isCoreSettingSyncing: Bool {
+        self.settingsSyncingKey != nil
+    }
+
     @Published var settingsErrorMessage: String?
     @Published var settingsSavedMessage: String?
     var lastSyncedEditableSettings: EditableSettingsSnapshot?
@@ -169,6 +189,24 @@ final class AppSession: ObservableObject {
         case .stopped:
             "bolt.slash.circle"
         }
+    }
+
+    private func hostFromSystemProxyDisplay(_ display: String) -> String? {
+        let trimmed = display.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        if trimmed.hasPrefix("["),
+           let closing = trimmed.firstIndex(of: "]"),
+           trimmed.index(after: closing) < trimmed.endIndex,
+           trimmed[trimmed.index(after: closing)] == ":"
+        {
+            return String(trimmed[trimmed.index(after: trimmed.startIndex)..<closing])
+        }
+
+        guard let separator = trimmed.lastIndex(of: ":") else {
+            return nil
+        }
+        return String(trimmed[..<separator])
     }
 
     var statusBarDisplayMode: StatusBarDisplayMode {
@@ -486,6 +524,7 @@ final class AppSession: ObservableObject {
                 await applyPendingAppLaunchSettingsOverlayIfNeeded()
                 // Register and ping the helper once so launchd can demand-launch it early.
                 await self.systemProxyRepository.warmUpHelperIfPossible()
+                await self.refreshSystemProxyHelperStatus()
                 await refreshSystemProxyStatus()
                 await ensureSystemProxyConsistencyOnFirstLaunchIfNeeded()
             }

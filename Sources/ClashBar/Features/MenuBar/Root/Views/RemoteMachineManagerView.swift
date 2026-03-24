@@ -396,6 +396,7 @@ struct RemoteMachineManagerView: View {
                 .font(.app(size: 14, weight: .medium))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
+                .contentShape(RoundedRectangle(cornerRadius: self.cardCornerRadius, style: .continuous))
         }
         .buttonStyle(.plain)
         .foregroundStyle(Color.white)
@@ -733,6 +734,7 @@ private struct RemoteMachineEditorCard: View {
                 .font(.app(size: 14, weight: .medium))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
+                .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
         .foregroundStyle(.primary)
@@ -751,6 +753,7 @@ private struct RemoteMachineEditorCard: View {
                 .font(.app(size: 14, weight: .medium))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
+                .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
         .foregroundStyle(Color.white)

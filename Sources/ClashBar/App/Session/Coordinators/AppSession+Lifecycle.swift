@@ -32,6 +32,11 @@ extension AppSession {
         let autoTestGroupLatencies: Bool
     }
 
+    private enum CoreTransitionKind {
+        case stop
+        case restart
+    }
+
     func startCore(trigger: StartTrigger = .manual) async {
         guard !self.isRemoteTarget else { return }
         guard !isCoreActionProcessing else { return }
@@ -119,7 +124,8 @@ extension AppSession {
         coreActionState = .stopping
         defer { coreActionState = .idle }
         await self.prepareCoreFeatureRecoveryBeforeCoreTransition(
-            fallbackRecovery: recoverySnapshotBeforeStop)
+            fallbackRecovery: recoverySnapshotBeforeStop,
+            transitionKind: .stop)
         self.cancelDeferredEditableSettingsOverlaySync()
         cancelProviderRefresh(reason: "stop requested")
         await self.stopCoreUseCase.execute()
@@ -155,7 +161,8 @@ extension AppSession {
             let launchController = applyExternalControllerFromSelectedConfigFile(configPath: configPath)
             let recoverySnapshotBeforeRestart = self.currentCoreFeatureRecoverySnapshot()
             await self.prepareCoreFeatureRecoveryBeforeCoreTransition(
-                fallbackRecovery: recoverySnapshotBeforeRestart)
+                fallbackRecovery: recoverySnapshotBeforeRestart,
+                transitionKind: .restart)
             let settingsOverlay = self.overlayApplyingPendingCoreFeatureRecovery(currentEditableSettingsSnapshot())
             _ = try await self.restartCoreUseCase.execute(configPath: configPath, controller: launchController)
             await self.completeCoreBootstrap(
@@ -204,9 +211,9 @@ extension AppSession {
 
     func quitApp() async {
         self.prepareForTermination()
-        try? await applySystemProxy(enabled: false, host: controllerHost(), ports: .disabled)
-        if coreRepository.isRunning {
-            await self.stopCoreUseCase.execute()
+        self.isPanelPresented = false
+        for window in NSApplication.shared.windows {
+            window.orderOut(nil)
         }
         NSApplication.shared.terminate(nil)
     }
@@ -409,7 +416,8 @@ extension AppSession {
     }
 
     private func prepareCoreFeatureRecoveryBeforeCoreTransition(
-        fallbackRecovery: CoreFeatureRecoveryState) async
+        fallbackRecovery: CoreFeatureRecoveryState,
+        transitionKind: CoreTransitionKind) async
     {
         let runtimeRunningBeforeTransition = self.isRuntimeRunning
         let capturedRecovery = CoreFeatureRecoveryState(
@@ -438,6 +446,7 @@ extension AppSession {
         do {
             try await self.applySystemProxy(enabled: false, host: self.controllerHost(), ports: .disabled)
             self.isSystemProxyEnabled = false
+            self.systemProxyActiveDisplay = nil
             self.appendLog(
                 level: "info",
                 message: self.tr("log.system_proxy.toggled", self.tr("log.system_proxy.disabled")))
@@ -445,6 +454,7 @@ extension AppSession {
             self.appendLog(
                 level: "error",
                 message: self.tr("log.system_proxy.toggle_failed", self.systemProxyErrorMessage(error)))
+            await self.refreshSystemProxyHelperStatus()
             await self.refreshSystemProxyStatus()
         }
     }
@@ -506,8 +516,16 @@ extension AppSession {
 
             do {
                 let target = try await self.resolveSystemProxyTargetFromRuntimeConfig()
-                try await self.applySystemProxy(enabled: true, host: target.host, ports: target.ports)
+                let isAlreadyConfigured = try await self.isSystemProxyConfigured(
+                    host: target.host,
+                    ports: target.ports)
+                if !isAlreadyConfigured {
+                    try await self.applySystemProxy(enabled: true, host: target.host, ports: target.ports)
+                }
                 self.isSystemProxyEnabled = true
+                self.systemProxyActiveDisplay = self.buildSystemProxyDisplayString(
+                    host: target.host,
+                    ports: target.ports)
                 remainingSystemProxyRecovery = false
                 self.appendLog(
                     level: "info",
@@ -516,6 +534,7 @@ extension AppSession {
                 self.appendLog(
                     level: "error",
                     message: self.tr("log.system_proxy.toggle_failed", self.systemProxyErrorMessage(error)))
+                await self.refreshSystemProxyHelperStatus()
                 await self.refreshSystemProxyStatus()
             }
         }

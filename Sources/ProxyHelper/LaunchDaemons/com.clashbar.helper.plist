@@ -11,5 +11,9 @@
     </dict>
     <key>BundleProgram</key>
     <string>Contents/Library/HelperTools/com.clashbar.helper</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Applications/ClashBar.app/Contents/Library/HelperTools/com.clashbar.helper</string>
+    </array>
 </dict>
 </plist>

@@ -149,6 +149,7 @@ struct AttachedPopoverMenu<Label: View, Content: View>: View {
 
 struct AttachedPopoverMenuItem: View {
     let title: String
+    var subtitle: String?
     var leadingSymbol: String?
     var leadingTint: Color = .secondary
     var showLeadingDot: Bool = false
@@ -178,10 +179,20 @@ struct AttachedPopoverMenuItem: View {
                         .opacity(self.selected ? 1 : 0)
                         .frame(width: 12, alignment: .center)
                 }
-                Text(self.title)
-                    .font(.app(size: T.FontSize.body, weight: .medium))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(self.title)
+                        .font(.app(size: T.FontSize.body, weight: .medium))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    if let subtitle, !subtitle.isEmpty {
+                        Text(subtitle)
+                            .font(.app(size: T.FontSize.caption, weight: .regular))
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .foregroundStyle(self.isHovered ? Color(nsColor: .selectedMenuItemTextColor)
+                                .opacity(0.9) : .secondary)
+                    }
+                }
                 Spacer(minLength: 0)
             }
             .foregroundStyle(self.itemForeground)

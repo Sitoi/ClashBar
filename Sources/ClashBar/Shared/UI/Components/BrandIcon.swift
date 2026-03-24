@@ -1,5 +1,6 @@
 import AppKit
 
+@MainActor
 enum BrandIcon {
     private static let logoRelativePaths = [
         "Assets.xcassets/BrandLogo.imageset/logo.png",

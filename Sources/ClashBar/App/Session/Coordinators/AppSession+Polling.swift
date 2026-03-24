@@ -353,9 +353,21 @@ extension AppSession {
 
     func refreshSystemProxyStatus() async {
         do {
-            isSystemProxyEnabled = try await readSystemProxyEnabledState()
+            let enabled = try await readSystemProxyEnabledState()
+            isSystemProxyEnabled = enabled
+            if enabled {
+                systemProxyActiveDisplay = try await readSystemProxyActiveDisplay()
+            } else {
+                systemProxyActiveDisplay = nil
+            }
+            if self.systemProxyHelperState == .unknown || self.systemProxyHelperState == .running {
+                self.systemProxyHelperState = .running
+                self.systemProxyHelperIssue = .none
+                self.systemProxyHelperFailureMessage = nil
+            }
         } catch {
             appendLog(level: "error", message: tr("log.system_proxy.read_failed", systemProxyErrorMessage(error)))
+            await self.refreshSystemProxyHelperStatus()
         }
     }
 

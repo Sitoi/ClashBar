@@ -2,12 +2,6 @@ import Foundation
 
 struct AppLogStore {
     let logFileURL: URL
-    private static let formatterLock = NSLock()
-    private static let timestampFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        return formatter
-    }()
 
     func ensureLogFileExists() {
         if !FileManager.default.fileExists(atPath: self.logFileURL.path) {
@@ -47,8 +41,8 @@ struct AppLogStore {
     }
 
     private static func timestampString(from date: Date) -> String {
-        self.formatterLock.lock()
-        defer { formatterLock.unlock() }
-        return self.timestampFormatter.string(from: date)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return formatter.string(from: date)
     }
 }

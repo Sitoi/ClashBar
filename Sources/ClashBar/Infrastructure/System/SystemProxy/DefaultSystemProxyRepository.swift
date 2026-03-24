@@ -16,8 +16,28 @@ final class DefaultSystemProxyRepository: SystemProxyRepository {
         try await self.service.isSystemProxyEnabled()
     }
 
+    func readActiveDisplay() async throws -> String? {
+        try await self.service.readSystemProxyActiveDisplay()
+    }
+
     func isConfigured(host: String, ports: SystemProxyPorts) async throws -> Bool {
         try await self.service.isSystemProxyConfigured(host: host, ports: ports)
+    }
+
+    func diagnoseCurrentHelper() async -> SystemProxyHelperDiagnosis {
+        await self.service.diagnoseCurrentHelper()
+    }
+
+    func diagnoseAndRepair() async -> SystemProxyHelperDiagnosis {
+        await self.service.diagnoseAndRepairHelper()
+    }
+
+    func installHelper() async -> SystemProxyHelperDiagnosis {
+        await self.service.installHelperManually()
+    }
+
+    func reinstallHelper() async -> SystemProxyHelperDiagnosis {
+        await self.service.reinstallHelperManually()
     }
 
     func warmUpHelperIfPossible() async {

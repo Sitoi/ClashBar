@@ -136,6 +136,31 @@ private final class SystemProxyConfigurator {
         return true
     }
 
+    func systemProxyActiveTarget() throws -> (host: String, port: Int)? {
+        let preferences = try makePreferences()
+        let protocols = try proxyProtocols(from: preferences)
+
+        for proxyProtocol in protocols {
+            let config = self.configuration(for: proxyProtocol)
+            for spec in Self.proxyEntrySpecs {
+                guard self.isEnabled(config: config, key: spec.enableKey) else {
+                    continue
+                }
+                let host = (config[spec.hostKey] as? String)?
+                    .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                guard !host.isEmpty else {
+                    continue
+                }
+                guard let port = self.intValue(config[spec.portKey]), port > 0 else {
+                    continue
+                }
+                return (host: host, port: port)
+            }
+        }
+
+        return nil
+    }
+
     private func validate(host: String) throws {
         let trimmedHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedHost.isEmpty else {
@@ -347,6 +372,15 @@ private final class ProxyHelperService: NSObject, ProxyHelperProtocol {
             completion(true, enabled, nil)
         } catch {
             completion(false, false, error.localizedDescription)
+        }
+    }
+
+    func getSystemProxyActiveTarget(completion: @escaping (Bool, String?, Int, String?) -> Void) {
+        do {
+            let target = try configurator.systemProxyActiveTarget()
+            completion(true, target?.host, target?.port ?? 0, nil)
+        } catch {
+            completion(false, nil, 0, error.localizedDescription)
         }
     }
 

@@ -86,7 +86,7 @@ extension MenuBarRootView {
         .sheet(isPresented: $showRemoteMachineManager) {
             RemoteMachineManagerView(
                 store: remoteMachineStore,
-                localControllerDisplay: appSession.externalControllerDisplay)
+                localControllerDisplay: appSession.localExternalControllerDisplay)
             { target in
                 isSwitchingMachine = true
                 Task { @MainActor in
@@ -120,6 +120,10 @@ extension MenuBarRootView {
                         .foregroundStyle(nativePrimaryLabel)
                         .lineLimit(1)
                         .truncationMode(.tail)
+
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 8, weight: .semibold))
+                        .foregroundStyle(nativeTertiaryLabel)
                 }
                 .contentShape(Rectangle())
             },

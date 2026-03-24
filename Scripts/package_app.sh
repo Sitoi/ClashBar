@@ -215,6 +215,7 @@ $ICON_PLIST_ENTRY
 PLIST
 
 CODESIGN_IDENTITY="${CODESIGN_IDENTITY:--}"
+
 if command -v codesign >/dev/null 2>&1; then
   codesign --force --sign "$CODESIGN_IDENTITY" "$APP/Contents/Library/HelperTools/$HELPER_LABEL"
   codesign --force --sign "$CODESIGN_IDENTITY" "$APP"
