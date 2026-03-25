@@ -18,7 +18,6 @@ jobs:
       version: ${{ steps.meta.outputs.version }}
       build_number: ${{ steps.meta.outputs.build_number }}
       source_ref: ${{ steps.meta.outputs.source_ref }}
-      release_branch: ${{ steps.meta.outputs.release_branch }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,7 +39,6 @@ jobs:
           echo "version=beta" >> "$GITHUB_OUTPUT"
           echo "build_number=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
           echo "source_ref=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
-          echo "release_branch=beta-release" >> "$GITHUB_OUTPUT"
 
   build-dmg:
     needs: prepare-beta
@@ -137,7 +135,6 @@ jobs:
         shell: bash
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
-          RELEASE_BRANCH: ${{ needs.prepare-beta.outputs.release_branch }}
           SOURCE_BRANCH: beta
         run: |
           chmod +x Scripts/generate_beta_release_notes.sh
@@ -157,28 +154,3 @@ jobs:
           fail_on_unmatched_files: true
           files: |
             dist/*.dmg
-            dist/*.dmg.sha256
-
-  sync-beta-channel:
-    needs: [prepare-beta, release]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ needs.prepare-beta.outputs.source_ref }}
-
-      - name: Move beta channel refs
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git tag -f "${{ needs.prepare-beta.outputs.tag }}" "${{ needs.prepare-beta.outputs.source_ref }}"
-          git push origin "refs/tags/${{ needs.prepare-beta.outputs.tag }}" --force
-          git push origin "${{ needs.prepare-beta.outputs.source_ref }}:refs/heads/${{ needs.prepare-beta.outputs.release_branch }}" --force

@@ -10,7 +10,6 @@ fi
 tag="$1"
 version="$2"
 output_path="${3:-release.md}"
-release_branch="${RELEASE_BRANCH:-beta-release}"
 source_branch="${SOURCE_BRANCH:-beta}"
 
 if [[ -z "${GITHUB_REPOSITORY:-}" ]]; then
@@ -32,7 +31,6 @@ cat >"$output_path" <<EOF
 - 版本号：\`${version}\`
 - 提交：\`${commit_sha}\` ${commit_subject}
 - 提交时间：${commit_date}
-- 同步分支：\`${release_branch}\`
 
 ### 📥 下载地址 (Downloads)
 
