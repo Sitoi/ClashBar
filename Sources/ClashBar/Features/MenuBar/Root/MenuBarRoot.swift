@@ -5,6 +5,7 @@ enum RootTab: String, CaseIterable, Hashable {
     case rules
     case activity
     case logs
+    case insights
     case system
 
     var titleKey: String {
@@ -13,6 +14,7 @@ enum RootTab: String, CaseIterable, Hashable {
         case .rules: "ui.tab.rules"
         case .activity: "ui.tab.activity"
         case .logs: "ui.tab.logs"
+        case .insights: "ui.tab.insights"
         case .system: "ui.tab.system"
         }
     }
@@ -123,6 +125,7 @@ private struct RulesRefreshToken: Equatable {
 struct MenuBarRoot: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var connectionsStore: ConnectionsStore
+    @EnvironmentObject var trafficInsightsStore: TrafficInsightsStore
     @EnvironmentObject var popoverLayoutModel: PopoverLayoutModel
     @Environment(\.colorScheme) var colorScheme
 
@@ -138,6 +141,9 @@ struct MenuBarRoot: View {
     @State var selectedLogSources: Set<AppLogSource> = Set(AppLogSource.allCases)
     @State var selectedLogLevels: Set<LogLevelFilter> = [.info, .warning, .error]
     @State var logSearchText: String = ""
+    @State var insightsTimeWindow: InsightsTimeWindow = .oneHour
+    @State var insightsViewMode: InsightsViewMode = .domains
+    @State var insightsSearchText: String = ""
     @State var topHeaderHeight: CGFloat = 0
     @State var modeAndTabSectionHeight: CGFloat = 0
     @State var footerBarHeight: CGFloat = 0
@@ -277,6 +283,8 @@ struct MenuBarRoot: View {
             activityTabBody
         case .logs:
             logsTabBody
+        case .insights:
+            insightsTabBody
         case .system:
             systemTabBody
         }
@@ -304,7 +312,7 @@ struct MenuBarRoot: View {
 
     func refreshDerivedData(for tab: RootTab) {
         switch tab {
-        case .proxy, .system:
+        case .proxy, .system, .insights:
             return
         case .rules:
             self.refreshVisibleRules()

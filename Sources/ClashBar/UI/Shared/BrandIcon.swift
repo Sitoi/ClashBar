@@ -1,5 +1,6 @@
 import AppKit
 
+@MainActor
 enum BrandIcon {
     private static let resourceExtension = "png"
     private static let resourceSubdirectory = "Brand"

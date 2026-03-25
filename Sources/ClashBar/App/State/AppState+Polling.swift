@@ -120,14 +120,14 @@ extension AppState {
         panelPresented: Bool,
         activeTab: RootTab) -> DataAcquisitionPolicy
     {
-        let trafficEnabled = panelPresented || self.statusBarDisplayMode != .iconOnly
+        let trafficEnabled = true
 
         if !panelPresented {
             return DataAcquisitionPolicy(
                 enableTrafficStream: trafficEnabled,
                 enableMemoryStream: false,
-                enableConnectionsStream: false,
-                connectionsIntervalMilliseconds: nil,
+                enableConnectionsStream: true,
+                connectionsIntervalMilliseconds: 2000,
                 enableLogsStream: false,
                 mediumFrequencyIntervalNanoseconds: backgroundMediumFrequencyIntervalNanoseconds,
                 lowFrequencyIntervalNanoseconds: backgroundLowFrequencyIntervalNanoseconds)
@@ -141,7 +141,7 @@ extension AppState {
         }
 
         let memoryEnabled = activeTab == .proxy
-        let connectionsEnabled = (activeTab == .proxy || activeTab == .activity)
+        let connectionsEnabled = (activeTab == .proxy || activeTab == .activity || activeTab == .insights)
         let logsEnabled = activeTab == .logs
 
         return DataAcquisitionPolicy(
@@ -192,6 +192,8 @@ extension AppState {
         case .rules:
             await refreshProvidersAndRules()
         case .activity:
+            await self.refreshConnections()
+        case .insights:
             await self.refreshConnections()
         case .logs:
             break
@@ -331,7 +333,7 @@ extension AppState {
             await refreshProvidersAndRules()
         case .system:
             await self.refreshSystemProxyStatus()
-        case .activity, .logs:
+        case .activity, .logs, .insights:
             break
         }
     }

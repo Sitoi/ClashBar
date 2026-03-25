@@ -27,6 +27,7 @@ private struct StatusItemPopoverRootView: View {
         MenuBarRoot()
             .environmentObject(self.appState)
             .environmentObject(self.appState.connectionsStore)
+            .environmentObject(self.appState.trafficInsightsStore)
             .environmentObject(self.popoverLayoutModel)
     }
 }

@@ -227,6 +227,7 @@ extension AppState {
     }
 
     private func applyTrafficSnapshot(_ snapshot: TrafficSnapshot) {
+        self.trafficInsightsStore.ingestTrafficSnapshot(snapshot)
         self.traffic = snapshot
         guard self.isPanelPresented else {
             if !self.trafficHistoryUp.isEmpty || !self.trafficHistoryDown
@@ -248,6 +249,7 @@ extension AppState {
     }
 
     private func applyConnectionsSnapshot(_ snapshot: ConnectionsSnapshot) {
+        self.trafficInsightsStore.ingest(snapshot: snapshot)
         let totalCount = snapshot.totalCount
         if connectionsStore.connectionsCount != totalCount {
             connectionsStore.connectionsCount = totalCount

@@ -56,10 +56,15 @@ struct ClashBarApp: App {
                 }
                 .keyboardShortcut("4", modifiers: [.command, .option])
 
+                Button(self.tr("ui.tab.insights")) {
+                    self.appDelegate.appState.setActiveMenuTab(.insights)
+                }
+                .keyboardShortcut("5", modifiers: [.command, .option])
+
                 Button(self.tr("ui.tab.system")) {
                     self.appDelegate.appState.setActiveMenuTab(.system)
                 }
-                .keyboardShortcut("5", modifiers: [.command, .option])
+                .keyboardShortcut("6", modifiers: [.command, .option])
 
                 Button(self.tr("ui.tab.system")) {
                     self.appDelegate.appState.setActiveMenuTab(.system)

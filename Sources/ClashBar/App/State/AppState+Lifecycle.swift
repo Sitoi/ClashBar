@@ -102,6 +102,8 @@ extension AppState {
         cancelProviderRefresh(reason: "stop requested")
         await processManager.stopAsync()
         cancelPolling()
+        self.trafficInsightsStore.clearConnectionBaselines()
+        self.trafficInsightsStore.clearTrafficTotalsBaseline()
         statusText = "Stopped"
         apiStatus = .unknown
         resetTrafficPresentation()
@@ -181,19 +183,25 @@ extension AppState {
 
     func quitApp() async {
         self.prepareForTermination()
+        self.trafficInsightsStore.flushPersistence()
         try? await applySystemProxy(enabled: false, host: controllerHost(), ports: .disabled)
         if processManager.isRunning {
             await processManager.stopAsync()
         }
+        self.trafficInsightsStore.clearConnectionBaselines()
+        self.trafficInsightsStore.clearTrafficTotalsBaseline()
         NSApplication.shared.terminate(nil)
     }
 
     func shutdownForTermination() {
         self.prepareForTermination()
+        self.trafficInsightsStore.flushPersistence()
         systemProxyService.clearSystemProxyBlocking(timeout: 2.0)
         if processManager.isRunning {
             processManager.stop()
         }
+        self.trafficInsightsStore.clearConnectionBaselines()
+        self.trafficInsightsStore.clearTrafficTotalsBaseline()
     }
 
     private func prepareForTermination() {

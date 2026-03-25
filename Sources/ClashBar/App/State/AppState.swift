@@ -33,6 +33,7 @@ final class AppState: ObservableObject {
     }
 
     let connectionsStore = ConnectionsStore()
+    let trafficInsightsStore: TrafficInsightsStore
 
     @Published var currentMode: CoreMode = .rule
     @Published var logLevel: String = "info"
@@ -422,6 +423,10 @@ final class AppState: ObservableObject {
     {
         self.processManager = processManager ?? MihomoProcessManager(workingDirectoryManager: workingDirectoryManager)
         self.workingDirectoryManager = workingDirectoryManager
+        self.trafficInsightsStore = TrafficInsightsStore(
+            storageURL: workingDirectoryManager.stateDirectoryURL.appendingPathComponent(
+                "traffic-insights.json",
+                isDirectory: false))
         self.systemProxyService = systemProxyService
         self.tunPermissionService = tunPermissionService
         self.configImportService = configImportService

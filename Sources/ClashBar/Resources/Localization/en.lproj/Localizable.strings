@@ -2,6 +2,7 @@
 "ui.tab.rules" = "Rules";
 "ui.tab.activity" = "Network";
 "ui.tab.logs" = "Logs";
+"ui.tab.insights" = "Stats";
 "ui.tab.system" = "Settings";
 
 "ui.log_filter.all" = "All";
@@ -86,11 +87,32 @@
 "ui.empty.rules" = "No rules data";
 "ui.empty.connections" = "No active connections";
 "ui.empty.logs" = "No logs";
+"ui.empty.insights" = "No attribution data yet. Keep ClashBar running to accumulate traffic insights.";
+"ui.empty.insights_attribution" = "Traffic exists in this window, but no attributable detail is available yet.";
 
 
 "ui.placeholder.filter_connection" = "Filter domain, IP...";
+"ui.placeholder.search_insights" = "Search domain, rule, route...";
 "ui.placeholder.search_logs" = "Search logs...";
 "ui.placeholder.port" = "0";
+
+"ui.insights.window.15m" = "15M";
+"ui.insights.window.1h" = "1H";
+"ui.insights.window.4h" = "4H";
+"ui.insights.window.1d" = "1D";
+"ui.insights.window.run" = "SESSION";
+"ui.insights.window.summary" = "Range · %@";
+"ui.insights.view.overview" = "Overview";
+"ui.insights.view.domains" = "Domains";
+"ui.insights.view.rules" = "Rules";
+"ui.insights.view.routes" = "Routes";
+"ui.insights.metric.total" = "Total";
+"ui.insights.metric.upload" = "Upload";
+"ui.insights.metric.download" = "Download";
+"ui.insights.metric.domains" = "Domains";
+"ui.insights.top.domains" = "Top Domains";
+"ui.insights.top.routes" = "Top Routes";
+"ui.insights.reset_runtime" = "Reset Stats";
 
 "ui.network.filter.transport" = "Transport Filter";
 "ui.network.filter.transport.all" = "All Protocols";

@@ -1,8 +1,6 @@
 import Foundation
 
 struct ConnectionsSnapshot: Decodable, Equatable {
-    static let retainedConnectionLimit = 120
-
     let totalCount: Int
     let connections: [ConnectionSummary]
 
@@ -17,28 +15,13 @@ struct ConnectionsSnapshot: Decodable, Equatable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        guard var connectionsContainer = try? container.nestedUnkeyedContainer(forKey: .connections) else {
+        guard let connections = try? container.decode([ConnectionSummary].self, forKey: .connections) else {
             self.connections = []
             self.totalCount = 0
             return
         }
-
-        var retained: [ConnectionSummary] = []
-        retained.reserveCapacity(min(
-            Self.retainedConnectionLimit,
-            connectionsContainer.count ?? Self.retainedConnectionLimit))
-
-        var totalCount = 0
-        while !connectionsContainer.isAtEnd {
-            let connection = try connectionsContainer.decode(ConnectionSummary.self)
-            if retained.count < Self.retainedConnectionLimit {
-                retained.append(connection)
-            }
-            totalCount += 1
-        }
-
-        self.connections = retained
-        self.totalCount = totalCount
+        self.connections = connections
+        self.totalCount = connections.count
     }
 }
 

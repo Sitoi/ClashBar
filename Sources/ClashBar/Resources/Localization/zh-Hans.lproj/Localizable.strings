@@ -2,6 +2,7 @@
 "ui.tab.rules" = "分流";
 "ui.tab.activity" = "网络";
 "ui.tab.logs" = "日志";
+"ui.tab.insights" = "统计";
 "ui.tab.system" = "设置";
 
 "ui.log_filter.all" = "全部";
@@ -86,11 +87,32 @@
 "ui.empty.rules" = "暂无规则数据";
 "ui.empty.connections" = "暂无活动连接";
 "ui.empty.logs" = "暂无日志";
+"ui.empty.insights" = "暂无统计数据，等待连接流量累计。";
+"ui.empty.insights_attribution" = "当前时间窗口已有总流量，但暂无可归因明细。";
 
 
 "ui.placeholder.filter_connection" = "过滤域名、IP...";
+"ui.placeholder.search_insights" = "搜索域名、规则、出口...";
 "ui.placeholder.search_logs" = "搜索日志...";
 "ui.placeholder.port" = "0";
+
+"ui.insights.window.15m" = "15M";
+"ui.insights.window.1h" = "1H";
+"ui.insights.window.4h" = "4H";
+"ui.insights.window.1d" = "1D";
+"ui.insights.window.run" = "累计";
+"ui.insights.window.summary" = "统计范围 · %@";
+"ui.insights.view.overview" = "总览";
+"ui.insights.view.domains" = "域名";
+"ui.insights.view.rules" = "规则";
+"ui.insights.view.routes" = "出口";
+"ui.insights.metric.total" = "总流量";
+"ui.insights.metric.upload" = "上传";
+"ui.insights.metric.download" = "下载";
+"ui.insights.metric.domains" = "域名数";
+"ui.insights.top.domains" = "Top 域名";
+"ui.insights.top.routes" = "Top 出口";
+"ui.insights.reset_runtime" = "清空统计";
 
 "ui.network.filter.transport" = "网络类型过滤";
 "ui.network.filter.transport.all" = "全部协议";

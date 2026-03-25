@@ -158,6 +158,22 @@ enum ValueFormatter {
         return L10n.t("fmt.relative.days", language: language, days)
     }
 
+    static func relativeTime(from date: Date, language: AppLanguage, now: Date = Date()) -> String {
+        let interval = max(0, now.timeIntervalSince(date))
+        let minutes = Int(interval / 60)
+        if minutes < 60 {
+            return L10n.t("fmt.relative.minutes", language: language, minutes)
+        }
+
+        let hours = Int(interval / 3600)
+        if hours < 24 {
+            return L10n.t("fmt.relative.hours", language: language, hours)
+        }
+
+        let days = Int(interval / 86400)
+        return L10n.t("fmt.relative.days", language: language, days)
+    }
+
     static func dateTimeFromISO(_ input: String?) -> String {
         guard let input = input?.trimmingCharacters(in: .whitespacesAndNewlines), !input.isEmpty else {
             return "--"
