@@ -1,3 +1,33 @@
+## v0.2.1
+
+![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.2.1-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
+
+> 本次更新主要围绕 **远程机器管理、菜单栏交互重构与系统代理恢复链路** 展开：新增远程控制端管理与本地/远程快速切换，Proxy、Rules、Connections、Logs、System 等页面会围绕当前目标自动切换；同时重做顶部模式/标签分段控件、代理详情与连接列表排版，并加强系统代理 Helper 的健康检查、恢复与提示，让多端点场景下的操作更清晰、状态更可信。
+
+### 📝 更新日志 (Changelog)
+
+**✨ 新增功能 (New Features)**
+
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **远程机器管理**：在菜单栏中新增远程机器管理面板，支持添加、编辑、删除远程控制端，并可在本地 Mihomo 与远程机器之间快速切换。
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **远程目标感知视图**：顶部 Header 会显示当前连接目标与连通状态，Proxy、Logs、Connections、System 页面也会围绕当前目标自动刷新，多控制端场景下不容易混淆。
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **远程场景只读保护**：连接远程机器时，涉及本地应用或仅应作用于本地内核的设置会明确标注为只读或本地生效，减少误操作风险。
+
+**🚀 优化改进 (Improvements)**
+
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **菜单栏分段控件重做**：顶部模式切换与标签栏改为自定义分段控件，选中态、悬停反馈和整体层次更统一，菜单栏交互更贴近原生体验。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **代理与概览展示**：重新整理 Proxy 页的流量概览、快捷操作、Provider/Group 行信息和节点类型展示，查看节点状态、切换配置与复制代理命令时更直观。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **连接与日志信息密度**：Connections 页补充过滤、排序、链路与流量摘要展示；Logs、Rules、System 页的列表与卡片布局也同步细化，在固定宽度菜单栏里能承载更多信息。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **系统代理状态可视化**：系统代理入口现在会同时展示后台项目授权、Helper 进程与当前生效地址等状态，定位问题和确认代理指向都更直接。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **工程结构与构建链路**：将应用进一步整理为 App / Session / Domain / Infrastructure / Features 等分层，并补充 beta DMG 预发布流程、二进制瘦身和打包优化，为后续迭代与分发打下更稳的基础。
+
+**🐞 修复问题 (Bug Fixes)**
+
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **系统代理恢复链路**：修复系统代理在启动、唤醒或切换场景下可能出现“开关已开但系统未生效”的问题，必要时会自动补齐配置并刷新真实状态。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **Helper 自恢复与预热**：修复系统代理 Helper 可能未及时拉起、注册状态失效或连接超时的问题，应用激活时会主动预热，并在连接失败后尝试恢复。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **授权与安装提示**：针对未放入“应用程序”目录、后台项目未允许、Helper 未注册或签名异常等场景补充更明确的错误提示，减少“打不开系统代理但不知道原因”的情况。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **远程切换状态一致性**：修复本地/远程目标切换时系统代理、快捷操作和页面状态可能不同步的问题，避免显示目标与实际控制端不一致。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **远程场景快捷操作适配**：修复复制终端代理命令、TUN/System Proxy 等快捷操作在远程使用场景下的适配问题，降低误用本地配置的风险。
+
 ## v0.2.0
 
 ![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.2.0-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
