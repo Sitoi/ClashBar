@@ -41,15 +41,10 @@ extension AppSession {
 
     func toggleSystemProxy(_ enabled: Bool) async {
         isProxySyncing = true
+        self.systemProxyEnableIntentInFlight = enabled
+        self.clearSystemProxyOpenFailureHint()
         defer { isProxySyncing = false }
-
-        // Never auto-repair from toggle path. Toggle only applies state when helper is already healthy.
-        await self.refreshSystemProxyHelperStatus()
-        if enabled, self.systemProxyHelperState != .running {
-            let reason = self.systemProxyHelperFailureMessage ?? tr("ui.common.unknown")
-            appendLog(level: "error", message: tr("log.system_proxy.toggle_failed", reason))
-            return
-        }
+        defer { self.systemProxyEnableIntentInFlight = false }
 
         do {
             if enabled {
@@ -65,19 +60,27 @@ extension AppSession {
             try await self.patchRuntimeConfigUseCase().execute(body: ["mode": .string(currentMode.rawValue)])
 
             isSystemProxyEnabled = enabled
-            if self.systemProxyHelperState == .unknown
-                || self.systemProxyHelperState == .running
-            {
-                self.systemProxyHelperState = .running
-                self.systemProxyHelperIssue = .none
-                self.systemProxyHelperFailureMessage = nil
+            self.clearSystemProxyOpenFailureHint()
+            self.systemProxyHelperFailureReason = nil
+            self.systemProxyHelperFailureMessage = nil
+            if enabled {
+                await self.refreshSystemProxyHelperRuntimeSnapshot()
+            } else {
+                self.resetSystemProxyObservedState()
             }
             let state = enabled ? tr("log.system_proxy.enabled") : tr("log.system_proxy.disabled")
             appendLog(level: "info", message: tr("log.system_proxy.toggled", state))
         } catch {
             appendLog(level: "error", message: tr("log.system_proxy.toggle_failed", systemProxyErrorMessage(error)))
+            if enabled {
+                self.updateSystemProxyOpenFailureHint(for: error)
+            }
             await self.refreshSystemProxyHelperStatus()
-            await refreshSystemProxyStatus()
+            if enabled || self.isSystemProxyEnabled {
+                await refreshSystemProxyStatus()
+            } else {
+                self.resetSystemProxyObservedState()
+            }
         }
     }
 

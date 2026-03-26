@@ -379,7 +379,6 @@ extension AppSession {
 
         defaults.set(configPath, forKey: lastSuccessfulConfigPathKey)
         startupErrorMessage = nil
-        self.seedCoreFeatureRecoveryFromPersistedQuitState()
         await self.restoreCoreFeaturesAfterStartupIfNeeded()
         enforceNetworkManagedCorePolicyIfNeeded()
 
@@ -447,6 +446,7 @@ extension AppSession {
             try await self.applySystemProxy(enabled: false, host: self.controllerHost(), ports: .disabled)
             self.isSystemProxyEnabled = false
             self.systemProxyActiveDisplay = nil
+            self.clearSystemProxyOpenFailureHint()
             self.appendLog(
                 level: "info",
                 message: self.tr("log.system_proxy.toggled", self.tr("log.system_proxy.disabled")))
@@ -459,7 +459,7 @@ extension AppSession {
         }
     }
 
-    private func seedCoreFeatureRecoveryFromPersistedQuitState() {
+    func seedCoreFeatureRecoveryFromPersistedQuitState() {
         let wasSystemProxyEnabled = defaults.bool(forKey: systemProxyEnabledOnQuitKey)
         defaults.removeObject(forKey: systemProxyEnabledOnQuitKey)
         guard wasSystemProxyEnabled else { return }
@@ -523,6 +523,7 @@ extension AppSession {
                     try await self.applySystemProxy(enabled: true, host: target.host, ports: target.ports)
                 }
                 self.isSystemProxyEnabled = true
+                self.clearSystemProxyOpenFailureHint()
                 self.systemProxyActiveDisplay = self.buildSystemProxyDisplayString(
                     host: target.host,
                     ports: target.ports)
@@ -534,6 +535,7 @@ extension AppSession {
                 self.appendLog(
                     level: "error",
                     message: self.tr("log.system_proxy.toggle_failed", self.systemProxyErrorMessage(error)))
+                self.updateSystemProxyOpenFailureHint(for: error)
                 await self.refreshSystemProxyHelperStatus()
                 await self.refreshSystemProxyStatus()
             }

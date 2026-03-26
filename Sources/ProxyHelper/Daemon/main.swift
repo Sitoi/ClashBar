@@ -338,6 +338,10 @@ private final class SystemProxyConfigurator {
 private final class ProxyHelperService: NSObject, ProxyHelperProtocol {
     private let configurator = SystemProxyConfigurator()
 
+    func ping(completion: @escaping (Bool, String?) -> Void) {
+        completion(true, nil)
+    }
+
     func setSystemProxy(
         host: String,
         httpPort: Int,

@@ -2,74 +2,53 @@ import Foundation
 
 @MainActor
 extension AppSession {
-    private func helperIssue(from message: String?) -> SystemProxyHelperIssue {
-        let normalized = (message ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if normalized.isEmpty { return .none }
-        if normalized.contains("not installed") {
-            return .notInstalled
-        }
-        if normalized.contains("blocked by system policy")
-            || normalized.contains("operation not permitted")
-            || normalized.contains("disallowed")
-            || normalized.contains("background item")
-            || normalized.contains("launch constraint")
-        {
-            return .systemPolicyBlocked
-        }
-        if normalized.contains("teamidentifier") || normalized.contains("signature")
-            || normalized.contains("codesign") || normalized.contains("code signing")
-        {
-            return .signatureMismatch
-        }
-        if normalized.contains("requires approval") || normalized.contains("login items") {
-            return .needsApproval
-        }
-        if normalized.contains("/applications") || normalized.contains("read-only") {
-            return .installLocationInvalid
-        }
-        if normalized.contains("not found in app bundle") || normalized.contains("not bundled") {
-            return .helperMissing
-        }
-        if normalized.contains("timed out") {
-            return .timeout
-        }
-        if normalized.contains("failed to connect privileged helper")
-            || normalized.contains("unable to create xpc proxy")
-            || normalized.contains("xpc")
-        {
-            return .connectionFailed
-        }
-        if normalized.contains("failed to register privileged helper")
-            || normalized.contains("not enabled. use reinstall helper")
-        {
-            return .registrationFailed
-        }
-        if normalized.contains("migration") || normalized.contains("reinstall") || normalized.contains("cleanup") {
-            return .migrationFailed
-        }
-        if normalized.contains("privileged helper operation failed") {
-            return .operationFailed
-        }
-        if normalized.contains("permission denied") {
-            return .permissionDenied
-        }
-        if normalized.contains("register"), normalized.contains("error: 1") {
-            return .registrationFailed
-        }
-        return .unknown
+    func clearSystemProxyOpenFailureHint() {
+        self.systemProxyOpenFailureHint = nil
     }
 
-    private func applyHelperDiagnosis(_ diagnosis: SystemProxyHelperDiagnosis) {
-        switch diagnosis {
-        case .healthy:
-            self.systemProxyHelperState = .running
-            self.systemProxyHelperIssue = .none
-            self.systemProxyHelperFailureMessage = nil
-        case let .failed(message):
-            self.systemProxyHelperState = .failed
-            self.systemProxyHelperIssue = self.helperIssue(from: message)
-            self.systemProxyHelperFailureMessage = message
+    func updateSystemProxyOpenFailureHint(for error: Error) {
+        self.systemProxyOpenFailureHint = self.systemProxyFailureHintMessage(for: error)
+    }
+
+    func updateSystemProxyOpenFailureHint(for reason: SystemProxyHelperFailureReason) {
+        self.systemProxyOpenFailureHint = self.systemProxyFailureReasonMessage(for: reason)
+    }
+
+    var hasSystemProxyOpenIntent: Bool {
+        self.isSystemProxyEnabled
+            || self.systemProxyEnableIntentInFlight
+            || (self.pendingCoreFeatureRecoveryState?.systemProxyEnabled ?? false)
+            || self.defaults.bool(forKey: self.systemProxyEnabledOnQuitKey)
+    }
+
+    func resetSystemProxyObservedState() {
+        self.systemProxyBackgroundActivityAllowed = nil
+        self.systemProxyHelperProcessRunning = nil
+        self.systemProxyHelperFailureReason = nil
+        self.systemProxyHelperFailureMessage = nil
+        if !self.isSystemProxyEnabled {
+            self.systemProxyActiveDisplay = nil
+        }
+    }
+
+    private func applyHelperHealthSnapshot(_ snapshot: SystemProxyHelperHealthSnapshot) {
+        let previousReason = self.systemProxyHelperFailureReason
+        let previousMessage = self.systemProxyHelperFailureMessage
+
+        self.systemProxyBackgroundActivityAllowed = snapshot.backgroundActivityAllowed
+        self.systemProxyHelperProcessRunning = snapshot.processRunning
+        self.systemProxyHelperFailureReason = snapshot.failureReason
+        self.systemProxyHelperFailureMessage = snapshot.rawMessage
+
+        guard let failureReason = snapshot.failureReason else { return }
+
+        if snapshot.rawMessage != previousMessage || failureReason != previousReason {
+            let message = snapshot.rawMessage ?? self.systemProxyFailureReasonMessage(for: failureReason)
             appendLog(level: "error", message: tr("log.system_proxy.helper_failed", message))
+        }
+
+        if self.hasSystemProxyOpenIntent || self.systemProxyEnableIntentInFlight {
+            self.updateSystemProxyOpenFailureHint(for: failureReason)
         }
     }
 
@@ -106,36 +85,38 @@ extension AppSession {
     }
 
     func refreshSystemProxyHelperStatus() async {
-        let diagnosis = await self.systemProxyRepository.diagnoseCurrentHelper()
-        self.applyHelperDiagnosis(diagnosis)
+        guard self.hasSystemProxyOpenIntent else {
+            self.resetSystemProxyObservedState()
+            return
+        }
+        let snapshot = await self.systemProxyRepository.readHelperHealthSnapshot()
+        self.applyHelperHealthSnapshot(snapshot)
     }
 
-    func installSystemProxyHelper() async {
-        guard !self.systemProxyHelperActionInFlight else { return }
-        self.systemProxyHelperActionInFlight = true
-        self.systemProxyHelperActionState = .installing
-        defer {
-            self.systemProxyHelperActionInFlight = false
-            self.systemProxyHelperActionState = .idle
-        }
-
-        appendLog(level: "info", message: tr("log.system_proxy.helper_installing"))
-        let diagnosis = await self.systemProxyRepository.installHelper()
-        self.applyHelperDiagnosis(diagnosis)
+    func refreshSystemProxyHelperRuntimeSnapshot() async {
+        await self.refreshSystemProxyHelperStatus()
     }
 
-    func reinstallSystemProxyHelper() async {
-        guard !self.systemProxyHelperActionInFlight else { return }
-        self.systemProxyHelperActionInFlight = true
-        self.systemProxyHelperActionState = .reinstalling
-        defer {
-            self.systemProxyHelperActionInFlight = false
-            self.systemProxyHelperActionState = .idle
-        }
+    func handleApplicationDidBecomeActive() {
+        self.refreshLaunchAtLoginStatus()
+        guard !self.isRemoteTarget, self.hasSystemProxyOpenIntent else { return }
 
-        appendLog(level: "info", message: tr("log.system_proxy.helper_reinstalling"))
-        let diagnosis = await self.systemProxyRepository.reinstallHelper()
-        self.applyHelperDiagnosis(diagnosis)
+        Task { [weak self] in
+            guard let self else { return }
+
+            let previousHealth = await self.systemProxyRepository.readHelperHealthSnapshot()
+            await self.systemProxyRepository.warmUpHelperIfPossible()
+            await self.refreshSystemProxyHelperStatus()
+
+            let shouldRefreshProxyStatus = self.isSystemProxyEnabled
+                || previousHealth.registrationState == .requiresApproval
+                || previousHealth.failureReason == .backgroundActivityDisabled
+                || previousHealth.failureReason == .helperNotRegistered
+
+            if shouldRefreshProxyStatus {
+                await self.refreshSystemProxyStatus()
+            }
+        }
     }
 
     func systemProxyPorts(from config: ConfigSnapshot) -> SystemProxyPorts {
@@ -164,6 +145,11 @@ extension AppSession {
     func ensureSystemProxyConsistencyOnFirstLaunchIfNeeded() async {
         guard !didCheckSystemProxyConsistencyOnLaunch else { return }
         guard isRuntimeRunning else { return }
+        guard self.hasSystemProxyOpenIntent else {
+            self.resetSystemProxyObservedState()
+            didCheckSystemProxyConsistencyOnLaunch = true
+            return
+        }
         guard isSystemProxyEnabled else {
             didCheckSystemProxyConsistencyOnLaunch = true
             return
@@ -178,8 +164,8 @@ extension AppSession {
                     level: "info",
                     message: tr("log.system_proxy.startup_repaired", target.host, target.ports.primaryPort ?? 0))
             }
-            self.systemProxyHelperState = .running
-            self.systemProxyHelperIssue = .none
+            self.clearSystemProxyOpenFailureHint()
+            self.systemProxyHelperFailureReason = nil
             self.systemProxyHelperFailureMessage = nil
             systemProxyActiveDisplay = buildSystemProxyDisplayString(host: target.host, ports: target.ports)
 
@@ -189,6 +175,7 @@ extension AppSession {
             appendLog(
                 level: "error",
                 message: tr("log.system_proxy.startup_repair_failed", self.systemProxyErrorMessage(error)))
+            self.updateSystemProxyOpenFailureHint(for: error)
             await self.refreshSystemProxyHelperStatus()
         }
     }
@@ -197,6 +184,10 @@ extension AppSession {
         refreshStatusBeforeOverlay: Bool,
         refreshStatusAfterBootstrap: Bool)
     {
+        guard self.hasSystemProxyOpenIntent else {
+            self.resetSystemProxyObservedState()
+            return
+        }
         let shouldRefreshStatus = refreshStatusBeforeOverlay || refreshStatusAfterBootstrap
         let shouldRepairConsistency = !didCheckSystemProxyConsistencyOnLaunch
         guard shouldRefreshStatus || shouldRepairConsistency else { return }
@@ -229,22 +220,75 @@ extension AppSession {
             return tr("app.system_proxy.error.invalid_port")
         case .helperNotBundled:
             return tr("app.system_proxy.error.helper_not_bundled")
-        case .helperNotInstalled:
-            return tr("app.system_proxy.error.helper_not_installed")
         case .helperRequiresInstallToApplications:
             return tr("app.system_proxy.error.helper_install_location")
         case .helperNeedsApproval:
             return tr("app.system_proxy.error.helper_needs_approval")
-        case let .helperBlockedBySystemPolicy(message):
-            return tr("app.system_proxy.error.helper_blocked_by_system_policy", message)
+        case let .helperNotRegistered(message):
+            if let message, !message.isEmpty {
+                return tr("app.system_proxy.error.helper_not_registered_with_detail", message)
+            }
+            return tr("app.system_proxy.error.helper_not_registered")
+        case .helperStartTimedOut:
+            return tr("app.system_proxy.error.helper_start_timed_out")
         case let .helperInvalidSignature(message):
             return tr("app.system_proxy.error.helper_invalid_signature", message)
-        case let .helperRegistrationFailed(message):
-            return tr("app.system_proxy.error.helper_registration_failed", message)
         case let .helperConnectionFailed(message):
             return tr("app.system_proxy.error.helper_connection_failed", message)
         case let .helperOperationFailed(message):
             return tr("app.system_proxy.error.helper_operation_failed", message)
+        }
+    }
+
+    func systemProxyFailureHintMessage(for error: Error) -> String {
+        guard let serviceError = error as? SystemProxyServiceError else {
+            return tr("app.system_proxy.alert.unknown")
+        }
+
+        switch serviceError {
+        case .invalidHost:
+            return tr("app.system_proxy.alert.invalid_host")
+        case .invalidPort:
+            return tr("app.system_proxy.alert.invalid_port")
+        case .helperNotBundled:
+            return tr("app.system_proxy.alert.helper_not_bundled")
+        case .helperRequiresInstallToApplications:
+            return tr("app.system_proxy.alert.helper_install_location")
+        case .helperNeedsApproval:
+            return tr("app.system_proxy.alert.background_activity_disabled")
+        case .helperNotRegistered:
+            return tr("app.system_proxy.alert.helper_not_registered")
+        case .helperStartTimedOut:
+            return tr("app.system_proxy.alert.helper_start_timed_out")
+        case .helperInvalidSignature:
+            return tr("app.system_proxy.alert.helper_invalid_signature")
+        case .helperConnectionFailed:
+            return tr("app.system_proxy.alert.helper_connection_failed")
+        case .helperOperationFailed:
+            return tr("app.system_proxy.alert.helper_operation_failed")
+        }
+    }
+
+    private func systemProxyFailureReasonMessage(for reason: SystemProxyHelperFailureReason) -> String {
+        switch reason {
+        case .backgroundActivityDisabled:
+            return tr("app.system_proxy.alert.background_activity_disabled")
+        case .helperNotRegistered:
+            return tr("app.system_proxy.alert.helper_not_registered")
+        case .helperStartTimedOut:
+            return tr("app.system_proxy.alert.helper_start_timed_out")
+        case .helperConnectionFailed:
+            return tr("app.system_proxy.alert.helper_connection_failed")
+        case .helperOperationFailed:
+            return tr("app.system_proxy.alert.helper_operation_failed")
+        case .appNotInApplications:
+            return tr("app.system_proxy.alert.helper_install_location")
+        case .helperNotBundled:
+            return tr("app.system_proxy.alert.helper_not_bundled")
+        case .signatureMismatch:
+            return tr("app.system_proxy.alert.helper_invalid_signature")
+        case .unknown:
+            return tr("app.system_proxy.alert.unknown")
         }
     }
 }

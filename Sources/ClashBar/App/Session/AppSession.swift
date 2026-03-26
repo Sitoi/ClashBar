@@ -72,12 +72,13 @@ final class AppSession: ObservableObject {
     @Published var isRuleProvidersRefreshing: Bool = false
 
     @Published var isSystemProxyEnabled: Bool = false
-    @Published var systemProxyHelperState: SystemProxyHelperRuntimeState = .unknown
-    @Published var systemProxyHelperActionState: SystemProxyHelperActionState = .idle
-    @Published var systemProxyHelperIssue: SystemProxyHelperIssue = .none
+    @Published var systemProxyEnableIntentInFlight: Bool = false
+    @Published var systemProxyHelperFailureReason: SystemProxyHelperFailureReason?
     @Published var systemProxyHelperFailureMessage: String?
-    @Published var systemProxyHelperActionInFlight: Bool = false
+    @Published var systemProxyBackgroundActivityAllowed: Bool?
+    @Published var systemProxyHelperProcessRunning: Bool?
     @Published var systemProxyActiveDisplay: String?
+    @Published var systemProxyOpenFailureHint: String?
     var isSystemProxyActiveNonLocal: Bool {
         guard let display = systemProxyActiveDisplay,
               let host = self.hostFromSystemProxyDisplay(display)?
@@ -522,11 +523,16 @@ final class AppSession: ObservableObject {
             Task {
                 await refreshFromAPI(includeSlowCalls: true)
                 await applyPendingAppLaunchSettingsOverlayIfNeeded()
-                // Register and ping the helper once so launchd can demand-launch it early.
-                await self.systemProxyRepository.warmUpHelperIfPossible()
-                await self.refreshSystemProxyHelperStatus()
-                await refreshSystemProxyStatus()
-                await ensureSystemProxyConsistencyOnFirstLaunchIfNeeded()
+                self.seedCoreFeatureRecoveryFromPersistedQuitState()
+                if self.hasSystemProxyOpenIntent {
+                    await self.systemProxyRepository.warmUpHelperIfPossible()
+                    await self.refreshSystemProxyHelperStatus()
+                    await refreshSystemProxyStatus()
+                    await ensureSystemProxyConsistencyOnFirstLaunchIfNeeded()
+                } else {
+                    self.resetSystemProxyObservedState()
+                    self.didCheckSystemProxyConsistencyOnLaunch = true
+                }
             }
 
             self.startConfigDirectoryMonitoringIfNeeded()

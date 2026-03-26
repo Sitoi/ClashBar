@@ -7,6 +7,8 @@ BUNDLE_ID="${BUNDLE_ID:-com.clashbar}"
 APP_VERSION="${APP_VERSION:-0.1.0}"
 BUILD_NUMBER="${BUILD_NUMBER:-1}"
 TARGET_ARCH="${TARGET_ARCH:-}"
+RELEASE_OPTIMIZE_FOR_SIZE="${RELEASE_OPTIMIZE_FOR_SIZE:-1}"
+STRIP_BINARIES="${STRIP_BINARIES:-1}"
 PREPROCESS_DIR="${PREPROCESS_DIR:-$ROOT/dist/preprocess}"
 PREPROCESSED_ICON_PATH="${PREPROCESSED_ICON_PATH:-$PREPROCESS_DIR/${APP_NAME}.icns}"
 PREPROCESSED_MIHOMO_PATH="${PREPROCESSED_MIHOMO_PATH:-$PREPROCESS_DIR/mihomo}"
@@ -20,6 +22,9 @@ HELPER_PLIST_SOURCE="$ROOT/Sources/ProxyHelper/LaunchDaemons/${HELPER_LABEL}.pli
 cd "$ROOT"
 
 BUILD_ARGS=(-c release)
+if [ "$RELEASE_OPTIMIZE_FOR_SIZE" = "1" ]; then
+  BUILD_ARGS+=(-Xswiftc -Osize)
+fi
 if [ -n "$TARGET_ARCH" ]; then
   BUILD_ARGS+=(--arch "$TARGET_ARCH")
 fi
@@ -60,6 +65,60 @@ resolve_build_artifact() {
     find_type="d"
   fi
   find "$ROOT/.build" -path "$release_pattern" -type "$find_type" | head -n 1 || true
+}
+
+artifact_size_bytes() {
+  stat -f%z "$1"
+}
+
+format_bytes() {
+  local bytes="${1:-0}"
+  awk -v bytes="$bytes" '
+    BEGIN {
+      split("B KiB MiB GiB TiB", units, " ")
+      size = bytes + 0
+      index = 1
+      while (size >= 1024 && index < 5) {
+        size /= 1024
+        index++
+      }
+      if (index == 1) {
+        printf "%d %s", size, units[index]
+      } else {
+        printf "%.1f %s", size, units[index]
+      }
+    }
+  '
+}
+
+print_artifact_size() {
+  local label="$1"
+  local path="$2"
+  local bytes
+  bytes="$(artifact_size_bytes "$path")"
+  echo "$label: $(format_bytes "$bytes") ($bytes bytes)"
+}
+
+strip_binary_if_enabled() {
+  local label="$1"
+  local path="$2"
+
+  if [ "$STRIP_BINARIES" != "1" ]; then
+    print_artifact_size "$label (strip disabled)" "$path"
+    return
+  fi
+
+  if ! command -v strip >/dev/null 2>&1; then
+    echo "strip command not found while STRIP_BINARIES=1." >&2
+    exit 1
+  fi
+
+  local before_bytes
+  local after_bytes
+  before_bytes="$(artifact_size_bytes "$path")"
+  strip -S -x "$path"
+  after_bytes="$(artifact_size_bytes "$path")"
+  echo "$label stripped: $(format_bytes "$before_bytes") -> $(format_bytes "$after_bytes")"
 }
 
 resolve_mihomo_install_path() {
@@ -179,6 +238,11 @@ cp "$HELPER_BIN" "$APP/Contents/Library/HelperTools/$HELPER_LABEL"
 chmod +x "$APP/Contents/Library/HelperTools/$HELPER_LABEL"
 cp "$HELPER_PLIST_SOURCE" "$APP/Contents/Library/LaunchDaemons/${HELPER_LABEL}.plist"
 
+print_artifact_size "Main binary before strip" "$APP/Contents/MacOS/ClashBar"
+print_artifact_size "Helper binary before strip" "$APP/Contents/Library/HelperTools/$HELPER_LABEL"
+strip_binary_if_enabled "Main binary" "$APP/Contents/MacOS/ClashBar"
+strip_binary_if_enabled "Helper binary" "$APP/Contents/Library/HelperTools/$HELPER_LABEL"
+
 ICON_PLIST_ENTRY=""
 if [ -f "$PREPROCESSED_ICON_PATH" ]; then
   cp "$PREPROCESSED_ICON_PATH" "$APP/Contents/Resources/${APP_NAME}.icns"
@@ -222,3 +286,4 @@ if command -v codesign >/dev/null 2>&1; then
 fi
 
 echo "Built app: $APP"
+du -sh "$APP"

@@ -80,7 +80,6 @@ struct MenuBarRootView: View {
     @State var hoveringCopyRow = false
     @State var proxyCommandCopied = false
     @State var proxyCommandCopyResetTask: Task<Void, Never>?
-    @State var showingSystemProxyHelperDetails = false
     @State var hoveredProviderName: String?
     @State var hoveredRuleIndex: Int?
     @State var hoveredMode: CoreMode?
@@ -287,7 +286,10 @@ struct MenuBarRootView: View {
 
     func refreshDerivedData(for tab: RootTab) {
         switch tab {
-        case .proxy, .system:
+        case .proxy:
+            Task { await self.appSession.refreshSystemProxyHelperRuntimeSnapshot() }
+            return
+        case .system:
             return
         case .rules:
             self.refreshVisibleRules()

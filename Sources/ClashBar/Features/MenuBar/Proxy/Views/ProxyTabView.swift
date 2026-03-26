@@ -217,18 +217,7 @@ extension MenuBarRootView {
                 .buttonStyle(.plain)
             }
 
-            self.quickToggleRow(
-                title: self.systemProxyRowTitle,
-                symbol: "network",
-                foreground: nativeInfo,
-                isDisabled: appSession.isProxySyncing,
-                isOn: Binding(
-                    get: { appSession.isSystemProxyEnabled },
-                    set: { value in
-                        Task { await appSession.toggleSystemProxy(value) }
-                    }))
-
-            self.helperStatusRow
+            self.systemProxyQuickToggleRow
 
             self.quickToggleRow(
                 title: tr("ui.quick.tun_mode"),
@@ -299,116 +288,68 @@ extension MenuBarRootView {
     }
 
     var systemProxyRowTitle: String {
-        var base = appSession.isRemoteTarget
+        appSession.isRemoteTarget
             ? "\(tr("ui.quick.system_proxy")) (\(tr("ui.machine.local_label")))"
             : tr("ui.quick.system_proxy")
-        if let display = appSession.systemProxyActiveDisplay {
-            base += " \(display)"
-            if appSession.isSystemProxyActiveNonLocal {
-                base += " \u{26A0}\u{FE0F}"
+    }
+
+    var systemProxyRowDetailText: String? {
+        if let failureHint = self.systemProxyInlineFailureText {
+            return failureHint
+        }
+
+        guard let display = appSession.systemProxyActiveDisplay?.trimmedNonEmpty else { return nil }
+        if appSession.isSystemProxyActiveNonLocal {
+            return "\(display) \u{26A0}\u{FE0F}"
+        }
+        return display
+    }
+
+    var systemProxyRowDetailColor: Color {
+        if self.systemProxyInlineFailureText != nil {
+            return nativeWarning.opacity(T.Opacity.solid)
+        }
+        return nativeSecondaryLabel
+    }
+
+    var systemProxyQuickToggleRow: some View {
+        HStack(spacing: T.space6) {
+            self.systemProxyCompositeIcon
+            Text(self.systemProxyRowTitle)
+                .font(.app(size: T.FontSize.body, weight: .medium))
+                .foregroundStyle(nativePrimaryLabel)
+                .lineLimit(1)
+                .minimumScaleFactor(T.minimumScale)
+
+            if let detailText = self.systemProxyRowDetailText {
+                Text(detailText)
+                    .font(.app(size: T.FontSize.caption, weight: .medium))
+                    .foregroundStyle(self.systemProxyRowDetailColor)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .minimumScaleFactor(T.minimumScale)
             }
+
+            Spacer(minLength: 0)
+            Toggle("", isOn: Binding(
+                get: { appSession.isSystemProxyEnabled },
+                set: { value in
+                    Task { await appSession.toggleSystemProxy(value) }
+                }))
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .disabled(appSession.isProxySyncing)
+                .frame(width: 50, alignment: .trailing)
         }
-        return base
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, T.space4)
+        .padding(.vertical, T.space2)
     }
 
-    var systemProxyHelperStatusText: String {
-        if self.appSession.systemProxyHelperActionState == .installing {
-            return tr("ui.system_proxy.helper.installing")
-        }
-        if self.appSession.systemProxyHelperActionState == .reinstalling {
-            return tr("ui.system_proxy.helper.reinstalling")
-        }
-        let detail = self.systemProxyHelperDetailText
-        switch self.appSession.systemProxyHelperState {
-        case .unknown:
-            return tr("ui.system_proxy.helper.unknown")
-        case .running:
-            return tr("ui.system_proxy.helper.running")
-        case .failed:
-            return detail.map { "\(tr("ui.system_proxy.helper.failed")): \($0)" } ?? tr("ui.system_proxy.helper.failed")
-        }
-    }
-
-    var systemProxyHelperGuidanceText: String? {
-        switch self.appSession.systemProxyHelperIssue {
-        case .none:
-            nil
-        case .notInstalled:
-            tr("ui.system_proxy.helper.guidance.not_installed")
-        case .registrationFailed, .connectionFailed, .operationFailed, .timeout:
-            tr("ui.system_proxy.helper.guidance.reinstall")
-        case .systemPolicyBlocked, .needsApproval:
-            tr("ui.system_proxy.helper.guidance.system_policy")
-        case .signatureMismatch:
-            tr("ui.system_proxy.helper.guidance.signature_mismatch")
-        case .installLocationInvalid:
-            tr("ui.system_proxy.helper.guidance.install_location_invalid")
-        case .helperMissing:
-            tr("ui.system_proxy.helper.guidance.helper_missing")
-        case .permissionDenied:
-            tr("ui.system_proxy.helper.guidance.permission_denied")
-        case .migrationFailed:
-            tr("ui.system_proxy.helper.guidance.migration_failed")
-        case .unknown:
-            tr("ui.system_proxy.helper.guidance.unknown")
-        }
-    }
-
-    var systemProxyHelperHoverText: String? {
-        guard self.appSession.systemProxyHelperState == .failed else { return nil }
-
-        var sections: [String] = []
-        if let guidance = self.systemProxyHelperGuidanceText, !guidance.isEmpty {
-            sections.append(guidance)
-        }
-        if let failureMessage = self.appSession.systemProxyHelperFailureMessage, !failureMessage.isEmpty {
-            sections.append(failureMessage)
-        }
-        return sections.isEmpty ? nil : sections.joined(separator: "\n\n")
-    }
-
-    var systemProxyHelperDetailText: String? {
-        switch self.appSession.systemProxyHelperIssue {
-        case .none:
-            nil
-        case .notInstalled:
-            tr("ui.system_proxy.helper.detail.not_installed")
-        case .registrationFailed:
-            tr("ui.system_proxy.helper.detail.registration_failed")
-        case .systemPolicyBlocked:
-            tr("ui.system_proxy.helper.detail.system_policy_blocked")
-        case .signatureMismatch:
-            tr("ui.system_proxy.helper.detail.signature_mismatch")
-        case .needsApproval:
-            tr("ui.system_proxy.helper.detail.needs_approval")
-        case .installLocationInvalid:
-            tr("ui.system_proxy.helper.detail.install_location_invalid")
-        case .helperMissing:
-            tr("ui.system_proxy.helper.detail.helper_missing")
-        case .timeout:
-            tr("ui.system_proxy.helper.detail.timeout")
-        case .connectionFailed:
-            tr("ui.system_proxy.helper.detail.connection_failed")
-        case .operationFailed:
-            tr("ui.system_proxy.helper.detail.operation_failed")
-        case .permissionDenied:
-            tr("ui.system_proxy.helper.detail.permission_denied")
-        case .migrationFailed:
-            tr("ui.system_proxy.helper.detail.migration_failed")
-        case .unknown:
-            tr("ui.system_proxy.helper.detail.unknown")
-        }
-    }
-
-    var systemProxyHelperStatusTint: Color {
-        switch self.appSession.systemProxyHelperState {
-        case .unknown:
-            nativeSecondaryLabel
-        case .running:
-            nativePositive
-        case .failed:
-            nativeCritical
-        }
+    var systemProxyInlineFailureText: String? {
+        guard !self.appSession.isSystemProxyEnabled else { return nil }
+        return self.appSession.systemProxyOpenFailureHint?.trimmedNonEmpty
     }
 
     func quickToggleRow(
@@ -439,79 +380,77 @@ extension MenuBarRootView {
             .frame(width: 18, height: 18, alignment: .center)
     }
 
-    @ViewBuilder
-    func helperActionsMenuContent(dismiss: @escaping () -> Void) -> some View {
-        AttachedPopoverMenuItem(
-            title: tr("ui.system_proxy.helper.install"),
-            leadingSymbol: "arrow.down.circle",
-            leadingTint: nativeInfo)
-        {
-            dismiss()
-            Task { await appSession.installSystemProxyHelper() }
+    var systemProxyCompositeIcon: some View {
+        ZStack {
+            self.systemProxyCompositeIconLayer(
+                tint: self.systemProxyBackgroundActivityTint,
+                alignment: .leading)
+            self.systemProxyCompositeIconLayer(
+                tint: self.systemProxyHelperProcessTint,
+                alignment: .trailing)
         }
-        AttachedPopoverMenuItem(
-            title: tr("ui.system_proxy.helper.reinstall"),
-            leadingSymbol: "arrow.triangle.2.circlepath",
-            leadingTint: nativeWarning)
-        {
-            dismiss()
-            Task { await appSession.reinstallSystemProxyHelper() }
+        .frame(width: 18, height: 18)
+        .help(self.systemProxyCompositeIconHelp)
+    }
+
+    func systemProxyCompositeIconLayer(tint: Color, alignment: Alignment) -> some View {
+        Image(systemName: "network")
+            .font(.app(size: T.FontSize.body, weight: .semibold))
+            .foregroundStyle(tint)
+            .frame(width: 18, height: 18)
+            .mask(alignment: alignment) {
+                Rectangle()
+                    .frame(width: 9)
+            }
+    }
+
+    var systemProxyBackgroundActivityTint: Color {
+        switch self.appSession.systemProxyBackgroundActivityAllowed {
+        case .some(true):
+            nativePositive.opacity(T.Opacity.solid)
+        case .some(false):
+            nativeCritical.opacity(T.Opacity.solid)
+        case .none:
+            nativeSecondaryLabel
         }
     }
 
-    var helperStatusRow: some View {
-        AttachedPopoverMenu { _ in
-            self.quickRowContent(
-                title: tr("ui.quick.system_proxy_helper"),
-                symbol: "wrench.and.screwdriver",
-                foreground: self.systemProxyHelperStatusTint)
-            {
-                HStack(spacing: T.space2) {
-                    self.helperStatusTrailing
-                    Image(systemName: "chevron.right")
-                        .font(.app(size: T.FontSize.caption, weight: .medium))
-                        .foregroundStyle(nativeTertiaryLabel)
-                }
-            }
-        } content: { dismiss in
-            self.helperActionsMenuContent(dismiss: dismiss)
+    var systemProxyHelperProcessTint: Color {
+        switch self.appSession.systemProxyHelperProcessRunning {
+        case .some(true):
+            nativePositive.opacity(T.Opacity.solid)
+        case .some(false):
+            nativeWarning.opacity(T.Opacity.solid)
+        case .none:
+            nativeSecondaryLabel
         }
-        .buttonStyle(.plain)
     }
 
-    var helperStatusTrailing: some View {
-        HStack(spacing: T.space2) {
-            Text(self.systemProxyHelperStatusText)
-                .font(.app(size: T.FontSize.caption, weight: .regular))
-                .lineLimit(1)
-                .foregroundStyle(nativeSecondaryLabel)
-
-            if let hoverText = self.systemProxyHelperHoverText {
-                Button {
-                    self.showingSystemProxyHelperDetails = true
-                } label: {
-                    Image(systemName: self.appSession.systemProxyHelperState == .failed
-                        ? "exclamationmark.circle.fill"
-                        : "info.circle")
-                        .font(.app(size: T.FontSize.caption, weight: .medium))
-                        .foregroundStyle(
-                            self.appSession.systemProxyHelperState == .failed
-                                ? nativeWarning
-                                : nativeTertiaryLabel)
-                }
-                .buttonStyle(.plain)
-                .popover(isPresented: $showingSystemProxyHelperDetails, arrowEdge: .top) {
-                    ScrollView {
-                        Text(hoverText)
-                            .font(.app(size: T.FontSize.caption, weight: .regular))
-                            .foregroundStyle(nativePrimaryLabel)
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(T.space6)
-                    }
-                    .frame(width: 360, height: 220)
-                }
-            }
+    var systemProxyBackgroundActivityHelp: String {
+        let value = switch self.appSession.systemProxyBackgroundActivityAllowed {
+        case .some(true):
+            tr("ui.system_proxy.background_activity.allowed")
+        case .some(false):
+            tr("ui.system_proxy.background_activity.blocked")
+        case .none:
+            tr("ui.common.unknown")
         }
+        return "\(tr("ui.system_proxy.background_activity")): \(value)"
+    }
+
+    var systemProxyHelperProcessHelp: String {
+        let value = switch self.appSession.systemProxyHelperProcessRunning {
+        case .some(true):
+            tr("ui.system_proxy.helper_process.running")
+        case .some(false):
+            tr("ui.system_proxy.helper_process.stopped")
+        case .none:
+            tr("ui.common.unknown")
+        }
+        return "\(tr("ui.system_proxy.helper_process")): \(value)"
+    }
+
+    var systemProxyCompositeIconHelp: String {
+        "\(self.systemProxyBackgroundActivityHelp)\n\(self.systemProxyHelperProcessHelp)"
     }
 }

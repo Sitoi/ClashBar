@@ -34,35 +34,6 @@ enum CoreUpgradeState: Equatable {
     case failed(message: String)
 }
 
-enum SystemProxyHelperRuntimeState: Equatable {
-    case unknown
-    case running
-    case failed
-}
-
-enum SystemProxyHelperActionState: Equatable {
-    case idle
-    case installing
-    case reinstalling
-}
-
-enum SystemProxyHelperIssue: Equatable {
-    case none
-    case notInstalled
-    case registrationFailed
-    case systemPolicyBlocked
-    case signatureMismatch
-    case needsApproval
-    case installLocationInvalid
-    case helperMissing
-    case timeout
-    case connectionFailed
-    case operationFailed
-    case permissionDenied
-    case migrationFailed
-    case unknown
-}
-
 enum ConfigLogLevel: String, CaseIterable {
     case silent
     case error

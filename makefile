@@ -14,6 +14,8 @@ TARGET_ARCH ?=
 DMG_SUFFIX ?=
 DMG_VOLUME_NAME ?= $(APP_NAME)
 WITH_CORE ?= 0
+RELEASE_OPTIMIZE_FOR_SIZE ?= 1
+STRIP_BINARIES ?= 1
 
 .PHONY: help build dist dmg clean
 
@@ -29,6 +31,8 @@ help:
 		"" \
 		"Overrides:" \
 		"  WITH_CORE=1       Bundle mihomo core into the app/dmg" \
+		"  RELEASE_OPTIMIZE_FOR_SIZE=0  Disable -Osize for packaged builds" \
+		"  STRIP_BINARIES=0 Keep packaged app/helper binaries unstripped" \
 		"  TARGET_ARCH=...   Pass through to Swift build/package scripts" \
 		"  APP_VERSION=...   Version used for Info.plist and dmg naming" \
 		"  BUILD_NUMBER=...  Build number used for Info.plist" \
@@ -43,6 +47,8 @@ build:
 	APP_VERSION="$(APP_VERSION)" \
 	BUILD_NUMBER="$(BUILD_NUMBER)" \
 	TARGET_ARCH="$(TARGET_ARCH)" \
+	RELEASE_OPTIMIZE_FOR_SIZE="$(RELEASE_OPTIMIZE_FOR_SIZE)" \
+	STRIP_BINARIES="$(STRIP_BINARIES)" \
 	PREPARE_MIHOMO_BINARY="$(WITH_CORE)" \
 	BUNDLE_MIHOMO_BINARY="$(WITH_CORE)" \
 	REQUIRE_MIHOMO_BINARY="$(WITH_CORE)" \
@@ -55,6 +61,8 @@ dist:
 	TARGET_ARCH="$(TARGET_ARCH)" \
 	DMG_SUFFIX="$(DMG_SUFFIX)" \
 	DMG_VOLUME_NAME="$(DMG_VOLUME_NAME)" \
+	RELEASE_OPTIMIZE_FOR_SIZE="$(RELEASE_OPTIMIZE_FOR_SIZE)" \
+	STRIP_BINARIES="$(STRIP_BINARIES)" \
 	PREPARE_MIHOMO_BINARY="$(WITH_CORE)" \
 	BUNDLE_MIHOMO_BINARY="$(WITH_CORE)" \
 	REQUIRE_MIHOMO_BINARY="$(WITH_CORE)" \

@@ -10,6 +10,7 @@ public enum ProxyHelperConstants {
 
 @objc(ProxyHelperProtocol)
 public protocol ProxyHelperProtocol {
+    func ping(completion: @escaping (Bool, String?) -> Void)
     func setSystemProxy(
         host: String,
         httpPort: Int,
