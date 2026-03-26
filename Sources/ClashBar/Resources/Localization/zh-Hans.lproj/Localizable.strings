@@ -78,6 +78,7 @@
 "ui.quick.system_proxy" = "系统代理";
 "ui.quick.tun_mode" = "TUN 模式";
 "ui.quick.copy_terminal" = "复制终端命令";
+"ui.quick.copy_terminal_current_endpoint" = "复制当前端点命令";
 "ui.quick.reload_config_list" = "重载配置文件";
 "ui.quick.import_local_config" = "导入本地配置";
 "ui.quick.import_remote_config" = "导入订阅链接";
@@ -175,6 +176,12 @@
 "ui.common.timeout" = "超时";
 "ui.common.testing" = "测试中...";
 "ui.common.latency_ms" = "%dms";
+"ui.system_proxy.background_activity" = "后台活动";
+"ui.system_proxy.background_activity.allowed" = "已允许";
+"ui.system_proxy.background_activity.blocked" = "未允许";
+"ui.system_proxy.helper_process" = "Helper";
+"ui.system_proxy.helper_process.running" = "已启动";
+"ui.system_proxy.helper_process.stopped" = "未启动";
 
 "app.runtime.starting" = "启动中";
 "app.runtime.running" = "运行中";
@@ -202,10 +209,24 @@
 "app.system_proxy.error.helper_not_bundled" = "未找到系统代理 helper。请使用打包后的应用（.app/.dmg）";
 "app.system_proxy.error.helper_install_location" = "请先将 ClashBar.app 拖到“应用程序”目录后重试";
 "app.system_proxy.error.helper_needs_approval" = "需要在系统设置 > 通用 > 登录项中允许 ClashBar 后台项目，然后重试";
-"app.system_proxy.error.helper_registration_failed" = "注册系统代理 helper 失败: %@";
-"app.system_proxy.error.helper_recovery_failed" = "恢复系统代理 helper 失败: %@";
+"app.system_proxy.error.helper_not_registered" = "系统代理 helper 未注册";
+"app.system_proxy.error.helper_not_registered_with_detail" = "系统代理 helper 未注册: %@";
+"app.system_proxy.error.helper_start_timed_out" = "系统代理 helper 启动超时";
+"app.system_proxy.error.helper_invalid_signature" = "系统代理 helper 签名无效: %@";
 "app.system_proxy.error.helper_connection_failed" = "连接系统代理 helper 失败: %@";
 "app.system_proxy.error.helper_operation_failed" = "系统代理 helper 执行失败: %@";
+"app.system_proxy.alert.title" = "系统代理失败";
+"app.system_proxy.alert.invalid_host" = "代理地址无效";
+"app.system_proxy.alert.invalid_port" = "代理端口无效";
+"app.system_proxy.alert.background_activity_disabled" = "后台项目未允许";
+"app.system_proxy.alert.helper_not_registered" = "Helper 未注册";
+"app.system_proxy.alert.helper_start_timed_out" = "Helper 启动超时";
+"app.system_proxy.alert.helper_connection_failed" = "Helper 连接失败";
+"app.system_proxy.alert.helper_operation_failed" = "系统代理操作失败";
+"app.system_proxy.alert.helper_install_location" = "请先将 ClashBar 放到应用程序目录";
+"app.system_proxy.alert.helper_not_bundled" = "App 包内缺少 Helper";
+"app.system_proxy.alert.helper_invalid_signature" = "Helper 签名异常";
+"app.system_proxy.alert.unknown" = "系统代理操作失败";
 "app.tun.error.binary_not_found" = "未找到 mihomo 二进制。请先将名为“mihomo”的可执行文件复制到以下目录：\n%@";
 "app.tun.error.permission_missing" = "TUN 模式需要 mihomo 二进制具备 root + setuid 权限。";
 "app.tun.error.authorization_cancelled" = "管理员授权已取消。";
@@ -283,6 +304,7 @@
 "log.system_proxy.port_sync_failed" = "同步系统代理端口失败: %@";
 "log.system_proxy.startup_repaired" = "启动时发现系统代理与目标不一致，已修正为 %@:%d";
 "log.system_proxy.startup_repair_failed" = "启动时校验系统代理失败: %@";
+"log.system_proxy.helper_failed" = "系统代理 helper 状态异常: %@";
 "log.tun.toggled" = "TUN 模式%@";
 "log.tun.enabled" = "已开启";
 "log.tun.disabled" = "已关闭";

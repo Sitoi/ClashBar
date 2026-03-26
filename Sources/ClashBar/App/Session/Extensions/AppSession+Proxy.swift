@@ -41,35 +41,76 @@ extension AppSession {
 
     func toggleSystemProxy(_ enabled: Bool) async {
         isProxySyncing = true
+        self.systemProxyEnableIntentInFlight = enabled
+        self.clearSystemProxyOpenFailureHint()
         defer { isProxySyncing = false }
+        defer { self.systemProxyEnableIntentInFlight = false }
 
         do {
             if enabled {
                 let target = try await resolveSystemProxyTargetFromRuntimeConfig()
                 try await applySystemProxy(enabled: true, host: target.host, ports: target.ports)
+                systemProxyActiveDisplay = self.buildSystemProxyDisplayString(host: target.host, ports: target.ports)
             } else {
                 try await applySystemProxy(enabled: false, host: self.controllerHost(), ports: .disabled)
+                systemProxyActiveDisplay = nil
             }
 
             // Keep a core-side sync call so proxy toggle and runtime config stay aligned.
             try await self.patchRuntimeConfigUseCase().execute(body: ["mode": .string(currentMode.rawValue)])
 
             isSystemProxyEnabled = enabled
+            self.clearSystemProxyOpenFailureHint()
+            self.systemProxyHelperFailureReason = nil
+            self.systemProxyHelperFailureMessage = nil
+            if enabled {
+                await self.refreshSystemProxyHelperRuntimeSnapshot()
+            } else {
+                self.resetSystemProxyObservedState()
+            }
             let state = enabled ? tr("log.system_proxy.enabled") : tr("log.system_proxy.disabled")
             appendLog(level: "info", message: tr("log.system_proxy.toggled", state))
         } catch {
             appendLog(level: "error", message: tr("log.system_proxy.toggle_failed", systemProxyErrorMessage(error)))
-            await refreshSystemProxyStatus()
+            if enabled {
+                self.updateSystemProxyOpenFailureHint(for: error)
+            }
+            await self.refreshSystemProxyHelperStatus()
+            if enabled || self.isSystemProxyEnabled {
+                await refreshSystemProxyStatus()
+            } else {
+                self.resetSystemProxyObservedState()
+            }
         }
     }
 
     func copyProxyCommand() {
+        self.copyLocalProxyCommand()
+    }
+
+    func copyLocalProxyCommand() {
+        self.copyProxyCommand(host: "127.0.0.1")
+    }
+
+    func copyManagedEndpointProxyCommand() {
+        self.copyProxyCommand(host: self.controllerHost())
+    }
+
+    func localProxyCommandTargetDisplay() -> String {
+        let ports = currentSystemProxyPortsFromState()
+        return self.buildSystemProxyDisplayString(host: "127.0.0.1", ports: ports) ?? "127.0.0.1"
+    }
+
+    func managedEndpointProxyCommandTargetDisplay() -> String {
+        let ports = currentSystemProxyPortsFromState()
+        return self.buildSystemProxyDisplayString(host: self.controllerHost(), ports: ports) ?? self.controllerHost()
+    }
+
+    private func copyProxyCommand(host: String) {
         let ports = currentSystemProxyPortsFromState()
         let httpPort = ports.httpPort ?? ports.socksPort ?? effectiveMixedPort()
         let socksPort = ports.socksPort ?? ports.httpPort ?? httpPort
-        let script = BuildTerminalProxyCommandUseCase().execute(
-            httpPort: httpPort,
-            socksPort: socksPort)
+        let script = BuildTerminalProxyCommandUseCase().execute(host: host, httpPort: httpPort, socksPort: socksPort)
         copyTextToPasteboard(script)
         appendLog(level: "info", message: tr("log.proxy_export.copied"))
     }
@@ -139,6 +180,15 @@ extension AppSession {
             return "127.0.0.1"
         }
         return host
+    }
+
+    func buildSystemProxyDisplayString(host: String, ports: SystemProxyPorts) -> String? {
+        guard let port = ports.primaryPort, port > 0 else { return nil }
+        let trimmedHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedHost.contains(":"), !trimmedHost.hasPrefix("[") {
+            return "[\(trimmedHost)]:\(port)"
+        }
+        return "\(trimmedHost):\(port)"
     }
 
     func makeControllerUIURL(_ controller: String) -> String {

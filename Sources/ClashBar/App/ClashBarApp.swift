@@ -118,6 +118,10 @@ final class ClashBarAppDelegate: NSObject, NSApplicationDelegate {
         self.appSession.presentInitialNoCoreSetupGuideIfNeeded()
     }
 
+    func applicationDidBecomeActive(_ notification: Notification) {
+        self.appSession.handleApplicationDidBecomeActive()
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         self.appSession.shutdownForTermination()
         self.statusItemController?.shutdown()
