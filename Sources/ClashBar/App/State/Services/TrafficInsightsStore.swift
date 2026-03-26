@@ -7,17 +7,23 @@ final class TrafficInsightsStore: ObservableObject {
 
     private struct PersistedState: Codable {
         let buckets: [TrafficInsightsMinuteBucket]
+        let hourlyTrendBuckets: [TrafficTotalsBucket]
+        let dailyTrendBuckets: [TrafficTotalsBucket]
         let cumulativeEntries: [TrafficInsightFacetEntry]
         let cumulativeUpload: Int64
         let cumulativeDownload: Int64
 
         init(
             buckets: [TrafficInsightsMinuteBucket],
+            hourlyTrendBuckets: [TrafficTotalsBucket] = [],
+            dailyTrendBuckets: [TrafficTotalsBucket] = [],
             cumulativeEntries: [TrafficInsightFacetEntry] = [],
             cumulativeUpload: Int64 = 0,
             cumulativeDownload: Int64 = 0)
         {
             self.buckets = buckets
+            self.hourlyTrendBuckets = hourlyTrendBuckets
+            self.dailyTrendBuckets = dailyTrendBuckets
             self.cumulativeEntries = cumulativeEntries
             self.cumulativeUpload = cumulativeUpload
             self.cumulativeDownload = cumulativeDownload
@@ -25,6 +31,8 @@ final class TrafficInsightsStore: ObservableObject {
 
         private enum CodingKeys: String, CodingKey {
             case buckets
+            case hourlyTrendBuckets
+            case dailyTrendBuckets
             case cumulativeEntries
             case cumulativeUpload
             case cumulativeDownload
@@ -35,6 +43,12 @@ final class TrafficInsightsStore: ObservableObject {
             self.buckets = try container.decodeIfPresent(
                 [TrafficInsightsMinuteBucket].self,
                 forKey: .buckets) ?? []
+            self.hourlyTrendBuckets = try container.decodeIfPresent(
+                [TrafficTotalsBucket].self,
+                forKey: .hourlyTrendBuckets) ?? []
+            self.dailyTrendBuckets = try container.decodeIfPresent(
+                [TrafficTotalsBucket].self,
+                forKey: .dailyTrendBuckets) ?? []
             self.cumulativeEntries = try container.decodeIfPresent(
                 [TrafficInsightFacetEntry].self,
                 forKey: .cumulativeEntries) ?? []
@@ -57,9 +71,23 @@ final class TrafficInsightsStore: ObservableObject {
         var download: Int64
     }
 
+    private struct TrafficTotalsBucket: Codable, Equatable, Identifiable {
+        let bucketStart: Int64
+        var upload: Int64
+        var download: Int64
+
+        var id: Int64 {
+            self.bucketStart
+        }
+    }
+
     private let storageURL: URL
     private let maxPersistedMinutes = 60 * 24
+    private let maxPersistedHours = 24 * 180
+    private let maxRuntimeTrendPoints = 240
     private var persistedBuckets: [Int64: TrafficInsightsMinuteBucket] = [:]
+    private var hourlyTrendBuckets: [Int64: TrafficTotalsBucket] = [:]
+    private var dailyTrendBuckets: [Int64: TrafficTotalsBucket] = [:]
     private var cumulativeEntries: [String: TrafficInsightFacetEntry] = [:]
     private var cumulativeUpload: Int64 = 0
     private var cumulativeDownload: Int64 = 0
@@ -73,6 +101,7 @@ final class TrafficInsightsStore: ObservableObject {
         self.storageURL = storageURL
         self.loadPersistedStateIfAvailable()
         self.trimPersistedBuckets(now: Date())
+        self.trimHourlyTrendBuckets(now: Date())
         self.startDisplayClock()
     }
 
@@ -124,6 +153,8 @@ final class TrafficInsightsStore: ObservableObject {
         self.persistTask?.cancel()
         self.persistTask = nil
         self.persistedBuckets.removeAll(keepingCapacity: false)
+        self.hourlyTrendBuckets.removeAll(keepingCapacity: false)
+        self.dailyTrendBuckets.removeAll(keepingCapacity: false)
         self.cumulativeEntries.removeAll(keepingCapacity: false)
         self.cumulativeUpload = 0
         self.cumulativeDownload = 0
@@ -135,11 +166,6 @@ final class TrafficInsightsStore: ObservableObject {
     }
 
     func snapshot(for window: InsightsTimeWindow, now: Date = Date()) -> TrafficInsightsSnapshot {
-        let didReconcile = self.reconcileCumulativeStateWithPersistedBuckets()
-        if didReconcile {
-            self.schedulePersistence()
-        }
-
         let effectiveNow = now
         switch window {
         case .runtime:
@@ -148,8 +174,7 @@ final class TrafficInsightsStore: ObservableObject {
                 totalUpload: self.cumulativeUpload,
                 totalDownload: self.cumulativeDownload,
                 entries: Array(self.cumulativeEntries.values),
-                trendPoints: self.makeTrendPoints(
-                    from: self.persistedBuckets.values.sorted { $0.minuteStart < $1.minuteStart }))
+                trendPoints: self.makeRuntimeTrendPoints(now: effectiveNow))
         default:
             let cutoff = Int64(effectiveNow.timeIntervalSince1970) - Int64((window.minuteCount ?? 0) * 60)
             let buckets = self.persistedBuckets.values
@@ -270,9 +295,20 @@ final class TrafficInsightsStore: ObservableObject {
             minuteStart: minuteStart,
             upload: upload,
             download: download)
+        self.updateTrendBucket(
+            bucketMap: &self.hourlyTrendBuckets,
+            bucketStart: Int64(recordedAt.timeIntervalSince1970 / 3600) * 3600,
+            upload: upload,
+            download: download)
+        self.updateTrendBucket(
+            bucketMap: &self.dailyTrendBuckets,
+            bucketStart: Int64(recordedAt.timeIntervalSince1970 / 86_400) * 86_400,
+            upload: upload,
+            download: download)
         self.cumulativeUpload += upload
         self.cumulativeDownload += download
         self.trimPersistedBuckets(now: recordedAt)
+        self.trimHourlyTrendBuckets(now: recordedAt)
         self.lastUpdatedAt = recordedAt
         self.displayReferenceDate = recordedAt
         self.schedulePersistence()
@@ -326,9 +362,29 @@ final class TrafficInsightsStore: ObservableObject {
         bucketMap[minuteStart] = bucket
     }
 
+    private func updateTrendBucket(
+        bucketMap: inout [Int64: TrafficTotalsBucket],
+        bucketStart: Int64,
+        upload: Int64,
+        download: Int64)
+    {
+        var bucket = bucketMap[bucketStart] ?? TrafficTotalsBucket(
+            bucketStart: bucketStart,
+            upload: 0,
+            download: 0)
+        bucket.upload += upload
+        bucket.download += download
+        bucketMap[bucketStart] = bucket
+    }
+
     private func trimPersistedBuckets(now: Date) {
         let cutoff = Int64(now.timeIntervalSince1970) - Int64(self.maxPersistedMinutes * 60)
         self.persistedBuckets = self.persistedBuckets.filter { $0.key >= cutoff }
+    }
+
+    private func trimHourlyTrendBuckets(now: Date) {
+        let cutoff = Int64(now.timeIntervalSince1970) - Int64(self.maxPersistedHours * 3600)
+        self.hourlyTrendBuckets = self.hourlyTrendBuckets.filter { $0.key >= cutoff }
     }
 
     private func updateCumulativeEntry(
@@ -387,11 +443,15 @@ final class TrafficInsightsStore: ObservableObject {
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
         let buckets = self.persistedBuckets.values.sorted { $0.minuteStart < $1.minuteStart }
+        let hourlyTrendBuckets = self.hourlyTrendBuckets.values.sorted { $0.bucketStart < $1.bucketStart }
+        let dailyTrendBuckets = self.dailyTrendBuckets.values.sorted { $0.bucketStart < $1.bucketStart }
         let cumulativeEntries = self.cumulativeEntries.values.sorted { lhs, rhs in
             lhs.id.localizedStandardCompare(rhs.id) == .orderedAscending
         }
         let state = PersistedState(
             buckets: buckets,
+            hourlyTrendBuckets: hourlyTrendBuckets,
+            dailyTrendBuckets: dailyTrendBuckets,
             cumulativeEntries: cumulativeEntries,
             cumulativeUpload: self.cumulativeUpload,
             cumulativeDownload: self.cumulativeDownload)
@@ -407,17 +467,46 @@ final class TrafficInsightsStore: ObservableObject {
         }
 
         self.persistedBuckets = Dictionary(uniqueKeysWithValues: state.buckets.map { ($0.minuteStart, $0) })
+        self.hourlyTrendBuckets = Dictionary(uniqueKeysWithValues: state.hourlyTrendBuckets.map { ($0.bucketStart, $0) })
+        self.dailyTrendBuckets = Dictionary(uniqueKeysWithValues: state.dailyTrendBuckets.map { ($0.bucketStart, $0) })
         self.cumulativeEntries = Dictionary(uniqueKeysWithValues: state.cumulativeEntries.map { ($0.id, $0) })
         self.cumulativeUpload = state.cumulativeUpload
         self.cumulativeDownload = state.cumulativeDownload
+        let didBackfillTrendBuckets = self.backfillTrendBucketsIfNeeded()
         let didBackfillCumulative = self.reconcileCumulativeStateWithPersistedBuckets()
+        let latestMinuteBucket = state.buckets.map(\.minuteStart).max().map(TimeInterval.init) ?? 0
+        let latestHourBucket = state.hourlyTrendBuckets.map(\.bucketStart).max().map(TimeInterval.init) ?? 0
+        let latestDayBucket = state.dailyTrendBuckets.map(\.bucketStart).max().map(TimeInterval.init) ?? 0
+        let latestCumulativeEntry = self.cumulativeEntries.values.map(\.lastSeenAt).max() ?? 0
         self.lastUpdatedAt = Date(
             timeIntervalSince1970: max(
-                state.buckets.map(\.minuteStart).max().map(TimeInterval.init) ?? 0,
-                self.cumulativeEntries.values.map(\.lastSeenAt).max() ?? 0))
-        if didBackfillCumulative {
+                latestMinuteBucket,
+                latestHourBucket,
+                latestDayBucket,
+                latestCumulativeEntry))
+        if didBackfillTrendBuckets || didBackfillCumulative {
             self.persistState()
         }
+    }
+
+    private func backfillTrendBucketsIfNeeded() -> Bool {
+        guard self.hourlyTrendBuckets.isEmpty && self.dailyTrendBuckets.isEmpty else { return false }
+
+        for bucket in self.persistedBuckets.values {
+            let timestamp = bucket.minuteStart
+            self.updateTrendBucket(
+                bucketMap: &self.hourlyTrendBuckets,
+                bucketStart: Int64(timestamp / 3600) * 3600,
+                upload: bucket.upload,
+                download: bucket.download)
+            self.updateTrendBucket(
+                bucketMap: &self.dailyTrendBuckets,
+                bucketStart: Int64(timestamp / 86_400) * 86_400,
+                upload: bucket.upload,
+                download: bucket.download)
+        }
+
+        return !self.persistedBuckets.isEmpty
     }
 
     private func reconcileCumulativeStateWithPersistedBuckets() -> Bool {
@@ -518,6 +607,69 @@ final class TrafficInsightsStore: ObservableObject {
                 upload: $0.upload,
                 download: $0.download)
         }
+    }
+
+    private func makeRuntimeTrendPoints(now: Date) -> [TrafficInsightsTrendPoint] {
+        let nowTimestamp = Int64(now.timeIntervalSince1970)
+        let minuteCutoff = nowTimestamp - Int64(self.maxPersistedMinutes * 60)
+        let hourCutoff = nowTimestamp - Int64(self.maxPersistedHours * 3600)
+
+        let dayPoints = self.dailyTrendBuckets.values
+            .filter { $0.bucketStart < hourCutoff }
+            .sorted { $0.bucketStart < $1.bucketStart }
+            .map {
+                TrafficInsightsTrendPoint(
+                    minuteStart: $0.bucketStart,
+                    upload: $0.upload,
+                    download: $0.download)
+            }
+        let hourPoints = self.hourlyTrendBuckets.values
+            .filter { $0.bucketStart >= hourCutoff && $0.bucketStart < minuteCutoff }
+            .sorted { $0.bucketStart < $1.bucketStart }
+            .map {
+                TrafficInsightsTrendPoint(
+                    minuteStart: $0.bucketStart,
+                    upload: $0.upload,
+                    download: $0.download)
+            }
+        let minutePoints = self.persistedBuckets.values
+            .filter { $0.minuteStart >= minuteCutoff }
+            .sorted { $0.minuteStart < $1.minuteStart }
+            .map {
+                TrafficInsightsTrendPoint(
+                    minuteStart: $0.minuteStart,
+                    upload: $0.upload,
+                    download: $0.download)
+            }
+
+        return self.downsampleTrendPoints(dayPoints + hourPoints + minutePoints, maxPoints: self.maxRuntimeTrendPoints)
+    }
+
+    private func downsampleTrendPoints(
+        _ points: [TrafficInsightsTrendPoint],
+        maxPoints: Int)
+        -> [TrafficInsightsTrendPoint]
+    {
+        guard points.count > maxPoints, maxPoints > 0 else { return points }
+
+        let chunkSize = Int(ceil(Double(points.count) / Double(maxPoints)))
+        var result: [TrafficInsightsTrendPoint] = []
+        result.reserveCapacity(maxPoints)
+
+        var index = 0
+        while index < points.count {
+            let chunkEnd = min(index + chunkSize, points.count)
+            let chunk = points[index..<chunkEnd]
+            guard let first = chunk.first else { break }
+
+            result.append(TrafficInsightsTrendPoint(
+                minuteStart: first.minuteStart,
+                upload: chunk.reduce(Int64(0)) { $0 + $1.upload },
+                download: chunk.reduce(Int64(0)) { $0 + $1.download }))
+            index = chunkEnd
+        }
+
+        return result
     }
 
     private func makeDomainItems(from entries: [TrafficInsightFacetEntry]) -> [TrafficInsightsDomainItem] {
