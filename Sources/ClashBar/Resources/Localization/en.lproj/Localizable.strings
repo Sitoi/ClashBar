@@ -1,8 +1,8 @@
-"ui.tab.proxy" = "Nodes";
-"ui.tab.rules" = "Rules";
-"ui.tab.activity" = "Network";
-"ui.tab.logs" = "Logs";
-"ui.tab.system" = "Settings";
+"ui.tab.proxy" = "Node";
+"ui.tab.rules" = "Rule";
+"ui.tab.connections" = "Connection";
+"ui.tab.logs" = "Log";
+"ui.tab.system" = "Setting";
 
 "ui.log_filter.all" = "All";
 "ui.log_filter.info" = "Info";
@@ -29,19 +29,19 @@
 "ui.action.close_connection" = "Close Connection";
 "ui.action.copy_all_logs" = "Copy All Logs";
 "ui.action.clear_all_logs" = "Clear All Logs";
-"ui.action.reset_log_filters" = "Reset Filters";
-"ui.action.reset_network_filters" = "Reset Network Filters";
 "ui.action.copy_host" = "Copy Host";
 "ui.action.copy_connection_id" = "Copy Connection ID";
 "ui.action.copy_log_message" = "Copy Log Message";
 "ui.action.copy_log_entry" = "Copy Full Log Entry";
 "ui.action.import" = "Import";
 "ui.action.overwrite" = "Overwrite";
+"ui.action.delete" = "Delete";
 "ui.action.cancel" = "Cancel";
 "ui.action.ok" = "OK";
 "ui.action.flush_fakeip_cache" = "Flush FakeIP Cache";
 "ui.action.flush_dns_cache" = "Flush DNS Cache";
 "ui.action.open_core_directory" = "Open Core Directory";
+"ui.action.open_web_ui" = "Open Web UI";
 "ui.action.enable_tun" = "Enable TUN Mode";
 "ui.action.disable_tun" = "Disable TUN Mode";
 "ui.action.update_geo" = "Update GEO Data";
@@ -54,11 +54,31 @@
 "ui.mode.global" = "Global";
 "ui.mode.direct" = "Direct";
 
+"ui.machine.local" = "Local";
+"ui.machine.manage" = "Manage Remote Machines";
+"ui.machine.add" = "Add Machine";
+"ui.machine.edit" = "Edit Machine";
+"ui.machine.save" = "Save";
+"ui.machine.empty" = "No remote machines";
+"ui.machine.field.name" = "Name";
+"ui.machine.field.host" = "Host";
+"ui.machine.field.port" = "Port";
+"ui.machine.field.secret" = "Secret";
+"ui.machine.remote_readonly" = "(Remote, read-only)";
+"ui.machine.return_local" = "Return to Local Core";
+"ui.machine.active" = "Active";
+"ui.machine.local_label" = "Local";
+"ui.machine.status_unreachable" = "Unreachable";
+
+"ui.section.local_app_settings" = "App Settings (Local)";
+"ui.section.core_settings" = "Core Settings";
+"ui.section.core_settings_remote" = "Core Settings (Remote)";
 
 "ui.quick.switch_config" = "Switch Config";
 "ui.quick.system_proxy" = "System Proxy";
 "ui.quick.tun_mode" = "TUN Mode";
 "ui.quick.copy_terminal" = "Copy Terminal Command";
+"ui.quick.copy_terminal_current_endpoint" = "Copy Current Endpoint Command";
 "ui.quick.reload_config_list" = "Reload Config List";
 "ui.quick.import_local_config" = "Import Local Config";
 "ui.quick.import_remote_config" = "Import Subscription Link";
@@ -86,7 +106,6 @@
 "ui.empty.rules" = "No rules data";
 "ui.empty.connections" = "No active connections";
 "ui.empty.logs" = "No logs";
-
 
 "ui.placeholder.filter_connection" = "Filter domain, IP...";
 "ui.placeholder.search_logs" = "Search logs...";
@@ -157,6 +176,12 @@
 "ui.common.timeout" = "Timeout";
 "ui.common.testing" = "Testing...";
 "ui.common.latency_ms" = "%dms";
+"ui.system_proxy.background_activity" = "Background";
+"ui.system_proxy.background_activity.allowed" = "Allowed";
+"ui.system_proxy.background_activity.blocked" = "Blocked";
+"ui.system_proxy.helper_process" = "Helper";
+"ui.system_proxy.helper_process.running" = "Running";
+"ui.system_proxy.helper_process.stopped" = "Stopped";
 
 "app.runtime.starting" = "Starting";
 "app.runtime.running" = "Running";
@@ -184,10 +209,24 @@
 "app.system_proxy.error.helper_not_bundled" = "Privileged helper not found in app bundle. Use the packaged .app/.dmg build";
 "app.system_proxy.error.helper_install_location" = "Move ClashBar.app to /Applications and reopen it before enabling system proxy";
 "app.system_proxy.error.helper_needs_approval" = "Allow ClashBar background item in System Settings > General > Login Items, then try again";
-"app.system_proxy.error.helper_registration_failed" = "Failed to register privileged helper: %@";
-"app.system_proxy.error.helper_recovery_failed" = "Failed to recover privileged helper: %@";
+"app.system_proxy.error.helper_not_registered" = "Privileged helper is not registered";
+"app.system_proxy.error.helper_not_registered_with_detail" = "Privileged helper is not registered: %@";
+"app.system_proxy.error.helper_start_timed_out" = "Privileged helper startup timed out";
+"app.system_proxy.error.helper_invalid_signature" = "Privileged helper signature invalid: %@";
 "app.system_proxy.error.helper_connection_failed" = "Failed to connect privileged helper: %@";
 "app.system_proxy.error.helper_operation_failed" = "Privileged helper operation failed: %@";
+"app.system_proxy.alert.title" = "System Proxy Failed";
+"app.system_proxy.alert.invalid_host" = "Invalid proxy host";
+"app.system_proxy.alert.invalid_port" = "Invalid proxy port";
+"app.system_proxy.alert.background_activity_disabled" = "Background item not allowed";
+"app.system_proxy.alert.helper_not_registered" = "Helper not registered";
+"app.system_proxy.alert.helper_start_timed_out" = "Helper startup timed out";
+"app.system_proxy.alert.helper_connection_failed" = "Helper connection failed";
+"app.system_proxy.alert.helper_operation_failed" = "System proxy operation failed";
+"app.system_proxy.alert.helper_install_location" = "Move ClashBar to /Applications first";
+"app.system_proxy.alert.helper_not_bundled" = "Helper missing from app bundle";
+"app.system_proxy.alert.helper_invalid_signature" = "Helper signature mismatch";
+"app.system_proxy.alert.unknown" = "System proxy operation failed";
 "app.tun.error.binary_not_found" = "No mihomo core was found. Copy an executable named \"mihomo\" to %@ first.";
 "app.tun.error.permission_missing" = "TUN mode requires root + setuid permissions on mihomo binary.";
 "app.tun.error.authorization_cancelled" = "Administrator authorization was cancelled.";
@@ -265,6 +304,7 @@
 "log.system_proxy.port_sync_failed" = "Failed to sync system proxy port: %@";
 "log.system_proxy.startup_repaired" = "Startup check fixed system proxy to %@:%d";
 "log.system_proxy.startup_repair_failed" = "Startup system proxy check failed: %@";
+"log.system_proxy.helper_failed" = "System proxy helper unhealthy: %@";
 "log.tun.toggled" = "TUN mode %@";
 "log.tun.enabled" = "enabled";
 "log.tun.disabled" = "disabled";
@@ -296,6 +336,8 @@
 "log.connection.copy_id" = "Copied connection ID: %@";
 "log.logs.copied_message" = "Copied log message";
 "log.logs.copied_entry" = "Copied full log entry";
+"log.remote.switched_to_local" = "Switched to local machine";
+"log.remote.switched_to_remote" = "Switched to remote machine: %@ (%@)";
 
 "log.action_name.reload_config" = "Reload config";
 "log.action_name.switch_proxy" = "Switch proxy %@ -> %@";

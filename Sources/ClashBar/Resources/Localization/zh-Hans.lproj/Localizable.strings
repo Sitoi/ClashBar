@@ -1,6 +1,6 @@
 "ui.tab.proxy" = "节点";
 "ui.tab.rules" = "分流";
-"ui.tab.activity" = "网络";
+"ui.tab.connections" = "连接";
 "ui.tab.logs" = "日志";
 "ui.tab.system" = "设置";
 
@@ -29,19 +29,19 @@
 "ui.action.close_connection" = "关闭连接";
 "ui.action.copy_all_logs" = "复制全部日志";
 "ui.action.clear_all_logs" = "清理全部日志";
-"ui.action.reset_log_filters" = "重置筛选";
-"ui.action.reset_network_filters" = "重置网络筛选";
 "ui.action.copy_host" = "复制 Host";
 "ui.action.copy_connection_id" = "复制连接 ID";
 "ui.action.copy_log_message" = "复制日志消息";
 "ui.action.copy_log_entry" = "复制完整日志";
 "ui.action.import" = "导入";
 "ui.action.overwrite" = "覆盖";
+"ui.action.delete" = "删除";
 "ui.action.cancel" = "取消";
 "ui.action.ok" = "确定";
 "ui.action.flush_fakeip_cache" = "清理 FakeIP 缓存";
 "ui.action.flush_dns_cache" = "清理 DNS 缓存";
 "ui.action.open_core_directory" = "打开内核目录";
+"ui.action.open_web_ui" = "打开 Web UI";
 "ui.action.enable_tun" = "开启 TUN 模式";
 "ui.action.disable_tun" = "关闭 TUN 模式";
 "ui.action.update_geo" = "更新 GEO 数据";
@@ -54,11 +54,31 @@
 "ui.mode.global" = "全局";
 "ui.mode.direct" = "直连";
 
+"ui.machine.local" = "本地";
+"ui.machine.manage" = "管理远程机器";
+"ui.machine.add" = "添加机器";
+"ui.machine.edit" = "编辑机器";
+"ui.machine.save" = "保存";
+"ui.machine.empty" = "暂无远程机器";
+"ui.machine.field.name" = "名称";
+"ui.machine.field.host" = "主机地址";
+"ui.machine.field.port" = "端口";
+"ui.machine.field.secret" = "密钥";
+"ui.machine.remote_readonly" = "(远程连接不可变更)";
+"ui.machine.return_local" = "返回本地内核";
+"ui.machine.active" = "当前";
+"ui.machine.local_label" = "本地";
+"ui.machine.status_unreachable" = "无法连接";
+
+"ui.section.local_app_settings" = "应用设置 (本地)";
+"ui.section.core_settings" = "内核设置";
+"ui.section.core_settings_remote" = "内核设置 (远程)";
 
 "ui.quick.switch_config" = "切换配置";
 "ui.quick.system_proxy" = "系统代理";
 "ui.quick.tun_mode" = "TUN 模式";
 "ui.quick.copy_terminal" = "复制终端命令";
+"ui.quick.copy_terminal_current_endpoint" = "复制当前端点命令";
 "ui.quick.reload_config_list" = "重载配置文件";
 "ui.quick.import_local_config" = "导入本地配置";
 "ui.quick.import_remote_config" = "导入订阅链接";
@@ -86,7 +106,6 @@
 "ui.empty.rules" = "暂无规则数据";
 "ui.empty.connections" = "暂无活动连接";
 "ui.empty.logs" = "暂无日志";
-
 
 "ui.placeholder.filter_connection" = "过滤域名、IP...";
 "ui.placeholder.search_logs" = "搜索日志...";
@@ -157,6 +176,12 @@
 "ui.common.timeout" = "超时";
 "ui.common.testing" = "测试中...";
 "ui.common.latency_ms" = "%dms";
+"ui.system_proxy.background_activity" = "后台活动";
+"ui.system_proxy.background_activity.allowed" = "已允许";
+"ui.system_proxy.background_activity.blocked" = "未允许";
+"ui.system_proxy.helper_process" = "Helper";
+"ui.system_proxy.helper_process.running" = "已启动";
+"ui.system_proxy.helper_process.stopped" = "未启动";
 
 "app.runtime.starting" = "启动中";
 "app.runtime.running" = "运行中";
@@ -184,10 +209,24 @@
 "app.system_proxy.error.helper_not_bundled" = "未找到系统代理 helper。请使用打包后的应用（.app/.dmg）";
 "app.system_proxy.error.helper_install_location" = "请先将 ClashBar.app 拖到“应用程序”目录后重试";
 "app.system_proxy.error.helper_needs_approval" = "需要在系统设置 > 通用 > 登录项中允许 ClashBar 后台项目，然后重试";
-"app.system_proxy.error.helper_registration_failed" = "注册系统代理 helper 失败: %@";
-"app.system_proxy.error.helper_recovery_failed" = "恢复系统代理 helper 失败: %@";
+"app.system_proxy.error.helper_not_registered" = "系统代理 helper 未注册";
+"app.system_proxy.error.helper_not_registered_with_detail" = "系统代理 helper 未注册: %@";
+"app.system_proxy.error.helper_start_timed_out" = "系统代理 helper 启动超时";
+"app.system_proxy.error.helper_invalid_signature" = "系统代理 helper 签名无效: %@";
 "app.system_proxy.error.helper_connection_failed" = "连接系统代理 helper 失败: %@";
 "app.system_proxy.error.helper_operation_failed" = "系统代理 helper 执行失败: %@";
+"app.system_proxy.alert.title" = "系统代理失败";
+"app.system_proxy.alert.invalid_host" = "代理地址无效";
+"app.system_proxy.alert.invalid_port" = "代理端口无效";
+"app.system_proxy.alert.background_activity_disabled" = "后台项目未允许";
+"app.system_proxy.alert.helper_not_registered" = "Helper 未注册";
+"app.system_proxy.alert.helper_start_timed_out" = "Helper 启动超时";
+"app.system_proxy.alert.helper_connection_failed" = "Helper 连接失败";
+"app.system_proxy.alert.helper_operation_failed" = "系统代理操作失败";
+"app.system_proxy.alert.helper_install_location" = "请先将 ClashBar 放到应用程序目录";
+"app.system_proxy.alert.helper_not_bundled" = "App 包内缺少 Helper";
+"app.system_proxy.alert.helper_invalid_signature" = "Helper 签名异常";
+"app.system_proxy.alert.unknown" = "系统代理操作失败";
 "app.tun.error.binary_not_found" = "未找到 mihomo 二进制。请先将名为“mihomo”的可执行文件复制到以下目录：\n%@";
 "app.tun.error.permission_missing" = "TUN 模式需要 mihomo 二进制具备 root + setuid 权限。";
 "app.tun.error.authorization_cancelled" = "管理员授权已取消。";
@@ -265,6 +304,7 @@
 "log.system_proxy.port_sync_failed" = "同步系统代理端口失败: %@";
 "log.system_proxy.startup_repaired" = "启动时发现系统代理与目标不一致，已修正为 %@:%d";
 "log.system_proxy.startup_repair_failed" = "启动时校验系统代理失败: %@";
+"log.system_proxy.helper_failed" = "系统代理 helper 状态异常: %@";
 "log.tun.toggled" = "TUN 模式%@";
 "log.tun.enabled" = "已开启";
 "log.tun.disabled" = "已关闭";
@@ -296,6 +336,8 @@
 "log.connection.copy_id" = "已复制连接 ID：%@";
 "log.logs.copied_message" = "已复制日志消息";
 "log.logs.copied_entry" = "已复制完整日志";
+"log.remote.switched_to_local" = "已切换到本地机器";
+"log.remote.switched_to_remote" = "已切换到远程机器: %@ (%@)";
 
 "log.action_name.reload_config" = "重载配置";
 "log.action_name.switch_proxy" = "切换代理 %@ -> %@";
