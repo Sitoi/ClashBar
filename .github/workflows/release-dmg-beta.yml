@@ -1,0 +1,156 @@
+name: Release Beta DMG
+
+on:
+  push:
+    branches:
+      - beta
+  workflow_dispatch:
+
+concurrency:
+  group: release-beta-dmg
+  cancel-in-progress: true
+
+jobs:
+  prepare-beta:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      version: ${{ steps.meta.outputs.version }}
+      build_number: ${{ steps.meta.outputs.build_number }}
+      source_ref: ${{ steps.meta.outputs.source_ref }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve beta release metadata
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_REF_TYPE}" != "branch" || "${GITHUB_REF_NAME}" != "beta" ]]; then
+            echo "This workflow only supports the beta branch. Current ref: ${GITHUB_REF_TYPE}/${GITHUB_REF_NAME}" >&2
+            exit 1
+          fi
+
+          echo "tag=beta" >> "$GITHUB_OUTPUT"
+          echo "version=beta" >> "$GITHUB_OUTPUT"
+          echo "build_number=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "source_ref=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+  build-dmg:
+    needs: prepare-beta
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target_arch: arm64
+            dmg_suffix: apple-silicon
+            artifact_name: dmg-arm64
+            bundle_mihomo_binary: '1'
+          - target_arch: arm64
+            dmg_suffix: apple-silicon-no-core
+            artifact_name: dmg-arm64-no-core
+            bundle_mihomo_binary: '0'
+          - target_arch: x86_64
+            dmg_suffix: intel
+            artifact_name: dmg-x86_64
+            bundle_mihomo_binary: '1'
+          - target_arch: x86_64
+            dmg_suffix: intel-no-core
+            artifact_name: dmg-x86_64-no-core
+            bundle_mihomo_binary: '0'
+    runs-on: macos-15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare-beta.outputs.source_ref }}
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Verify Swift toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          swift --version
+          if ! swift --version | grep -Eq 'Swift version (6\.[2-9]|[7-9]\.)'; then
+            echo "Swift 6.2+ is required by Package.swift (// swift-tools-version: 6.2)." >&2
+            exit 1
+          fi
+
+      - name: Build app
+        shell: bash
+        run: |
+          APP_VERSION="${{ needs.prepare-beta.outputs.version }}" \
+          BUILD_NUMBER="${{ needs.prepare-beta.outputs.build_number }}" \
+          PREPARE_MIHOMO_BINARY="${{ matrix.bundle_mihomo_binary }}" \
+          BUNDLE_MIHOMO_BINARY="${{ matrix.bundle_mihomo_binary }}" \
+          TARGET_ARCH="${{ matrix.target_arch }}" \
+          ./Scripts/build.sh app
+
+      - name: Build dmg
+        shell: bash
+        run: |
+          APP_VERSION="${{ needs.prepare-beta.outputs.version }}" \
+          DMG_SUFFIX="${{ matrix.dmg_suffix }}" \
+          ./Scripts/build.sh dmg
+
+      - name: Upload dmg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            dist/ClashBar-${{ needs.prepare-beta.outputs.version }}-${{ matrix.dmg_suffix }}.dmg
+            dist/ClashBar-${{ needs.prepare-beta.outputs.version }}-${{ matrix.dmg_suffix }}.dmg.sha256
+          if-no-files-found: error
+
+  release:
+    needs: [prepare-beta, build-dmg]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare-beta.outputs.source_ref }}
+
+      - name: Download dmg artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: dmg-*
+          merge-multiple: true
+          path: dist
+
+      - name: Generate beta release body
+        shell: bash
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          SOURCE_BRANCH: beta
+        run: |
+          chmod +x Scripts/generate_beta_release_notes.sh
+          Scripts/generate_beta_release_notes.sh \
+            "${{ needs.prepare-beta.outputs.tag }}" \
+            "${{ needs.prepare-beta.outputs.version }}" \
+            release.md
+
+      - name: Publish beta release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare-beta.outputs.tag }}
+          target_commitish: ${{ needs.prepare-beta.outputs.source_ref }}
+          name: ClashBar ${{ needs.prepare-beta.outputs.version }}
+          body_path: release.md
+          prerelease: true
+          fail_on_unmatched_files: true
+          files: |
+            dist/*.dmg

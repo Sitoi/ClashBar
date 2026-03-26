@@ -15,21 +15,16 @@ let package = Package(
     targets: [
         .target(
             name: "ProxyHelperShared",
-            path: "Sources/Helper/Shared"),
+            path: "Sources/ProxyHelperShared"),
         .executableTarget(
             name: "ClashBar",
             dependencies: ["ProxyHelperShared"],
             path: "Sources/ClashBar",
             resources: [
-                .copy("Resources/bin"),
-                .copy("Resources/Brand/logo.png"),
-                .copy("Resources/Brand/icon-run.png"),
-                .copy("Resources/Brand/icon-sleep.png"),
-                .copy("Resources/ConfigTemplates/ClashBar.yaml"),
-                .process("Resources/Localization"),
+                .process("Resources"),
             ]),
         .executableTarget(
             name: "ClashBarProxyHelper",
             dependencies: ["ProxyHelperShared"],
-            path: "Sources/Helper/Daemon"),
+            path: "Sources/ProxyHelper/Daemon"),
     ])

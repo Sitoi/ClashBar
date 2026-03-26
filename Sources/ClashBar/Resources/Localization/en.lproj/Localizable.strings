@@ -1,9 +1,9 @@
-"ui.tab.proxy" = "Nodes";
-"ui.tab.rules" = "Rules";
-"ui.tab.activity" = "Network";
-"ui.tab.logs" = "Logs";
+"ui.tab.proxy" = "Node";
+"ui.tab.rules" = "Rule";
+"ui.tab.connections" = "Connection";
+"ui.tab.logs" = "Log";
 "ui.tab.insights" = "Stats";
-"ui.tab.system" = "Settings";
+"ui.tab.system" = "Setting";
 
 "ui.log_filter.all" = "All";
 "ui.log_filter.info" = "Info";
@@ -30,19 +30,19 @@
 "ui.action.close_connection" = "Close Connection";
 "ui.action.copy_all_logs" = "Copy All Logs";
 "ui.action.clear_all_logs" = "Clear All Logs";
-"ui.action.reset_log_filters" = "Reset Filters";
-"ui.action.reset_network_filters" = "Reset Network Filters";
 "ui.action.copy_host" = "Copy Host";
 "ui.action.copy_connection_id" = "Copy Connection ID";
 "ui.action.copy_log_message" = "Copy Log Message";
 "ui.action.copy_log_entry" = "Copy Full Log Entry";
 "ui.action.import" = "Import";
 "ui.action.overwrite" = "Overwrite";
+"ui.action.delete" = "Delete";
 "ui.action.cancel" = "Cancel";
 "ui.action.ok" = "OK";
 "ui.action.flush_fakeip_cache" = "Flush FakeIP Cache";
 "ui.action.flush_dns_cache" = "Flush DNS Cache";
 "ui.action.open_core_directory" = "Open Core Directory";
+"ui.action.open_web_ui" = "Open Web UI";
 "ui.action.enable_tun" = "Enable TUN Mode";
 "ui.action.disable_tun" = "Disable TUN Mode";
 "ui.action.update_geo" = "Update GEO Data";
@@ -55,6 +55,25 @@
 "ui.mode.global" = "Global";
 "ui.mode.direct" = "Direct";
 
+"ui.machine.local" = "Local";
+"ui.machine.manage" = "Manage Remote Machines";
+"ui.machine.add" = "Add Machine";
+"ui.machine.edit" = "Edit Machine";
+"ui.machine.save" = "Save";
+"ui.machine.empty" = "No remote machines";
+"ui.machine.field.name" = "Name";
+"ui.machine.field.host" = "Host";
+"ui.machine.field.port" = "Port";
+"ui.machine.field.secret" = "Secret";
+"ui.machine.remote_readonly" = "(Remote, read-only)";
+"ui.machine.return_local" = "Return to Local Core";
+"ui.machine.active" = "Active";
+"ui.machine.local_label" = "Local";
+"ui.machine.status_unreachable" = "Unreachable";
+
+"ui.section.local_app_settings" = "App Settings (Local)";
+"ui.section.core_settings" = "Core Settings";
+"ui.section.core_settings_remote" = "Core Settings (Remote)";
 
 "ui.quick.switch_config" = "Switch Config";
 "ui.quick.system_proxy" = "System Proxy";
@@ -89,7 +108,6 @@
 "ui.empty.logs" = "No logs";
 "ui.empty.insights" = "No attribution data yet. Keep ClashBar running to accumulate traffic insights.";
 "ui.empty.insights_attribution" = "Traffic exists in this window, but no attributable detail is available yet.";
-
 
 "ui.placeholder.filter_connection" = "Filter domain, IP...";
 "ui.placeholder.search_insights" = "Search domain, rule, route...";
@@ -318,6 +336,8 @@
 "log.connection.copy_id" = "Copied connection ID: %@";
 "log.logs.copied_message" = "Copied log message";
 "log.logs.copied_entry" = "Copied full log entry";
+"log.remote.switched_to_local" = "Switched to local machine";
+"log.remote.switched_to_remote" = "Switched to remote machine: %@ (%@)";
 
 "log.action_name.reload_config" = "Reload config";
 "log.action_name.switch_proxy" = "Switch proxy %@ -> %@";

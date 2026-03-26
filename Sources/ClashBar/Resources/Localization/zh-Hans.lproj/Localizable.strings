@@ -1,6 +1,6 @@
 "ui.tab.proxy" = "节点";
 "ui.tab.rules" = "分流";
-"ui.tab.activity" = "网络";
+"ui.tab.connections" = "连接";
 "ui.tab.logs" = "日志";
 "ui.tab.insights" = "统计";
 "ui.tab.system" = "设置";
@@ -30,19 +30,19 @@
 "ui.action.close_connection" = "关闭连接";
 "ui.action.copy_all_logs" = "复制全部日志";
 "ui.action.clear_all_logs" = "清理全部日志";
-"ui.action.reset_log_filters" = "重置筛选";
-"ui.action.reset_network_filters" = "重置网络筛选";
 "ui.action.copy_host" = "复制 Host";
 "ui.action.copy_connection_id" = "复制连接 ID";
 "ui.action.copy_log_message" = "复制日志消息";
 "ui.action.copy_log_entry" = "复制完整日志";
 "ui.action.import" = "导入";
 "ui.action.overwrite" = "覆盖";
+"ui.action.delete" = "删除";
 "ui.action.cancel" = "取消";
 "ui.action.ok" = "确定";
 "ui.action.flush_fakeip_cache" = "清理 FakeIP 缓存";
 "ui.action.flush_dns_cache" = "清理 DNS 缓存";
 "ui.action.open_core_directory" = "打开内核目录";
+"ui.action.open_web_ui" = "打开 Web UI";
 "ui.action.enable_tun" = "开启 TUN 模式";
 "ui.action.disable_tun" = "关闭 TUN 模式";
 "ui.action.update_geo" = "更新 GEO 数据";
@@ -55,6 +55,25 @@
 "ui.mode.global" = "全局";
 "ui.mode.direct" = "直连";
 
+"ui.machine.local" = "本地";
+"ui.machine.manage" = "管理远程机器";
+"ui.machine.add" = "添加机器";
+"ui.machine.edit" = "编辑机器";
+"ui.machine.save" = "保存";
+"ui.machine.empty" = "暂无远程机器";
+"ui.machine.field.name" = "名称";
+"ui.machine.field.host" = "主机地址";
+"ui.machine.field.port" = "端口";
+"ui.machine.field.secret" = "密钥";
+"ui.machine.remote_readonly" = "(远程连接不可变更)";
+"ui.machine.return_local" = "返回本地内核";
+"ui.machine.active" = "当前";
+"ui.machine.local_label" = "本地";
+"ui.machine.status_unreachable" = "无法连接";
+
+"ui.section.local_app_settings" = "应用设置 (本地)";
+"ui.section.core_settings" = "内核设置";
+"ui.section.core_settings_remote" = "内核设置 (远程)";
 
 "ui.quick.switch_config" = "切换配置";
 "ui.quick.system_proxy" = "系统代理";
@@ -89,7 +108,6 @@
 "ui.empty.logs" = "暂无日志";
 "ui.empty.insights" = "暂无统计数据，等待连接流量累计。";
 "ui.empty.insights_attribution" = "当前时间窗口已有总流量，但暂无可归因明细。";
-
 
 "ui.placeholder.filter_connection" = "过滤域名、IP...";
 "ui.placeholder.search_insights" = "搜索域名、规则、出口...";
@@ -318,6 +336,8 @@
 "log.connection.copy_id" = "已复制连接 ID：%@";
 "log.logs.copied_message" = "已复制日志消息";
 "log.logs.copied_entry" = "已复制完整日志";
+"log.remote.switched_to_local" = "已切换到本地机器";
+"log.remote.switched_to_remote" = "已切换到远程机器: %@ (%@)";
 
 "log.action_name.reload_config" = "重载配置";
 "log.action_name.switch_proxy" = "切换代理 %@ -> %@";
