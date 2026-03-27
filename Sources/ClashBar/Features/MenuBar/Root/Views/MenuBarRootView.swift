@@ -62,6 +62,11 @@ private struct RulesRefreshToken: Equatable {
 }
 
 struct MenuBarRootView: View {
+    enum ProxyCommandCopyTarget: Equatable {
+        case local
+        case currentEndpoint
+    }
+
     @EnvironmentObject var appSession: AppSession
     @EnvironmentObject var connectionsStore: ConnectionsStore
     @EnvironmentObject var remoteMachineStore: RemoteMachineStore
@@ -77,8 +82,7 @@ struct MenuBarRootView: View {
     @State var switchingMode: CoreMode?
     @State var isSwitchingMachine = false
     @State var showRemoteMachineManager = false
-    @State var hoveringCopyRow = false
-    @State var proxyCommandCopied = false
+    @State var copiedProxyCommandTarget: ProxyCommandCopyTarget?
     @State var proxyCommandCopyResetTask: Task<Void, Never>?
     @State var hoveredProviderName: String?
     @State var hoveredRuleIndex: Int?

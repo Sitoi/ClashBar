@@ -101,9 +101,17 @@ extension AppSession {
         return self.buildSystemProxyDisplayString(host: "127.0.0.1", ports: ports) ?? "127.0.0.1"
     }
 
+    func localProxyCommandHostDisplay() -> String {
+        "127.0.0.1"
+    }
+
     func managedEndpointProxyCommandTargetDisplay() -> String {
         let ports = currentSystemProxyPortsFromState()
         return self.buildSystemProxyDisplayString(host: self.controllerHost(), ports: ports) ?? self.controllerHost()
+    }
+
+    func managedEndpointProxyCommandHostDisplay() -> String {
+        self.controllerHost()
     }
 
     private func copyProxyCommand(host: String) {

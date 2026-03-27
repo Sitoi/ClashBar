@@ -79,14 +79,6 @@ final class AppSession: ObservableObject {
     @Published var systemProxyHelperProcessRunning: Bool?
     @Published var systemProxyActiveDisplay: String?
     @Published var systemProxyOpenFailureHint: String?
-    var isSystemProxyActiveNonLocal: Bool {
-        guard let display = systemProxyActiveDisplay,
-              let host = self.hostFromSystemProxyDisplay(display)?
-                  .trimmingCharacters(in: .whitespacesAndNewlines)
-                  .lowercased()
-        else { return false }
-        return host != "127.0.0.1" && host != "localhost" && host != "::1"
-    }
 
     @Published var isProxySyncing: Bool = false
     @Published var isTunEnabled: Bool = false
@@ -190,24 +182,6 @@ final class AppSession: ObservableObject {
         case .stopped:
             "bolt.slash.circle"
         }
-    }
-
-    private func hostFromSystemProxyDisplay(_ display: String) -> String? {
-        let trimmed = display.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
-
-        if trimmed.hasPrefix("["),
-           let closing = trimmed.firstIndex(of: "]"),
-           trimmed.index(after: closing) < trimmed.endIndex,
-           trimmed[trimmed.index(after: closing)] == ":"
-        {
-            return String(trimmed[trimmed.index(after: trimmed.startIndex)..<closing])
-        }
-
-        guard let separator = trimmed.lastIndex(of: ":") else {
-            return nil
-        }
-        return String(trimmed[..<separator])
     }
 
     var statusBarDisplayMode: StatusBarDisplayMode {

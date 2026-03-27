@@ -9,6 +9,7 @@ DerivedData/
 dist/
 .agents/
 .claude/
+.codex/
 skills-lock.json
 .swiftpm/
 .home/

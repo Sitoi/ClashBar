@@ -4,14 +4,14 @@ import SwiftUI
 private typealias T = MenuBarLayoutTokens
 
 extension MenuBarRootView {
-    func handleCopyProxyCommand(_ action: () -> Void) {
+    func handleCopyProxyCommand(_ target: ProxyCommandCopyTarget, action: () -> Void) {
         action()
 
         self.proxyCommandCopyResetTask?.cancel()
         self.proxyCommandCopyResetTask = nil
 
         withAnimation(.snappy(duration: 0.16)) {
-            self.proxyCommandCopied = true
+            self.copiedProxyCommandTarget = target
         }
 
         self.proxyCommandCopyResetTask = Task { @MainActor in
@@ -23,7 +23,7 @@ extension MenuBarRootView {
 
             guard !Task.isCancelled else { return }
             withAnimation(.easeOut(duration: 0.16)) {
-                self.proxyCommandCopied = false
+                self.copiedProxyCommandTarget = nil
             }
             self.proxyCommandCopyResetTask = nil
         }
@@ -64,32 +64,6 @@ extension MenuBarRootView {
         AttachedPopoverMenuItem(title: tr("ui.quick.show_in_finder")) {
             dismiss()
             appSession.showSelectedConfigInFinder()
-        }
-    }
-
-    @ViewBuilder
-    func proxyCommandMenuContent(dismiss: @escaping () -> Void) -> some View {
-        AttachedPopoverMenuItem(
-            title: tr("ui.quick.copy_terminal"),
-            subtitle: self.appSession.localProxyCommandTargetDisplay(),
-            leadingSymbol: "desktopcomputer",
-            leadingTint: nativeInfo)
-        {
-            dismiss()
-            self.handleCopyProxyCommand {
-                self.appSession.copyLocalProxyCommand()
-            }
-        }
-        AttachedPopoverMenuItem(
-            title: tr("ui.quick.copy_terminal_current_endpoint"),
-            subtitle: self.appSession.managedEndpointProxyCommandTargetDisplay(),
-            leadingSymbol: "network",
-            leadingTint: nativeWarning)
-        {
-            dismiss()
-            self.handleCopyProxyCommand {
-                self.appSession.copyManagedEndpointProxyCommand()
-            }
         }
     }
 
@@ -181,7 +155,11 @@ extension MenuBarRootView {
     }
 
     var proxyQuickRows: some View {
-        VStack(spacing: 0) {
+        let localTargetDisplay = self.appSession.localProxyCommandTargetDisplay()
+        let managedTargetDisplay = self.appSession.managedEndpointProxyCommandTargetDisplay()
+        let showManagedTargetAction = localTargetDisplay != managedTargetDisplay
+
+        return VStack(spacing: 0) {
             if appSession.isRemoteTarget {
                 self.quickRowContent(
                     title: tr("ui.quick.switch_config"),
@@ -233,35 +211,90 @@ extension MenuBarRootView {
             self.quickRowContent(
                 title: tr("ui.quick.copy_terminal"),
                 symbol: "terminal",
-                foreground: nativeWarning)
+                foreground: nativeWarning,
+                trailingFitsContent: true)
             {
-                HStack(spacing: T.space2) {
-                    Button {
-                        self.handleCopyProxyCommand {
-                            self.appSession.copyLocalProxyCommand()
-                        }
-                    } label: {
-                        Image(systemName: proxyCommandCopied ? "checkmark.circle.fill" : "doc.on.doc")
-                            .font(.app(size: T.FontSize.body, weight: .medium))
-                            .foregroundStyle(
-                                proxyCommandCopied
-                                    ? nativePositive.opacity(T.Opacity.solid)
-                                    : (hoveringCopyRow ? nativeSecondaryLabel : nativeTertiaryLabel.opacity(0.6)))
+                HStack(spacing: 2) {
+                    self.proxyCommandActionButton(
+                        title: self.appSession.localProxyCommandHostDisplay(),
+                        target: .local,
+                        helpTitle: tr("ui.quick.copy_terminal"),
+                        helpDetail: localTargetDisplay)
+                    {
+                        self.appSession.copyLocalProxyCommand()
                     }
-                    .buttonStyle(.plain)
 
-                    AttachedPopoverMenu(expandAnchor: false) { _ in
-                        Image(systemName: "chevron.right")
-                            .font(.app(size: T.FontSize.caption, weight: .medium))
-                            .foregroundStyle(nativeTertiaryLabel)
-                    } content: { dismiss in
-                        self.proxyCommandMenuContent(dismiss: dismiss)
+                    if showManagedTargetAction {
+                        self.proxyCommandActionButton(
+                            title: self.appSession.managedEndpointProxyCommandHostDisplay(),
+                            target: .currentEndpoint,
+                            helpTitle: tr("ui.quick.copy_terminal_current_endpoint"),
+                            helpDetail: managedTargetDisplay)
+                        {
+                            self.appSession.copyManagedEndpointProxyCommand()
+                        }
                     }
-                    .buttonStyle(.plain)
                 }
             }
-            .onHover { hoveringCopyRow = $0 }
         }
+    }
+
+    func proxyCommandActionButton(
+        title: String,
+        target: ProxyCommandCopyTarget,
+        helpTitle: String,
+        helpDetail: String,
+        action: @escaping () -> Void) -> some View
+    {
+        let copied = self.copiedProxyCommandTarget == target
+        let foreground = copied
+            ? self.nativePositive.opacity(T.Opacity.solid)
+            : self.nativeSecondaryLabel
+        let iconForeground = copied
+            ? self.nativePositive.opacity(T.Opacity.solid)
+            : self.nativeTertiaryLabel
+
+        return Button {
+            self.handleCopyProxyCommand(target) {
+                action()
+            }
+        } label: {
+            HStack(spacing: T.space4) {
+                Image(systemName: copied ? "checkmark.circle.fill" : "doc.on.doc")
+                    .font(.app(size: T.FontSize.caption, weight: .semibold))
+                    .foregroundStyle(iconForeground)
+                Text(title)
+                    .font(.app(size: T.FontSize.caption, weight: .medium))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .minimumScaleFactor(T.minimumScale)
+                    .monospacedDigit()
+                    .foregroundStyle(foreground)
+            }
+            .padding(1)
+            .background {
+                Capsule(style: .continuous)
+                    .fill(copied ? self.nativePositive.opacity(T.Opacity.tint) : self.nativeBadgeFill)
+                    .overlay {
+                        Capsule(style: .continuous)
+                            .stroke(
+                                copied
+                                    ? self.nativePositive.opacity(0.18)
+                                    : self.nativeControlBorder.opacity(0.42),
+                                lineWidth: T.stroke)
+                    }
+            }
+        }
+        .buttonStyle(.plain)
+        .help("\(helpTitle)\n\(helpDetail)")
+    }
+
+    var systemProxyRowDetailText: String? {
+        if let failureHint = self.systemProxyInlineFailureText {
+            return failureHint
+        }
+
+        return nil
     }
 
     func quickRowContent(
@@ -269,6 +302,7 @@ extension MenuBarRootView {
         symbol: String,
         foreground: Color,
         trailingWidth: CGFloat? = nil,
+        trailingFitsContent: Bool = false,
         @ViewBuilder trailing: () -> some View) -> some View
     {
         HStack(spacing: T.space6) {
@@ -279,8 +313,13 @@ extension MenuBarRootView {
                 .lineLimit(1)
                 .minimumScaleFactor(T.minimumScale)
             Spacer(minLength: 0)
-            trailing()
-                .frame(width: trailingWidth ?? self.quickRowTrailingColumnWidth, alignment: .trailing)
+            if trailingFitsContent {
+                trailing()
+                    .fixedSize(horizontal: true, vertical: false)
+            } else {
+                trailing()
+                    .frame(width: trailingWidth ?? self.quickRowTrailingColumnWidth, alignment: .trailing)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, T.space4)
@@ -291,18 +330,6 @@ extension MenuBarRootView {
         appSession.isRemoteTarget
             ? "\(tr("ui.quick.system_proxy")) (\(tr("ui.machine.local_label")))"
             : tr("ui.quick.system_proxy")
-    }
-
-    var systemProxyRowDetailText: String? {
-        if let failureHint = self.systemProxyInlineFailureText {
-            return failureHint
-        }
-
-        guard let display = appSession.systemProxyActiveDisplay?.trimmedNonEmpty else { return nil }
-        if appSession.isSystemProxyActiveNonLocal {
-            return "\(display) \u{26A0}\u{FE0F}"
-        }
-        return display
     }
 
     var systemProxyRowDetailColor: Color {
