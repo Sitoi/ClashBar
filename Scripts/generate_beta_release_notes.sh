@@ -26,8 +26,9 @@ download_base="${repo_url}/releases/download/${tag}"
 cat >"$output_path" <<EOF
 ## Beta 预览
 
-该构建来自 \`${source_branch}\` 分支最新提交，CI 每次成功后都会原地更新这个 beta 发布通道。
+该构建由 GitHub Actions 在 \`${source_branch}\` 分支手动触发生成。
 
+- 发布标签：\`${tag}\`
 - 版本号：\`${version}\`
 - 提交：\`${commit_sha}\` ${commit_subject}
 - 提交时间：${commit_date}

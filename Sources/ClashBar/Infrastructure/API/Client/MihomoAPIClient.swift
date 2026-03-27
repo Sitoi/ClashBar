@@ -171,6 +171,17 @@ enum Endpoint {
         }
     }
 
+    /// Long-running latency checks should not occupy the same URLSession connection pool as
+    /// control-plane requests like reload/restart/toggle actions.
+    var usesLongRunningSession: Bool {
+        switch self {
+        case .groupDelay, .proxyProviderHealthcheck, .proxyProviderProxyHealthcheck:
+            true
+        default:
+            false
+        }
+    }
+
     private func proxyProviderPath(_ name: String) -> String {
         "\(Self.proxyProvidersPath)/\(name.urlPathSegmentEscaped)"
     }
@@ -208,29 +219,40 @@ enum APIError: Error, LocalizedError {
 final class MihomoAPIClient: MihomoAPITransporting, @unchecked Sendable {
     // Request building reads mutable credentials; guard with lock for thread safety.
     private let lock = NSLock()
-    private let session: URLSession
+    private let controlSession: URLSession
+    private let longRunningSession: URLSession
     private let decoder = JSONDecoder()
 
     private(set) var controller: String
     private(set) var secret: String?
 
-    init(controller: String, secret: String?, session: URLSession? = nil) {
+    init(
+        controller: String,
+        secret: String?,
+        session: URLSession? = nil,
+        longRunningSession: URLSession? = nil)
+    {
         self.controller = controller
         self.secret = secret
 
         if let session {
-            self.session = session
+            self.controlSession = session
         } else {
-            let config = URLSessionConfiguration.ephemeral
-            config.timeoutIntervalForRequest = 2
-            config.timeoutIntervalForResource = 240
-            config.waitsForConnectivity = false
-            config.requestCachePolicy = .reloadIgnoringLocalCacheData
-            config.urlCache = nil
-            config.httpCookieStorage = nil
-            config.httpShouldSetCookies = false
-            config.urlCredentialStorage = nil
-            self.session = URLSession(configuration: config)
+            self.controlSession = Self.makeSession(
+                timeoutIntervalForRequest: 2,
+                timeoutIntervalForResource: 240,
+                httpMaximumConnectionsPerHost: 6)
+        }
+
+        if let longRunningSession {
+            self.longRunningSession = longRunningSession
+        } else if let session {
+            self.longRunningSession = session
+        } else {
+            self.longRunningSession = Self.makeSession(
+                timeoutIntervalForRequest: 2,
+                timeoutIntervalForResource: 240,
+                httpMaximumConnectionsPerHost: 12)
         }
     }
 
@@ -252,13 +274,14 @@ final class MihomoAPIClient: MihomoAPITransporting, @unchecked Sendable {
 
     func makeWebSocketTask(for endpoint: Endpoint) throws -> URLSessionWebSocketTask {
         let request = try buildWebSocketRequest(for: endpoint)
-        return self.session.webSocketTask(with: request)
+        return self.controlSession.webSocketTask(with: request)
     }
 
     private func send(_ endpoint: Endpoint) async throws -> Data {
         var lastError: Error?
 
         let maxAttempts = endpoint.method == .get ? 3 : 1
+        let session = self.session(for: endpoint)
 
         for attempt in 0..<maxAttempts {
             do {
@@ -281,6 +304,28 @@ final class MihomoAPIClient: MihomoAPITransporting, @unchecked Sendable {
         }
 
         throw lastError ?? APIError.invalidResponse
+    }
+
+    private func session(for endpoint: Endpoint) -> URLSession {
+        endpoint.usesLongRunningSession ? self.longRunningSession : self.controlSession
+    }
+
+    private static func makeSession(
+        timeoutIntervalForRequest: TimeInterval,
+        timeoutIntervalForResource: TimeInterval,
+        httpMaximumConnectionsPerHost: Int) -> URLSession
+    {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = timeoutIntervalForRequest
+        config.timeoutIntervalForResource = timeoutIntervalForResource
+        config.waitsForConnectivity = false
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        config.urlCache = nil
+        config.httpCookieStorage = nil
+        config.httpShouldSetCookies = false
+        config.urlCredentialStorage = nil
+        config.httpMaximumConnectionsPerHost = httpMaximumConnectionsPerHost
+        return URLSession(configuration: config)
     }
 
     private func buildRequest(for endpoint: Endpoint) throws -> URLRequest {

@@ -295,7 +295,10 @@ struct MenuBarRootView: View {
 
     func refreshDerivedData(for tab: RootTab) {
         switch tab {
-        case .proxy, .system, .insights:
+        case .proxy:
+            Task { await self.appSession.refreshSystemProxyHelperRuntimeSnapshot() }
+            return
+        case .system, .insights:
             return
         case .rules:
             self.refreshVisibleRules()

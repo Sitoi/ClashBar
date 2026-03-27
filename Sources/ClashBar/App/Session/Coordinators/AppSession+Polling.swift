@@ -178,7 +178,7 @@ extension AppSession {
         case .system:
             await self.refreshMediumFrequency()
             guard shouldContinueRefresh() else { return }
-            if !self.isRemoteTarget {
+            if !self.isRemoteTarget, self.hasSystemProxyOpenIntent {
                 await self.refreshSystemProxyStatus()
             }
         }
@@ -354,10 +354,25 @@ extension AppSession {
     }
 
     func refreshSystemProxyStatus() async {
+        guard self.hasSystemProxyOpenIntent else {
+            self.resetSystemProxyObservedState()
+            return
+        }
+
         do {
-            isSystemProxyEnabled = try await readSystemProxyEnabledState()
+            let enabled = try await readSystemProxyEnabledState()
+            isSystemProxyEnabled = enabled
+            if enabled {
+                systemProxyActiveDisplay = try await readSystemProxyActiveDisplay()
+            } else {
+                systemProxyActiveDisplay = nil
+            }
+            await self.refreshSystemProxyHelperRuntimeSnapshot()
+            self.systemProxyHelperFailureReason = nil
+            self.systemProxyHelperFailureMessage = nil
         } catch {
             appendLog(level: "error", message: tr("log.system_proxy.read_failed", systemProxyErrorMessage(error)))
+            await self.refreshSystemProxyHelperStatus()
         }
     }
 

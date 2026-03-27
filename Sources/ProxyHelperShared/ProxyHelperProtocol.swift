@@ -10,6 +10,7 @@ public enum ProxyHelperConstants {
 
 @objc(ProxyHelperProtocol)
 public protocol ProxyHelperProtocol {
+    func ping(completion: @escaping (Bool, String?) -> Void)
     func setSystemProxy(
         host: String,
         httpPort: Int,
@@ -18,6 +19,7 @@ public protocol ProxyHelperProtocol {
         completion: @escaping (Bool, String?) -> Void)
     func clearSystemProxy(completion: @escaping (Bool, String?) -> Void)
     func getSystemProxyState(completion: @escaping (Bool, Bool, String?) -> Void)
+    func getSystemProxyActiveTarget(completion: @escaping (Bool, String?, Int, String?) -> Void)
     func isSystemProxyConfigured(
         host: String,
         httpPort: Int,

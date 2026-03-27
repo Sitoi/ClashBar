@@ -1,9 +1,6 @@
 name: Release Beta DMG
 
 on:
-  push:
-    branches:
-      - beta
   workflow_dispatch:
 
 concurrency:
@@ -13,6 +10,8 @@ concurrency:
 jobs:
   prepare-beta:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       tag: ${{ steps.meta.outputs.tag }}
       version: ${{ steps.meta.outputs.version }}
@@ -31,14 +30,24 @@ jobs:
           set -euo pipefail
 
           if [[ "${GITHUB_REF_TYPE}" != "branch" || "${GITHUB_REF_NAME}" != "beta" ]]; then
-            echo "This workflow only supports the beta branch. Current ref: ${GITHUB_REF_TYPE}/${GITHUB_REF_NAME}" >&2
+            echo "This workflow only supports manual runs from the beta branch. Current ref: ${GITHUB_REF_TYPE}/${GITHUB_REF_NAME}" >&2
             exit 1
           fi
 
-          echo "tag=beta" >> "$GITHUB_OUTPUT"
-          echo "version=beta" >> "$GITHUB_OUTPUT"
+          source_ref="${GITHUB_SHA}"
+          build_label="beta"
+          tag="pre-release"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f "${tag}" "${source_ref}"
+          git push --force origin "refs/tags/${tag}"
+          echo "Updated tag: ${tag} -> ${source_ref}"
+
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "version=${build_label}" >> "$GITHUB_OUTPUT"
           echo "build_number=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
-          echo "source_ref=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "source_ref=${source_ref}" >> "$GITHUB_OUTPUT"
 
   build-dmg:
     needs: prepare-beta

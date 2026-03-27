@@ -4,8 +4,8 @@ import SwiftUI
 private typealias T = MenuBarLayoutTokens
 
 extension MenuBarRootView {
-    func handleCopyProxyCommand() {
-        self.appSession.copyProxyCommand()
+    func handleCopyProxyCommand(_ action: () -> Void) {
+        action()
 
         self.proxyCommandCopyResetTask?.cancel()
         self.proxyCommandCopyResetTask = nil
@@ -64,6 +64,32 @@ extension MenuBarRootView {
         AttachedPopoverMenuItem(title: tr("ui.quick.show_in_finder")) {
             dismiss()
             appSession.showSelectedConfigInFinder()
+        }
+    }
+
+    @ViewBuilder
+    func proxyCommandMenuContent(dismiss: @escaping () -> Void) -> some View {
+        AttachedPopoverMenuItem(
+            title: tr("ui.quick.copy_terminal"),
+            subtitle: self.appSession.localProxyCommandTargetDisplay(),
+            leadingSymbol: "desktopcomputer",
+            leadingTint: nativeInfo)
+        {
+            dismiss()
+            self.handleCopyProxyCommand {
+                self.appSession.copyLocalProxyCommand()
+            }
+        }
+        AttachedPopoverMenuItem(
+            title: tr("ui.quick.copy_terminal_current_endpoint"),
+            subtitle: self.appSession.managedEndpointProxyCommandTargetDisplay(),
+            leadingSymbol: "network",
+            leadingTint: nativeWarning)
+        {
+            dismiss()
+            self.handleCopyProxyCommand {
+                self.appSession.copyManagedEndpointProxyCommand()
+            }
         }
     }
 
@@ -191,18 +217,7 @@ extension MenuBarRootView {
                 .buttonStyle(.plain)
             }
 
-            self.quickToggleRow(
-                title: appSession.isRemoteTarget
-                    ? "\(tr("ui.quick.system_proxy")) (\(tr("ui.machine.local_label")))"
-                    : tr("ui.quick.system_proxy"),
-                symbol: "network",
-                foreground: nativeInfo,
-                isDisabled: appSession.isProxySyncing,
-                isOn: Binding(
-                    get: { appSession.isSystemProxyEnabled },
-                    set: { value in
-                        Task { await appSession.toggleSystemProxy(value) }
-                    }))
+            self.systemProxyQuickToggleRow
 
             self.quickToggleRow(
                 title: tr("ui.quick.tun_mode"),
@@ -215,23 +230,36 @@ extension MenuBarRootView {
                         Task { await appSession.toggleTunMode(value) }
                     }))
 
-            Button {
-                self.handleCopyProxyCommand()
-            } label: {
-                self.quickRowContent(
-                    title: tr("ui.quick.copy_terminal"),
-                    symbol: "terminal",
-                    foreground: nativeWarning)
-                {
-                    Image(systemName: proxyCommandCopied ? "checkmark.circle.fill" : "doc.on.doc")
-                        .font(.app(size: T.FontSize.body, weight: .medium))
-                        .foregroundStyle(
-                            proxyCommandCopied
-                                ? nativePositive.opacity(T.Opacity.solid)
-                                : (hoveringCopyRow ? nativeSecondaryLabel : nativeTertiaryLabel.opacity(0.6)))
+            self.quickRowContent(
+                title: tr("ui.quick.copy_terminal"),
+                symbol: "terminal",
+                foreground: nativeWarning)
+            {
+                HStack(spacing: T.space2) {
+                    Button {
+                        self.handleCopyProxyCommand {
+                            self.appSession.copyLocalProxyCommand()
+                        }
+                    } label: {
+                        Image(systemName: proxyCommandCopied ? "checkmark.circle.fill" : "doc.on.doc")
+                            .font(.app(size: T.FontSize.body, weight: .medium))
+                            .foregroundStyle(
+                                proxyCommandCopied
+                                    ? nativePositive.opacity(T.Opacity.solid)
+                                    : (hoveringCopyRow ? nativeSecondaryLabel : nativeTertiaryLabel.opacity(0.6)))
+                    }
+                    .buttonStyle(.plain)
+
+                    AttachedPopoverMenu(expandAnchor: false) { _ in
+                        Image(systemName: "chevron.right")
+                            .font(.app(size: T.FontSize.caption, weight: .medium))
+                            .foregroundStyle(nativeTertiaryLabel)
+                    } content: { dismiss in
+                        self.proxyCommandMenuContent(dismiss: dismiss)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
-            .buttonStyle(.plain)
             .onHover { hoveringCopyRow = $0 }
         }
     }
@@ -240,6 +268,7 @@ extension MenuBarRootView {
         title: String,
         symbol: String,
         foreground: Color,
+        trailingWidth: CGFloat? = nil,
         @ViewBuilder trailing: () -> some View) -> some View
     {
         HStack(spacing: T.space6) {
@@ -251,11 +280,76 @@ extension MenuBarRootView {
                 .minimumScaleFactor(T.minimumScale)
             Spacer(minLength: 0)
             trailing()
-                .frame(width: self.quickRowTrailingColumnWidth, alignment: .trailing)
+                .frame(width: trailingWidth ?? self.quickRowTrailingColumnWidth, alignment: .trailing)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, T.space4)
         .padding(.vertical, T.space2)
+    }
+
+    var systemProxyRowTitle: String {
+        appSession.isRemoteTarget
+            ? "\(tr("ui.quick.system_proxy")) (\(tr("ui.machine.local_label")))"
+            : tr("ui.quick.system_proxy")
+    }
+
+    var systemProxyRowDetailText: String? {
+        if let failureHint = self.systemProxyInlineFailureText {
+            return failureHint
+        }
+
+        guard let display = appSession.systemProxyActiveDisplay?.trimmedNonEmpty else { return nil }
+        if appSession.isSystemProxyActiveNonLocal {
+            return "\(display) \u{26A0}\u{FE0F}"
+        }
+        return display
+    }
+
+    var systemProxyRowDetailColor: Color {
+        if self.systemProxyInlineFailureText != nil {
+            return nativeWarning.opacity(T.Opacity.solid)
+        }
+        return nativeSecondaryLabel
+    }
+
+    var systemProxyQuickToggleRow: some View {
+        HStack(spacing: T.space6) {
+            self.systemProxyCompositeIcon
+            Text(self.systemProxyRowTitle)
+                .font(.app(size: T.FontSize.body, weight: .medium))
+                .foregroundStyle(nativePrimaryLabel)
+                .lineLimit(1)
+                .minimumScaleFactor(T.minimumScale)
+
+            if let detailText = self.systemProxyRowDetailText {
+                Text(detailText)
+                    .font(.app(size: T.FontSize.caption, weight: .medium))
+                    .foregroundStyle(self.systemProxyRowDetailColor)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .minimumScaleFactor(T.minimumScale)
+            }
+
+            Spacer(minLength: 0)
+            Toggle("", isOn: Binding(
+                get: { appSession.isSystemProxyEnabled },
+                set: { value in
+                    Task { await appSession.toggleSystemProxy(value) }
+                }))
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .disabled(appSession.isProxySyncing)
+                .frame(width: 50, alignment: .trailing)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, T.space4)
+        .padding(.vertical, T.space2)
+    }
+
+    var systemProxyInlineFailureText: String? {
+        guard !self.appSession.isSystemProxyEnabled else { return nil }
+        return self.appSession.systemProxyOpenFailureHint?.trimmedNonEmpty
     }
 
     func quickToggleRow(
@@ -268,7 +362,8 @@ extension MenuBarRootView {
         self.quickRowContent(
             title: title,
             symbol: symbol,
-            foreground: foreground)
+            foreground: foreground,
+            trailingWidth: 50)
         {
             Toggle("", isOn: isOn)
                 .labelsHidden()
@@ -283,5 +378,79 @@ extension MenuBarRootView {
             .font(.app(size: T.FontSize.body, weight: .semibold))
             .foregroundStyle(foreground)
             .frame(width: 18, height: 18, alignment: .center)
+    }
+
+    var systemProxyCompositeIcon: some View {
+        ZStack {
+            self.systemProxyCompositeIconLayer(
+                tint: self.systemProxyBackgroundActivityTint,
+                alignment: .leading)
+            self.systemProxyCompositeIconLayer(
+                tint: self.systemProxyHelperProcessTint,
+                alignment: .trailing)
+        }
+        .frame(width: 18, height: 18)
+        .help(self.systemProxyCompositeIconHelp)
+    }
+
+    func systemProxyCompositeIconLayer(tint: Color, alignment: Alignment) -> some View {
+        Image(systemName: "network")
+            .font(.app(size: T.FontSize.body, weight: .semibold))
+            .foregroundStyle(tint)
+            .frame(width: 18, height: 18)
+            .mask(alignment: alignment) {
+                Rectangle()
+                    .frame(width: 9)
+            }
+    }
+
+    var systemProxyBackgroundActivityTint: Color {
+        switch self.appSession.systemProxyBackgroundActivityAllowed {
+        case .some(true):
+            nativePositive.opacity(T.Opacity.solid)
+        case .some(false):
+            nativeCritical.opacity(T.Opacity.solid)
+        case .none:
+            nativeSecondaryLabel
+        }
+    }
+
+    var systemProxyHelperProcessTint: Color {
+        switch self.appSession.systemProxyHelperProcessRunning {
+        case .some(true):
+            nativePositive.opacity(T.Opacity.solid)
+        case .some(false):
+            nativeWarning.opacity(T.Opacity.solid)
+        case .none:
+            nativeSecondaryLabel
+        }
+    }
+
+    var systemProxyBackgroundActivityHelp: String {
+        let value = switch self.appSession.systemProxyBackgroundActivityAllowed {
+        case .some(true):
+            tr("ui.system_proxy.background_activity.allowed")
+        case .some(false):
+            tr("ui.system_proxy.background_activity.blocked")
+        case .none:
+            tr("ui.common.unknown")
+        }
+        return "\(tr("ui.system_proxy.background_activity")): \(value)"
+    }
+
+    var systemProxyHelperProcessHelp: String {
+        let value = switch self.appSession.systemProxyHelperProcessRunning {
+        case .some(true):
+            tr("ui.system_proxy.helper_process.running")
+        case .some(false):
+            tr("ui.system_proxy.helper_process.stopped")
+        case .none:
+            tr("ui.common.unknown")
+        }
+        return "\(tr("ui.system_proxy.helper_process")): \(value)"
+    }
+
+    var systemProxyCompositeIconHelp: String {
+        "\(self.systemProxyBackgroundActivityHelp)\n\(self.systemProxyHelperProcessHelp)"
     }
 }

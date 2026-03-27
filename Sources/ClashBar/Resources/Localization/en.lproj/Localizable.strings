@@ -79,6 +79,7 @@
 "ui.quick.system_proxy" = "System Proxy";
 "ui.quick.tun_mode" = "TUN Mode";
 "ui.quick.copy_terminal" = "Copy Terminal Command";
+"ui.quick.copy_terminal_current_endpoint" = "Copy Current Endpoint Command";
 "ui.quick.reload_config_list" = "Reload Config List";
 "ui.quick.import_local_config" = "Import Local Config";
 "ui.quick.import_remote_config" = "Import Subscription Link";
@@ -197,6 +198,12 @@
 "ui.common.timeout" = "Timeout";
 "ui.common.testing" = "Testing...";
 "ui.common.latency_ms" = "%dms";
+"ui.system_proxy.background_activity" = "Background";
+"ui.system_proxy.background_activity.allowed" = "Allowed";
+"ui.system_proxy.background_activity.blocked" = "Blocked";
+"ui.system_proxy.helper_process" = "Helper";
+"ui.system_proxy.helper_process.running" = "Running";
+"ui.system_proxy.helper_process.stopped" = "Stopped";
 
 "app.runtime.starting" = "Starting";
 "app.runtime.running" = "Running";
@@ -224,10 +231,24 @@
 "app.system_proxy.error.helper_not_bundled" = "Privileged helper not found in app bundle. Use the packaged .app/.dmg build";
 "app.system_proxy.error.helper_install_location" = "Move ClashBar.app to /Applications and reopen it before enabling system proxy";
 "app.system_proxy.error.helper_needs_approval" = "Allow ClashBar background item in System Settings > General > Login Items, then try again";
-"app.system_proxy.error.helper_registration_failed" = "Failed to register privileged helper: %@";
-"app.system_proxy.error.helper_recovery_failed" = "Failed to recover privileged helper: %@";
+"app.system_proxy.error.helper_not_registered" = "Privileged helper is not registered";
+"app.system_proxy.error.helper_not_registered_with_detail" = "Privileged helper is not registered: %@";
+"app.system_proxy.error.helper_start_timed_out" = "Privileged helper startup timed out";
+"app.system_proxy.error.helper_invalid_signature" = "Privileged helper signature invalid: %@";
 "app.system_proxy.error.helper_connection_failed" = "Failed to connect privileged helper: %@";
 "app.system_proxy.error.helper_operation_failed" = "Privileged helper operation failed: %@";
+"app.system_proxy.alert.title" = "System Proxy Failed";
+"app.system_proxy.alert.invalid_host" = "Invalid proxy host";
+"app.system_proxy.alert.invalid_port" = "Invalid proxy port";
+"app.system_proxy.alert.background_activity_disabled" = "Background item not allowed";
+"app.system_proxy.alert.helper_not_registered" = "Helper not registered";
+"app.system_proxy.alert.helper_start_timed_out" = "Helper startup timed out";
+"app.system_proxy.alert.helper_connection_failed" = "Helper connection failed";
+"app.system_proxy.alert.helper_operation_failed" = "System proxy operation failed";
+"app.system_proxy.alert.helper_install_location" = "Move ClashBar to /Applications first";
+"app.system_proxy.alert.helper_not_bundled" = "Helper missing from app bundle";
+"app.system_proxy.alert.helper_invalid_signature" = "Helper signature mismatch";
+"app.system_proxy.alert.unknown" = "System proxy operation failed";
 "app.tun.error.binary_not_found" = "No mihomo core was found. Copy an executable named \"mihomo\" to %@ first.";
 "app.tun.error.permission_missing" = "TUN mode requires root + setuid permissions on mihomo binary.";
 "app.tun.error.authorization_cancelled" = "Administrator authorization was cancelled.";
@@ -305,6 +326,7 @@
 "log.system_proxy.port_sync_failed" = "Failed to sync system proxy port: %@";
 "log.system_proxy.startup_repaired" = "Startup check fixed system proxy to %@:%d";
 "log.system_proxy.startup_repair_failed" = "Startup system proxy check failed: %@";
+"log.system_proxy.helper_failed" = "System proxy helper unhealthy: %@";
 "log.tun.toggled" = "TUN mode %@";
 "log.tun.enabled" = "enabled";
 "log.tun.disabled" = "disabled";
