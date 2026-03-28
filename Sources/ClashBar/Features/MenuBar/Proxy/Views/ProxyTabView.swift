@@ -47,18 +47,31 @@ extension MenuBarRootView {
             : self.nativeInfo.opacity(T.Opacity.solid)
     }
 
+    func configMenuSubtitle(state: RemoteConfigMenuState?) -> String? {
+        guard let state else { return nil }
+        return state.updatedAt.map(ValueFormatter.dateTime) ?? "--"
+    }
+
     @ViewBuilder
     func configMenuContent(dismiss: @escaping () -> Void) -> some View {
         ForEach(appSession.availableConfigFileNames, id: \.self) { name in
-            AttachedPopoverMenuItem(
+            let remoteState = self.appSession.remoteConfigMenuState(for: name)
+
+            ConfigMenuItemView(
                 title: name,
+                subtitle: self.configMenuSubtitle(state: self.isRemoteConfigFile(name) ? remoteState : nil),
                 leadingSymbol: self.configMenuLeadingSymbol(for: name),
                 leadingTint: self.configMenuLeadingTint(for: name),
                 selected: name == appSession.selectedConfigName,
-                selectionIndicatorPlacement: .trailing)
+                refreshPhase: self.isRemoteConfigFile(name) ? remoteState.phase : nil,
+                refreshHelpText: tr("ui.action.refresh"),
+                refreshingAccessibilityLabel: tr("ui.quick.remote.refreshing"),
+                refreshFailedHelpText: tr("ui.quick.remote.refresh_failed"))
             {
                 dismiss()
                 Task { await appSession.selectConfigFile(named: name) }
+            } onRefresh: {
+                Task { await appSession.refreshRemoteConfigFile(named: name) }
             }
         }
         AttachedPopoverMenuDivider()
@@ -209,27 +222,32 @@ extension MenuBarRootView {
                         .foregroundStyle(nativeTertiaryLabel)
                 }
             } else {
-                AttachedPopoverMenu { _ in
-                    self.quickRowContent(
-                        title: tr("ui.quick.switch_config"),
-                        symbol: "doc.text",
-                        foreground: nativePurple)
-                    {
-                        HStack(spacing: T.space2) {
-                            Text(appSession.selectedConfigName)
-                                .font(.app(size: T.FontSize.caption, weight: .regular))
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                                .foregroundStyle(nativeSecondaryLabel)
-                            Image(systemName: "chevron.right")
-                                .font(.app(size: T.FontSize.caption, weight: .medium))
-                                .foregroundStyle(nativeTertiaryLabel)
+                AttachedPopoverMenu(
+                    onWillPresent: {
+                        self.appSession.refreshRemoteConfigMenuStates()
+                    },
+                    label: { _ in
+                        self.quickRowContent(
+                            title: tr("ui.quick.switch_config"),
+                            symbol: "doc.text",
+                            foreground: nativePurple)
+                        {
+                            HStack(spacing: T.space2) {
+                                Text(appSession.selectedConfigName)
+                                    .font(.app(size: T.FontSize.caption, weight: .regular))
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                    .foregroundStyle(nativeSecondaryLabel)
+                                Image(systemName: "chevron.right")
+                                    .font(.app(size: T.FontSize.caption, weight: .medium))
+                                    .foregroundStyle(nativeTertiaryLabel)
+                            }
                         }
-                    }
-                } content: { dismiss in
-                    self.configMenuContent(dismiss: dismiss)
-                }
-                .buttonStyle(.plain)
+                    },
+                    content: { dismiss in
+                        self.configMenuContent(dismiss: dismiss)
+                    })
+                    .buttonStyle(.plain)
             }
 
             self.systemProxyQuickToggleRow
@@ -364,9 +382,10 @@ extension MenuBarRootView {
     }
 
     var systemProxyRowTitle: String {
-        appSession.isRemoteTarget
-            ? "\(tr("ui.quick.system_proxy")) (\(tr("ui.machine.local_label")))"
-            : tr("ui.quick.system_proxy")
+        if let scopeLabel = self.systemProxyScopeLabel {
+            return "\(tr("ui.quick.system_proxy")) (\(scopeLabel))"
+        }
+        return tr("ui.quick.system_proxy")
     }
 
     var systemProxyRowDetailColor: Color {
@@ -379,11 +398,21 @@ extension MenuBarRootView {
     var systemProxyQuickToggleRow: some View {
         HStack(spacing: T.space6) {
             self.systemProxyCompositeIcon
-            Text(self.systemProxyRowTitle)
-                .font(.app(size: T.FontSize.body, weight: .medium))
-                .foregroundStyle(nativePrimaryLabel)
-                .lineLimit(1)
-                .minimumScaleFactor(T.minimumScale)
+            HStack(spacing: T.space2) {
+                Text(self.systemProxyRowTitle)
+                    .font(.app(size: T.FontSize.body, weight: .medium))
+                    .foregroundStyle(nativePrimaryLabel)
+                    .lineLimit(1)
+                    .minimumScaleFactor(T.minimumScale)
+
+                if self.shouldShowSystemProxyRemoteWarning {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.app(size: T.FontSize.caption, weight: .semibold))
+                        .foregroundStyle(nativeWarning.opacity(T.Opacity.solid))
+                        .help(tr("ui.system_proxy.remote_target_warning"))
+                        .accessibilityLabel(tr("ui.system_proxy.remote_target_warning"))
+                }
+            }
 
             if let detailText = self.systemProxyRowDetailText {
                 Text(detailText)
@@ -414,6 +443,20 @@ extension MenuBarRootView {
     var systemProxyInlineFailureText: String? {
         guard !self.appSession.isSystemProxyEnabled else { return nil }
         return self.appSession.systemProxyOpenFailureHint?.trimmedNonEmpty
+    }
+
+    var systemProxyScopeLabel: String? {
+        if self.appSession.isSystemProxyUsingRemoteCore {
+            return tr("ui.machine.remote_label")
+        }
+        if self.appSession.isRemoteTarget {
+            return tr("ui.machine.local_label")
+        }
+        return nil
+    }
+
+    var shouldShowSystemProxyRemoteWarning: Bool {
+        self.appSession.isSystemProxyUsingRemoteCore
     }
 
     func quickToggleRow(
@@ -516,5 +559,139 @@ extension MenuBarRootView {
 
     var systemProxyCompositeIconHelp: String {
         "\(self.systemProxyBackgroundActivityHelp)\n\(self.systemProxyHelperProcessHelp)"
+    }
+}
+
+private struct ConfigMenuItemView: View {
+    let title: String
+    let subtitle: String?
+    let leadingSymbol: String?
+    let leadingTint: Color
+    let selected: Bool
+    let refreshPhase: RemoteConfigRefreshPhase?
+    let refreshHelpText: String
+    let refreshingAccessibilityLabel: String
+    let refreshFailedHelpText: String
+    let onSelect: () -> Void
+    let onRefresh: (() -> Void)?
+
+    @State private var isHovered = false
+
+    var body: some View {
+        HStack(alignment: .center, spacing: T.space6) {
+            Button(action: self.onSelect) {
+                HStack(alignment: .center, spacing: T.space6) {
+                    if let leadingSymbol {
+                        Image(systemName: leadingSymbol)
+                            .font(.app(size: T.FontSize.caption, weight: .semibold))
+                            .foregroundStyle(self.leadingSymbolForeground)
+                            .frame(width: 12, alignment: .center)
+                    }
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(self.title)
+                            .font(.app(size: T.FontSize.body, weight: self.selected ? .semibold : .medium))
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .foregroundStyle(self.primaryTextColor)
+
+                        if let subtitle, !subtitle.isEmpty {
+                            Text(subtitle)
+                                .font(.app(size: T.FontSize.caption, weight: .regular))
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                                .monospacedDigit()
+                                .foregroundStyle(self.secondaryTextColor)
+                        }
+                    }
+
+                    Spacer(minLength: 0)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if let refreshPhase, let onRefresh {
+                self.refreshControl(phase: refreshPhase, onRefresh: onRefresh)
+            }
+        }
+        .padding(.horizontal, T.space6)
+        .padding(.vertical, T.space2)
+        .background(
+            RoundedRectangle(cornerRadius: T.cornerRadius, style: .continuous)
+                .fill(self.rowBackground))
+        .contentShape(Rectangle())
+        .onHover { self.isHovered = $0 }
+    }
+
+    private func refreshControl(
+        phase: RemoteConfigRefreshPhase,
+        onRefresh: @escaping () -> Void) -> some View
+    {
+        let failureTint = Color(nsColor: .systemRed)
+        let helpText: String
+        let tint: Color
+        let baseTint: Color
+        let isLoading = phase == .refreshing
+
+        switch phase {
+        case .idle:
+            helpText = self.refreshHelpText
+            tint = Color(nsColor: .controlAccentColor)
+            baseTint = self.secondaryTextColor
+        case .refreshing:
+            helpText = self.refreshingAccessibilityLabel
+            tint = self.secondaryTextColor
+            baseTint = self.secondaryTextColor
+        case .failed:
+            helpText = self.refreshFailedHelpText
+            tint = failureTint
+            baseTint = failureTint.opacity(0.92)
+        }
+
+        return CompactAsyncIconButton(
+            symbol: "arrow.clockwise",
+            tint: tint,
+            baseTint: baseTint,
+            role: nil,
+            isLoading: isLoading,
+            size: 20,
+            fontSize: T.FontSize.body,
+            hierarchicalSymbol: false,
+            action: { onRefresh() })
+            .help(helpText)
+            .accessibilityLabel(helpText)
+    }
+
+    private var primaryTextColor: Color {
+        if self.isHovered {
+            return Color(nsColor: .selectedMenuItemTextColor)
+        }
+        return .primary
+    }
+
+    private var secondaryTextColor: Color {
+        if self.isHovered {
+            return Color(nsColor: .selectedMenuItemTextColor).opacity(0.88)
+        }
+        return self.selected ? .primary.opacity(0.72) : .secondary
+    }
+
+    private var leadingSymbolForeground: Color {
+        if self.isHovered {
+            return Color(nsColor: .selectedMenuItemTextColor)
+        }
+        return self.leadingTint
+    }
+
+    private var rowBackground: Color {
+        if self.isHovered {
+            return Color(nsColor: .selectedContentBackgroundColor)
+        }
+        if self.selected {
+            return Color(nsColor: .selectedContentBackgroundColor).opacity(0.34)
+        }
+        return .clear
     }
 }

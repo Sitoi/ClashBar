@@ -47,6 +47,7 @@ final class AppSession: ObservableObject {
     @Published var selectedConfigName: String = "-"
     @Published var configDirectoryPath: String = "-"
     @Published var availableConfigFileNames: [String] = []
+    @Published var remoteConfigMenuStates: [String: RemoteConfigMenuState] = [:]
 
     @Published var proxyGroups: [ProxyGroup] = []
     @Published var groupLatencyLoading: Set<String> = []
@@ -244,8 +245,14 @@ final class AppSession: ObservableObject {
             unitIndex += 1
         }
 
-        let integer = min(999, max(1, Int(value)))
-        return "\(integer)\(units[unitIndex])"
+        let unit = units[unitIndex]
+        if value < 10 {
+            return String(format: "%.2f%@", value, unit)
+        } else if value < 100 {
+            return String(format: "%.1f%@", value, unit)
+        } else {
+            return String(format: "%.0f%@", min(value, 999), unit)
+        }
     }
 
     func refreshMenuBarDisplaySnapshotIfNeeded() {

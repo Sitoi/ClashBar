@@ -2,6 +2,19 @@ import Foundation
 
 @MainActor
 extension AppSession {
+    var isSystemProxyUsingRemoteCore: Bool {
+        guard self.isSystemProxyEnabled,
+              let activeDisplay = self.systemProxyActiveDisplay?.trimmedNonEmpty,
+              let activeHost = self.controllerHost(from: activeDisplay)?.trimmedNonEmpty
+        else {
+            return false
+        }
+
+        let localHost = self.controllerHost(from: self.localExternalControllerDisplay)?.trimmedNonEmpty ?? "127.0.0.1"
+        return self.normalizedSystemProxyComparisonHost(activeHost) != self
+            .normalizedSystemProxyComparisonHost(localHost)
+    }
+
     func clearSystemProxyOpenFailureHint() {
         self.systemProxyOpenFailureHint = nil
     }
@@ -272,23 +285,32 @@ extension AppSession {
     private func systemProxyFailureReasonMessage(for reason: SystemProxyHelperFailureReason) -> String {
         switch reason {
         case .backgroundActivityDisabled:
-            return tr("app.system_proxy.alert.background_activity_disabled")
+            tr("app.system_proxy.alert.background_activity_disabled")
         case .helperNotRegistered:
-            return tr("app.system_proxy.alert.helper_not_registered")
+            tr("app.system_proxy.alert.helper_not_registered")
         case .helperStartTimedOut:
-            return tr("app.system_proxy.alert.helper_start_timed_out")
+            tr("app.system_proxy.alert.helper_start_timed_out")
         case .helperConnectionFailed:
-            return tr("app.system_proxy.alert.helper_connection_failed")
+            tr("app.system_proxy.alert.helper_connection_failed")
         case .helperOperationFailed:
-            return tr("app.system_proxy.alert.helper_operation_failed")
+            tr("app.system_proxy.alert.helper_operation_failed")
         case .appNotInApplications:
-            return tr("app.system_proxy.alert.helper_install_location")
+            tr("app.system_proxy.alert.helper_install_location")
         case .helperNotBundled:
-            return tr("app.system_proxy.alert.helper_not_bundled")
+            tr("app.system_proxy.alert.helper_not_bundled")
         case .signatureMismatch:
-            return tr("app.system_proxy.alert.helper_invalid_signature")
+            tr("app.system_proxy.alert.helper_invalid_signature")
         case .unknown:
-            return tr("app.system_proxy.alert.unknown")
+            tr("app.system_proxy.alert.unknown")
+        }
+    }
+
+    private func normalizedSystemProxyComparisonHost(_ host: String) -> String {
+        switch host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "localhost", "127.0.0.1", "0.0.0.0", "::1", "::", "0:0:0:0:0:0:0:0":
+            "loopback"
+        default:
+            host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         }
     }
 }

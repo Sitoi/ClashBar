@@ -26,7 +26,7 @@ enum DeviceIPv4AddressResolver {
             }
 
             let interfaceName = String(cString: interface.ifa_name)
-            guard !isIgnoredInterface(interfaceName) else {
+            guard !self.isIgnoredInterface(interfaceName) else {
                 continue
             }
 
@@ -44,7 +44,9 @@ enum DeviceIPv4AddressResolver {
             }
 
             let addressBytes = hostBuffer.prefix { $0 != 0 }.map(UInt8.init(bitPattern:))
-            let address = String(decoding: addressBytes, as: UTF8.self)
+            guard let address = String(bytes: addressBytes, encoding: .utf8) else {
+                continue
+            }
             guard !address.hasPrefix("169.254.") else {
                 continue
             }

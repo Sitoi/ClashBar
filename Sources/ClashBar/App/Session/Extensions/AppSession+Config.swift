@@ -224,10 +224,7 @@ extension AppSession {
         var failedCount = 0
 
         for fileName in sources.keys.sorted() {
-            guard let urlString = sources[fileName],
-                  let remoteURL = URL(string: urlString),
-                  isSupportedRemoteConfigURL(remoteURL)
-            else {
+            guard let remoteURL = self.resolvedRemoteURL(for: fileName) else {
                 failedCount += 1
                 appendLog(
                     level: "error",
@@ -293,6 +290,66 @@ extension AppSession {
         appendLog(level: "info", message: tr("log.config.loaded_count", configRepository.availableConfigs.count))
     }
 
+    func refreshRemoteConfigMenuStates() {
+        let remoteFileNames = Set(self.remoteConfigSources.keys)
+        guard !remoteFileNames.isEmpty else {
+            self.remoteConfigMenuStates = [:]
+            return
+        }
+
+        var nextStates: [String: RemoteConfigMenuState] = [:]
+        nextStates.reserveCapacity(remoteFileNames.count)
+
+        for fileName in remoteFileNames {
+            let updatedAt = self.remoteConfigUpdatedAt(for: fileName)
+            nextStates[fileName] = self.mergedRemoteConfigMenuState(for: fileName, updatedAt: updatedAt)
+        }
+
+        self.remoteConfigMenuStates = nextStates
+    }
+
+    func remoteConfigMenuState(for fileName: String) -> RemoteConfigMenuState {
+        self.remoteConfigMenuStates[fileName] ?? .idle
+    }
+
+    func refreshRemoteConfigFile(named fileName: String) async {
+        guard self.remoteConfigMenuState(for: fileName).phase != .refreshing else { return }
+        guard let configDirectory = self.ensureConfigDirectoryAvailable() else { return }
+
+        self.pruneRemoteConfigSourcesIfNeeded()
+        self.setRemoteConfigMenuState(for: fileName, phase: .refreshing)
+
+        guard let remoteURL = self.resolvedRemoteURL(for: fileName) else {
+            let reason = tr("log.config.remote.invalid_url", self.remoteConfigSources[fileName] ?? fileName)
+            self.appendLog(level: "error", message: tr("log.config.remote.update_item_failed", fileName, reason))
+            self.setRemoteConfigMenuState(for: fileName, phase: .failed)
+            return
+        }
+
+        do {
+            let userAgent = await self.remoteSubscriptionUserAgent()
+            let data = try await self.downloadRemoteConfigData(from: remoteURL, userAgent: userAgent)
+            let targetURL = configDirectory.appendingPathComponent(fileName, isDirectory: false)
+            try self.writeConfigData(data, to: targetURL)
+
+            self.refreshConfigStateAfterMutation()
+
+            if self.shouldAutoReloadCurrentConfig(updatedFileNames: [fileName]) {
+                await self.reloadConfig()
+            }
+
+            self.setRemoteConfigMenuState(
+                for: fileName,
+                phase: .idle,
+                updatedAt: self.remoteConfigUpdatedAt(for: fileName) ?? Date())
+        } catch {
+            self.appendLog(
+                level: "error",
+                message: tr("log.config.remote.update_item_failed", fileName, error.localizedDescription))
+            self.setRemoteConfigMenuState(for: fileName, phase: .failed)
+        }
+    }
+
     func reloadConfig() async {
         let actionName = tr("log.action_name.reload_config")
         let expectedTunEnabled = isTunEnabled
@@ -330,6 +387,7 @@ extension AppSession {
             defaults.removeObject(forKey: selectedConfigKey)
         }
         syncConfigDisplayState()
+        self.refreshRemoteConfigMenuStates()
     }
 
     @discardableResult
@@ -496,5 +554,46 @@ extension AppSession {
         }
         persistRemoteConfigSources()
         self.refreshConfigStateAfterMutation()
+    }
+
+    private func remoteConfigUpdatedAt(for fileName: String) -> Date? {
+        guard let configURL = self.configRepository.availableConfigs.first(where: { $0.lastPathComponent == fileName })
+        else {
+            return nil
+        }
+        return try? configURL.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
+    }
+
+    private func mergedRemoteConfigMenuState(for fileName: String, updatedAt: Date?) -> RemoteConfigMenuState {
+        let current = self.remoteConfigMenuStates[fileName] ?? .idle
+        let phase: RemoteConfigRefreshPhase = switch current.phase {
+        case .refreshing:
+            .refreshing
+        case .failed:
+            current.updatedAt == updatedAt ? .failed : .idle
+        case .idle:
+            .idle
+        }
+
+        return RemoteConfigMenuState(updatedAt: updatedAt, phase: phase)
+    }
+
+    private func setRemoteConfigMenuState(
+        for fileName: String,
+        phase: RemoteConfigRefreshPhase,
+        updatedAt: Date? = nil)
+    {
+        let resolvedUpdatedAt = updatedAt ?? self.remoteConfigMenuStates[fileName]?.updatedAt
+        self.remoteConfigMenuStates[fileName] = RemoteConfigMenuState(
+            updatedAt: resolvedUpdatedAt,
+            phase: phase)
+    }
+
+    private func resolvedRemoteURL(for fileName: String) -> URL? {
+        guard let urlString = self.remoteConfigSources[fileName],
+              let url = URL(string: urlString),
+              self.isSupportedRemoteConfigURL(url)
+        else { return nil }
+        return url
     }
 }

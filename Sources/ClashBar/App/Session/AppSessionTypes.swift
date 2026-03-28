@@ -106,6 +106,19 @@ enum ProviderRefreshPhase {
     case cancelled
 }
 
+enum RemoteConfigRefreshPhase: Equatable {
+    case idle
+    case refreshing
+    case failed
+}
+
+struct RemoteConfigMenuState: Equatable {
+    let updatedAt: Date?
+    let phase: RemoteConfigRefreshPhase
+
+    static let idle = RemoteConfigMenuState(updatedAt: nil, phase: .idle)
+}
+
 struct ProviderRefreshStatus {
     let phase: ProviderRefreshPhase
     let trigger: ProviderRefreshTrigger?
@@ -127,7 +140,7 @@ struct MenuBarSpeedLines: Equatable {
     let up: String
     let down: String
 
-    static let zero = MenuBarSpeedLines(up: "↑0K", down: "↓0K")
+    static let zero = MenuBarSpeedLines(up: "0K↑", down: "0K↓")
 }
 
 struct MenuBarDisplay: Equatable {

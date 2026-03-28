@@ -68,6 +68,7 @@
 "ui.machine.return_local" = "返回本地内核";
 "ui.machine.active" = "当前";
 "ui.machine.local_label" = "本地";
+"ui.machine.remote_label" = "远程";
 "ui.machine.status_unreachable" = "无法连接";
 
 "ui.section.local_app_settings" = "应用设置 (本地)";
@@ -88,6 +89,9 @@
 "ui.quick.remote.url_placeholder" = "https://example.com/config.yaml";
 "ui.quick.remote.filename_label" = "文件名";
 "ui.quick.remote.filename_placeholder" = "留空则自动推断";
+"ui.quick.remote.refreshing" = "刷新中";
+"ui.quick.remote.refresh_failed" = "刷新失败";
+"ui.system_proxy.remote_target_warning" = "系统代理当前指向远程内核，请确认远程地址可达。";
 
 "ui.section.proxy_providers" = "代理提供者";
 "ui.section.proxy_groups" = "代理组";

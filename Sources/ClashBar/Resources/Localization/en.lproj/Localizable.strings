@@ -68,6 +68,7 @@
 "ui.machine.return_local" = "Return to Local Core";
 "ui.machine.active" = "Active";
 "ui.machine.local_label" = "Local";
+"ui.machine.remote_label" = "Remote";
 "ui.machine.status_unreachable" = "Unreachable";
 
 "ui.section.local_app_settings" = "App Settings (Local)";
@@ -88,6 +89,9 @@
 "ui.quick.remote.url_placeholder" = "https://example.com/config.yaml";
 "ui.quick.remote.filename_label" = "File Name";
 "ui.quick.remote.filename_placeholder" = "Leave empty to infer automatically";
+"ui.quick.remote.refreshing" = "Refreshing";
+"ui.quick.remote.refresh_failed" = "Refresh Failed";
+"ui.system_proxy.remote_target_warning" = "System proxy currently points to a remote core. Make sure the remote endpoint remains reachable.";
 
 "ui.section.proxy_providers" = "Proxy Providers";
 "ui.section.proxy_groups" = "Proxy Groups";
