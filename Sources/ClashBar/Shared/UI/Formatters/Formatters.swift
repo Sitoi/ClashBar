@@ -40,11 +40,30 @@ enum ValueFormatter {
     private static let iso8601BasicKey = "clashbar.formatter.iso8601.basic"
 
     static func speed(_ value: Int64) -> String {
-        let normalized = max(0, value)
-        if normalized >= 1024 * 1024 {
-            return String(format: "%.2f MB/s", Double(normalized) / (1024 * 1024))
+        let (formatted, unit) = speedComponents(value)
+        return "\(formatted) \(unit)/s"
+    }
+
+    static func speedCompact(_ value: Int64) -> String {
+        let (formatted, unit) = speedComponents(value)
+        return "\(formatted)\(unit.replacingOccurrences(of: "B", with: ""))"
+    }
+
+    private static func speedComponents(_ bytesPerSecond: Int64) -> (String, String) {
+        let normalized = max(0, bytesPerSecond)
+        var value = Double(normalized) / 1024
+        let units = ["KB", "MB", "GB", "TB"]
+        var unitIndex = 0
+
+        while value >= 1000, unitIndex < units.count - 1 {
+            value /= 1024
+            unitIndex += 1
         }
-        return String(format: "%.2f KB/s", Double(normalized) / 1024)
+
+        if unitIndex == 0 {
+            return (String(format: "%.0f", value), units[unitIndex])
+        }
+        return (String(format: "%.2f", value), units[unitIndex])
     }
 
     static func bytesInteger(_ value: Int64) -> String {

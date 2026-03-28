@@ -230,22 +230,7 @@ final class AppSession: ObservableObject {
     }
 
     func compactMenuBarRate(_ bytesPerSecond: Int64) -> String {
-        let normalizedBytes = max(0, bytesPerSecond)
-        if normalizedBytes == 0 {
-            return "0K"
-        }
-
-        var value = Double(normalizedBytes) / 1024
-        let units = ["K", "M", "G", "T"]
-        var unitIndex = 0
-
-        while value >= 1000, unitIndex < units.count - 1 {
-            value /= 1024
-            unitIndex += 1
-        }
-
-        let integer = min(999, max(1, Int(value)))
-        return "\(integer)\(units[unitIndex])"
+        ValueFormatter.speedCompact(bytesPerSecond)
     }
 
     func refreshMenuBarDisplaySnapshotIfNeeded() {
