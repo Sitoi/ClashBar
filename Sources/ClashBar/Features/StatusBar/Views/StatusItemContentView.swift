@@ -7,7 +7,7 @@ final class StatusItemContentView: NSView {
     private let brandIconRenderSize: CGFloat = 24
     private let symbolPointSize: CGFloat = 20
     private let iconTextSpacing: CGFloat = 0
-    private let textContainerWidth: CGFloat = 34
+    private let textContainerWidth: CGFloat = 45
     private let textLineHeight: CGFloat = 11
 
     private let iconView: NSImageView = {
