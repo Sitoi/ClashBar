@@ -84,6 +84,9 @@
 "ui.quick.import_remote_config" = "导入订阅链接";
 "ui.quick.update_remote_configs" = "更新订阅链接";
 "ui.quick.show_in_finder" = "在访达中显示";
+"ui.quick.config_status.subtitle" = "(变更:%@, 检查成功:%@)";
+"ui.quick.config_status.never_checked" = "未检查";
+"ui.quick.config_status.just_now" = "刚刚";
 "ui.quick.remote.url_label" = "订阅链接";
 "ui.quick.remote.url_placeholder" = "https://example.com/config.yaml";
 "ui.quick.remote.filename_label" = "文件名";

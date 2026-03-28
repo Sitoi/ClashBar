@@ -84,6 +84,9 @@
 "ui.quick.import_remote_config" = "Import Subscription Link";
 "ui.quick.update_remote_configs" = "Update Subscription Links";
 "ui.quick.show_in_finder" = "Show in Finder";
+"ui.quick.config_status.subtitle" = "(Changed: %@, Check succeeded: %@)";
+"ui.quick.config_status.never_checked" = "Never";
+"ui.quick.config_status.just_now" = "just now";
 "ui.quick.remote.url_label" = "Subscription URL";
 "ui.quick.remote.url_placeholder" = "https://example.com/config.yaml";
 "ui.quick.remote.filename_label" = "File Name";

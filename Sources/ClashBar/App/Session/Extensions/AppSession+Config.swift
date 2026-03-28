@@ -4,8 +4,47 @@ import UniformTypeIdentifiers
 
 @MainActor
 extension AppSession {
+    private enum RemoteConfigWriteResult {
+        case changed
+        case unchanged
+    }
+
     private func reloadRuntimeConfigUseCase() throws -> ReloadRuntimeConfigUseCase {
         try ReloadRuntimeConfigUseCase(repository: DefaultRuntimeConfigRepository(transport: self.clientOrThrow()))
+    }
+
+    func isRemoteConfigFile(named fileName: String) -> Bool {
+        self.remoteConfigSources[fileName] != nil
+    }
+
+    func configMenuStatusSubtitle(for fileName: String) -> String? {
+        self.configMenuStatusSubtitleByName[fileName]
+    }
+
+    func refreshConfigMenuStatusSnapshot() {
+        let now = Date()
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        formatter.locale = Locale(identifier: self.uiLanguage.localeIdentifier)
+
+        var snapshot: [String: String] = [:]
+        let keys: Set<URLResourceKey> = [.contentModificationDateKey]
+        for configURL in self.configRepository.availableConfigs {
+            let fileName = configURL.lastPathComponent
+            let modifiedDate = (try? configURL.resourceValues(forKeys: keys))?.contentModificationDate
+            let modifiedText = self.menuRelativeTimeText(from: modifiedDate, now: now, formatter: formatter)
+
+            let checkedText: String
+            if let checkedTimestamp = self.remoteConfigLastCheckSucceededAt[fileName], checkedTimestamp > 0 {
+                let checkedDate = Date(timeIntervalSince1970: checkedTimestamp)
+                checkedText = self.menuRelativeTimeText(from: checkedDate, now: now, formatter: formatter)
+            } else {
+                checkedText = self.tr("ui.quick.config_status.never_checked")
+            }
+
+            snapshot[fileName] = self.tr("ui.quick.config_status.subtitle", modifiedText, checkedText)
+        }
+        self.configMenuStatusSubtitleByName = snapshot
     }
 
     func seedBundledConfigIfNeeded() {
@@ -194,6 +233,7 @@ extension AppSession {
             try writeConfigData(data, to: targetURL)
 
             self.updateRemoteConfigSource(for: fileName, urlString: remoteURL.absoluteString)
+            self.markRemoteConfigCheckSucceeded(fileNames: Set([fileName]))
             let message = tr("log.config.import_remote.success", fileName)
             appendLog(level: "info", message: message)
 
@@ -220,29 +260,24 @@ extension AppSession {
         }
 
         let userAgent = await remoteSubscriptionUserAgent()
-        var updatedFileNames: Set<String> = []
+        var changedFileNames: Set<String> = []
+        var succeededFileNames: Set<String> = []
         var failedCount = 0
 
         for fileName in sources.keys.sorted() {
-            guard let urlString = sources[fileName],
-                  let remoteURL = URL(string: urlString),
-                  isSupportedRemoteConfigURL(remoteURL)
-            else {
-                failedCount += 1
-                appendLog(
-                    level: "error",
-                    message: tr(
-                        "log.config.remote.update_item_failed",
-                        fileName,
-                        tr("log.config.remote.invalid_url", sources[fileName] ?? fileName)))
-                continue
-            }
-
-            let targetURL = configDirectory.appendingPathComponent(fileName, isDirectory: false)
             do {
-                let data = try await downloadRemoteConfigData(from: remoteURL, userAgent: userAgent)
-                try writeConfigData(data, to: targetURL)
-                updatedFileNames.insert(fileName)
+                if let result = try await self.updateSingleRemoteConfigFile(
+                    named: fileName,
+                    configDirectory: configDirectory,
+                    userAgent: userAgent)
+                {
+                    succeededFileNames.insert(fileName)
+                    if case .changed = result {
+                        changedFileNames.insert(fileName)
+                    }
+                } else {
+                    failedCount += 1
+                }
             } catch {
                 failedCount += 1
                 appendLog(
@@ -251,11 +286,114 @@ extension AppSession {
             }
         }
 
+        if !succeededFileNames.isEmpty {
+            self.markRemoteConfigCheckSucceeded(fileNames: succeededFileNames)
+        }
         self.refreshConfigStateAfterMutation()
-        appendLog(level: "info", message: tr("log.config.remote.update_summary", updatedFileNames.count, failedCount))
+        appendLog(level: "info", message: tr("log.config.remote.update_summary", changedFileNames.count, failedCount))
 
-        if self.shouldAutoReloadCurrentConfig(updatedFileNames: updatedFileNames) {
+        if self.shouldAutoReloadCurrentConfig(updatedFileNames: changedFileNames) {
             await self.reloadConfig()
+        }
+    }
+
+    func updateRemoteConfigFile(named fileName: String) async {
+        guard let configDirectory = ensureConfigDirectoryAvailable() else { return }
+        pruneRemoteConfigSourcesIfNeeded()
+
+        guard remoteConfigSources[fileName] != nil else {
+            appendLog(
+                level: "error",
+                message: tr("log.config.remote.update_item_failed", fileName, tr("log.config.remote.no_sources")))
+            return
+        }
+        guard !self.remoteConfigUpdateInFlightNames.contains(fileName) else { return }
+
+        self.remoteConfigUpdateInFlightNames.insert(fileName)
+        self.remoteConfigUpdateFeedbackByName.removeValue(forKey: fileName)
+        defer { self.remoteConfigUpdateInFlightNames.remove(fileName) }
+
+        do {
+            let userAgent = await remoteSubscriptionUserAgent()
+            if let result = try await self.updateSingleRemoteConfigFile(
+                named: fileName,
+                configDirectory: configDirectory,
+                userAgent: userAgent)
+            {
+                self.markRemoteConfigCheckSucceeded(fileNames: Set([fileName]))
+                self.refreshConfigStateAfterMutation()
+                if case .changed = result,
+                   self.shouldAutoReloadCurrentConfig(updatedFileNames: [fileName])
+                {
+                    await self.reloadConfig()
+                }
+                self.markRemoteConfigUpdateFeedback(for: fileName, success: true)
+            }
+        } catch {
+            appendLog(
+                level: "error",
+                message: tr("log.config.remote.update_item_failed", fileName, error.localizedDescription))
+            self.markRemoteConfigUpdateFeedback(for: fileName, success: false)
+        }
+    }
+
+    private func updateSingleRemoteConfigFile(
+        named fileName: String,
+        configDirectory: URL,
+        userAgent: String) async throws -> RemoteConfigWriteResult?
+    {
+        guard let urlString = remoteConfigSources[fileName],
+              let remoteURL = URL(string: urlString),
+              isSupportedRemoteConfigURL(remoteURL)
+        else {
+            appendLog(
+                level: "error",
+                message: tr(
+                    "log.config.remote.update_item_failed",
+                    fileName,
+                    tr("log.config.remote.invalid_url", remoteConfigSources[fileName] ?? fileName)))
+            return nil
+        }
+
+        let targetURL = configDirectory.appendingPathComponent(fileName, isDirectory: false)
+        let data = try await downloadRemoteConfigData(from: remoteURL, userAgent: userAgent)
+        if let existing = try? Data(contentsOf: targetURL), existing == data {
+            return .unchanged
+        }
+        try self.writeConfigData(data, to: targetURL)
+        return .changed
+    }
+
+    private func markRemoteConfigCheckSucceeded(fileNames: Set<String>, at now: Date = Date()) {
+        guard !fileNames.isEmpty else { return }
+        let timestamp = now.timeIntervalSince1970
+        for fileName in fileNames where self.remoteConfigSources[fileName] != nil {
+            self.remoteConfigLastCheckSucceededAt[fileName] = timestamp
+        }
+        self.persistRemoteConfigLastCheckSucceededAt()
+        self.refreshConfigMenuStatusSnapshot()
+    }
+
+    private func menuRelativeTimeText(
+        from date: Date?,
+        now: Date,
+        formatter: RelativeDateTimeFormatter) -> String
+    {
+        guard let date else { return self.tr("ui.common.unknown") }
+        let safeDate = min(date, now)
+        if now.timeIntervalSince(safeDate) < 45 {
+            return self.tr("ui.quick.config_status.just_now")
+        }
+        return formatter.localizedString(for: safeDate, relativeTo: now)
+    }
+
+    private func markRemoteConfigUpdateFeedback(for fileName: String, success: Bool) {
+        self.remoteConfigUpdateFeedbackClearTasks[fileName]?.cancel()
+        self.remoteConfigUpdateFeedbackByName[fileName] = success
+        self.remoteConfigUpdateFeedbackClearTasks[fileName] = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            self.remoteConfigUpdateFeedbackByName.removeValue(forKey: fileName)
+            self.remoteConfigUpdateFeedbackClearTasks.removeValue(forKey: fileName)
         }
     }
 

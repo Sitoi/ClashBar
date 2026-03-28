@@ -47,6 +47,9 @@ final class AppSession: ObservableObject {
     @Published var selectedConfigName: String = "-"
     @Published var configDirectoryPath: String = "-"
     @Published var availableConfigFileNames: [String] = []
+    @Published var configMenuStatusSubtitleByName: [String: String] = [:]
+    @Published var remoteConfigUpdateInFlightNames: Set<String> = []
+    @Published var remoteConfigUpdateFeedbackByName: [String: Bool] = [:]
 
     @Published var proxyGroups: [ProxyGroup] = []
     @Published var groupLatencyLoading: Set<String> = []
@@ -349,6 +352,7 @@ final class AppSession: ObservableObject {
     let selectedConfigKey = "clashbar.config.selected.filename"
     let legacySelectedConfigKey = "clashbar.config.selected"
     let remoteConfigSourcesKey = "clashbar.config.remote.sources.v1"
+    let remoteConfigLastCheckSucceededAtKey = "clashbar.config.remote.last_check_succeeded_at.v1"
     let lastSuccessfulConfigPathKey = "clashbar.last.success.config.path"
     let editableSettingsSnapshotKey = "clashbar.settings.editable.snapshot.v1"
     let systemProxyEnabledOnQuitKey = "clashbar.system_proxy.enabled_on_quit"
@@ -390,6 +394,8 @@ final class AppSession: ObservableObject {
     var pendingCoreFeatureRecoveryState: CoreFeatureRecoveryState?
     var deferredEditableSettingsOverlay: (snapshot: EditableSettingsSnapshot, syncingKey: String)?
     var remoteConfigSources: [String: String] = [:]
+    var remoteConfigLastCheckSucceededAt: [String: TimeInterval] = [:]
+    var remoteConfigUpdateFeedbackClearTasks: [String: Task<Void, Never>] = [:]
     var externalControllerWarningKeys: Set<String> = []
     let streamJSONDecoder = JSONDecoder()
     let initialNoCoreSetupGuideShownKey = "clashbar.core.install.guide.shown.v1"
@@ -483,7 +489,9 @@ final class AppSession: ObservableObject {
         restoreSavedConfigDirectory()
         restoreLastSuccessfulConfigIfAvailable()
         self.remoteConfigSources = loadPersistedRemoteConfigSources()
+        self.remoteConfigLastCheckSucceededAt = loadPersistedRemoteConfigLastCheckSucceededAt()
         pruneRemoteConfigSourcesIfNeeded()
+        pruneRemoteConfigLastCheckSucceededAtIfNeeded()
         // Always start in local mode. Remote target is session-level only.
         self.remoteMachineStore.resetActiveTarget()
         self.controllerUIURL = makeControllerUIURL(self.controller)
@@ -539,6 +547,10 @@ final class AppSession: ObservableObject {
             webSocketTask.cancel(with: .goingAway, reason: nil)
         }
         providerRefreshTask?.cancel()
+        for task in remoteConfigUpdateFeedbackClearTasks.values {
+            task.cancel()
+        }
+        remoteConfigUpdateFeedbackClearTasks.removeAll()
     }
 
     private static func resolveBundledMihomoCoreFlag() -> Bool {

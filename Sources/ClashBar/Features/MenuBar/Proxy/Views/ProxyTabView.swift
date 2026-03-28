@@ -36,12 +36,40 @@ extension MenuBarRootView {
     @ViewBuilder
     func configMenuContent(dismiss: @escaping () -> Void) -> some View {
         ForEach(appSession.availableConfigFileNames, id: \.self) { name in
-            AttachedPopoverMenuItem(
-                title: name,
-                selected: name == appSession.selectedConfigName)
-            {
-                dismiss()
-                Task { await appSession.selectConfigFile(named: name) }
+            HStack(spacing: T.space4) {
+                AttachedPopoverMenuItem(
+                    title: name,
+                    subtitle: appSession.configMenuStatusSubtitle(for: name),
+                    selected: name == appSession.selectedConfigName)
+                {
+                    dismiss()
+                    Task { await appSession.selectConfigFile(named: name) }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                if appSession.isRemoteConfigFile(named: name) {
+                    Button {
+                        Task { await appSession.updateRemoteConfigFile(named: name) }
+                    } label: {
+                        Group {
+                            if appSession.remoteConfigUpdateInFlightNames.contains(name) {
+                                ProgressView()
+                                    .controlSize(.mini)
+                            } else if let success = appSession.remoteConfigUpdateFeedbackByName[name] {
+                                Image(systemName: success ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                    .font(.app(size: T.FontSize.caption, weight: .semibold))
+                                    .foregroundStyle(success ? nativePositive : nativeWarning)
+                            } else {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.app(size: T.FontSize.caption, weight: .semibold))
+                                    .foregroundStyle(nativeTertiaryLabel)
+                            }
+                        }
+                        .padding(T.space2)
+                    }
+                    .buttonStyle(.plain)
+                    .help(tr("ui.action.refresh"))
+                }
             }
         }
         AttachedPopoverMenuDivider()
@@ -172,7 +200,9 @@ extension MenuBarRootView {
                         .foregroundStyle(nativeTertiaryLabel)
                 }
             } else {
-                AttachedPopoverMenu { _ in
+                AttachedPopoverMenu(onWillPresent: {
+                    self.appSession.refreshConfigMenuStatusSnapshot()
+                }) { _ in
                     self.quickRowContent(
                         title: tr("ui.quick.switch_config"),
                         symbol: "doc.text",

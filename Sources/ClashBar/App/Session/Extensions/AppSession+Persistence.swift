@@ -70,6 +70,10 @@ extension AppSession {
             selectedConfigName = first
         }
         self.pruneRemoteConfigSourcesIfNeeded()
+        self.pruneRemoteConfigLastCheckSucceededAtIfNeeded()
+        self.configMenuStatusSubtitleByName = self.configMenuStatusSubtitleByName.filter { availableConfigFileNames
+            .contains($0.key)
+        }
     }
 
     func ensureAPIClient() {
@@ -131,11 +135,41 @@ extension AppSession {
         defaults.set(remoteConfigSources, forKey: remoteConfigSourcesKey)
     }
 
+    func loadPersistedRemoteConfigLastCheckSucceededAt() -> [String: TimeInterval] {
+        guard let stored = defaults.dictionary(forKey: remoteConfigLastCheckSucceededAtKey)
+            as? [String: TimeInterval]
+        else {
+            return [:]
+        }
+
+        var result: [String: TimeInterval] = [:]
+        for (fileName, timestamp) in stored where timestamp > 0 {
+            guard let normalizedName = normalizedConfigFileName(fileName), normalizedName == fileName else { continue }
+            result[normalizedName] = timestamp
+        }
+        return result
+    }
+
+    func persistRemoteConfigLastCheckSucceededAt() {
+        defaults.set(remoteConfigLastCheckSucceededAt, forKey: remoteConfigLastCheckSucceededAtKey)
+    }
+
     func pruneRemoteConfigSourcesIfNeeded() {
         let availableNames = Set(availableConfigFileNames)
         let filtered = remoteConfigSources.filter { availableNames.contains($0.key) }
         guard filtered != remoteConfigSources else { return }
         remoteConfigSources = filtered
         self.persistRemoteConfigSources()
+    }
+
+    func pruneRemoteConfigLastCheckSucceededAtIfNeeded() {
+        let availableNames = Set(availableConfigFileNames)
+        let remoteNames = Set(remoteConfigSources.keys)
+        let filtered = remoteConfigLastCheckSucceededAt.filter {
+            availableNames.contains($0.key) && remoteNames.contains($0.key)
+        }
+        guard filtered != remoteConfigLastCheckSucceededAt else { return }
+        remoteConfigLastCheckSucceededAt = filtered
+        self.persistRemoteConfigLastCheckSucceededAt()
     }
 }
