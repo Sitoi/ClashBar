@@ -101,11 +101,18 @@ final class RemoteMachineStore: ObservableObject {
     }
 
     func checkConnectivity(for machine: RemoteMachine) {
-        self.machineStatuses[machine.id] = .checking
-        Task {
-            let status = await Self.probe(machine: machine)
-            self.machineStatuses[machine.id] = status
+        Task { [weak self] in
+            guard let self else { return }
+            _ = await self.refreshConnectivity(for: machine)
         }
+    }
+
+    @discardableResult
+    func refreshConnectivity(for machine: RemoteMachine) async -> MachineConnectionStatus {
+        self.machineStatuses[machine.id] = .checking
+        let status = await Self.probe(machine: machine)
+        self.machineStatuses[machine.id] = status
+        return status
     }
 
     func startPeriodicConnectivityChecks() {
@@ -153,6 +160,7 @@ final class RemoteMachineStore: ObservableObject {
     }
 
     private static func probe(machine: RemoteMachine) async -> MachineConnectionStatus {
+        let timeoutInterval: TimeInterval = 1
         let address = machine.controllerAddress
         let base = address.contains("://") ? address : "http://\(address)"
         guard let url = URL(string: "\(base)/version") else {
@@ -160,15 +168,15 @@ final class RemoteMachineStore: ObservableObject {
         }
 
         var request = URLRequest(url: url)
-        request.timeoutInterval = 3
+        request.timeoutInterval = timeoutInterval
         if let secret = machine.secret, !secret.isEmpty {
             request.setValue("Bearer \(secret)", forHTTPHeaderField: "Authorization")
         }
 
         do {
             let configuration = URLSessionConfiguration.ephemeral
-            configuration.timeoutIntervalForRequest = 3
-            configuration.timeoutIntervalForResource = 5
+            configuration.timeoutIntervalForRequest = timeoutInterval
+            configuration.timeoutIntervalForResource = timeoutInterval
             let session = URLSession(configuration: configuration)
             let (data, response) = try await session.data(for: request)
 

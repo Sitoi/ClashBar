@@ -33,35 +33,72 @@ extension MenuBarRootView {
         min(170, max(126, contentWidth * 0.44))
     }
 
+    func isRemoteConfigFile(_ name: String) -> Bool {
+        self.appSession.remoteConfigSources[name] != nil
+    }
+
+    func configMenuLeadingSymbol(for name: String) -> String {
+        self.isRemoteConfigFile(name) ? "link" : "doc.text"
+    }
+
+    func configMenuLeadingTint(for name: String) -> Color {
+        self.isRemoteConfigFile(name)
+            ? self.nativePurple.opacity(T.Opacity.solid)
+            : self.nativeInfo.opacity(T.Opacity.solid)
+    }
+
     @ViewBuilder
     func configMenuContent(dismiss: @escaping () -> Void) -> some View {
         ForEach(appSession.availableConfigFileNames, id: \.self) { name in
             AttachedPopoverMenuItem(
                 title: name,
-                selected: name == appSession.selectedConfigName)
+                leadingSymbol: self.configMenuLeadingSymbol(for: name),
+                leadingTint: self.configMenuLeadingTint(for: name),
+                selected: name == appSession.selectedConfigName,
+                selectionIndicatorPlacement: .trailing)
             {
                 dismiss()
                 Task { await appSession.selectConfigFile(named: name) }
             }
         }
         AttachedPopoverMenuDivider()
-        AttachedPopoverMenuItem(title: tr("ui.quick.reload_config_list")) {
+        AttachedPopoverMenuItem(
+            title: tr("ui.quick.reload_config_list"),
+            leadingSymbol: "arrow.clockwise",
+            leadingTint: self.nativeInfo.opacity(T.Opacity.solid))
+        {
             dismiss()
             appSession.reloadConfigFileList()
         }
-        AttachedPopoverMenuItem(title: tr("ui.quick.import_local_config")) {
+        AttachedPopoverMenuItem(
+            title: tr("ui.quick.import_local_config"),
+            leadingSymbol: "square.and.arrow.down",
+            leadingTint: self.nativePositive.opacity(T.Opacity.solid))
+        {
             dismiss()
             appSession.importLocalConfigFile()
         }
-        AttachedPopoverMenuItem(title: tr("ui.quick.import_remote_config")) {
+        AttachedPopoverMenuItem(
+            title: tr("ui.quick.import_remote_config"),
+            leadingSymbol: "link.badge.plus",
+            leadingTint: self.nativePurple.opacity(T.Opacity.solid))
+        {
             dismiss()
             Task { await appSession.importRemoteConfigFile() }
         }
-        AttachedPopoverMenuItem(title: tr("ui.quick.update_remote_configs")) {
+        AttachedPopoverMenuItem(
+            title: tr("ui.quick.update_remote_configs"),
+            leadingSymbol: "arrow.triangle.2.circlepath",
+            leadingTint: self.nativeWarning.opacity(T.Opacity.solid))
+        {
             dismiss()
             Task { await appSession.updateAllRemoteConfigFiles() }
         }
-        AttachedPopoverMenuItem(title: tr("ui.quick.show_in_finder")) {
+        AttachedPopoverMenuItem(
+            title: tr("ui.quick.show_in_finder"),
+            leadingSymbol: "folder",
+            leadingTint: self.nativeSecondaryLabel)
+        {
             dismiss()
             appSession.showSelectedConfigInFinder()
         }
@@ -260,9 +297,6 @@ extension MenuBarRootView {
             }
         } label: {
             HStack(spacing: T.space4) {
-                Image(systemName: copied ? "checkmark.circle.fill" : "doc.on.doc")
-                    .font(.app(size: T.FontSize.caption, weight: .semibold))
-                    .foregroundStyle(iconForeground)
                 Text(title)
                     .font(.app(size: T.FontSize.caption, weight: .medium))
                     .lineLimit(1)
@@ -270,8 +304,11 @@ extension MenuBarRootView {
                     .minimumScaleFactor(T.minimumScale)
                     .monospacedDigit()
                     .foregroundStyle(foreground)
+                Image(systemName: copied ? "checkmark.circle.fill" : "doc.on.doc")
+                    .font(.app(size: T.FontSize.caption, weight: .semibold))
+                    .foregroundStyle(iconForeground)
             }
-            .padding(1)
+            .padding(T.space2)
             .background {
                 Capsule(style: .continuous)
                     .fill(copied ? self.nativePositive.opacity(T.Opacity.tint) : self.nativeBadgeFill)

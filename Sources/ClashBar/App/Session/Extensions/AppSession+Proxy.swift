@@ -93,7 +93,7 @@ extension AppSession {
     }
 
     func copyManagedEndpointProxyCommand() {
-        self.copyProxyCommand(host: self.controllerHost())
+        self.copyProxyCommand(host: self.managedEndpointProxyCommandHost())
     }
 
     func localProxyCommandTargetDisplay() -> String {
@@ -107,11 +107,12 @@ extension AppSession {
 
     func managedEndpointProxyCommandTargetDisplay() -> String {
         let ports = currentSystemProxyPortsFromState()
-        return self.buildSystemProxyDisplayString(host: self.controllerHost(), ports: ports) ?? self.controllerHost()
+        let host = self.managedEndpointProxyCommandHost()
+        return self.buildSystemProxyDisplayString(host: host, ports: ports) ?? host
     }
 
     func managedEndpointProxyCommandHostDisplay() -> String {
-        self.controllerHost()
+        self.managedEndpointProxyCommandHost()
     }
 
     private func copyProxyCommand(host: String) {
@@ -188,6 +189,31 @@ extension AppSession {
             return "127.0.0.1"
         }
         return host
+    }
+
+    private func managedEndpointProxyCommandHost() -> String {
+        guard !self.isRemoteTarget else {
+            return self.controllerHost()
+        }
+
+        let configuredHost = self.controllerHost(from: self.localExternalControllerDisplay) ?? self.controllerHost()
+        guard self.settingsAllowLan else {
+            return configuredHost
+        }
+        guard self.shouldUseCurrentDeviceIPv4ForProxyCommand(host: configuredHost) else {
+            return configuredHost
+        }
+
+        return DeviceIPv4AddressResolver.currentAddress() ?? self.controllerHost()
+    }
+
+    private func shouldUseCurrentDeviceIPv4ForProxyCommand(host: String) -> Bool {
+        switch host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "", "localhost", "127.0.0.1", "::1", "0.0.0.0", "::", "0:0:0:0:0:0:0:0":
+            true
+        default:
+            false
+        }
     }
 
     func buildSystemProxyDisplayString(host: String, ports: SystemProxyPorts) -> String? {

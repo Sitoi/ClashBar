@@ -164,6 +164,7 @@ extension MenuBarRootView {
                             isSwitchingMachine = false
                         }
                     }
+                    .disabled(!status.isConnected)
                 }
 
                 AttachedPopoverMenuDivider()

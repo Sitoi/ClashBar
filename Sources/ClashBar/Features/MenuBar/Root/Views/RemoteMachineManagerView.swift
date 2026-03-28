@@ -305,11 +305,12 @@ struct RemoteMachineManagerView: View {
     private func remoteCard(_ machine: RemoteMachine) -> some View {
         let status = self.store.statusFor(machine.id)
         let isActive = self.store.activeTargetID == machine.id
+        let isSwitchEnabled = status.isConnected && !isActive
         let hovered = self.hoveredMachineID == machine.id
 
         return HStack(spacing: 10) {
             Button {
-                guard !isActive else { return }
+                guard isSwitchEnabled else { return }
                 self.onSwitchTarget(.remote(machine))
                 self.dismiss()
             } label: {
@@ -337,7 +338,7 @@ struct RemoteMachineManagerView: View {
                 .contentShape(RoundedRectangle(cornerRadius: self.cardCornerRadius, style: .continuous))
             }
             .buttonStyle(.plain)
-            .disabled(isActive)
+            .disabled(!isSwitchEnabled)
 
             if isActive {
                 Image(systemName: "checkmark.circle.fill")

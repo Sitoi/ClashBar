@@ -3,6 +3,11 @@ import Foundation
 @MainActor
 extension AppSession {
     func switchToMachineTarget(_ target: MachineTarget) async {
+        if case let .remote(machine) = target {
+            let status = await self.remoteMachineStore.refreshConnectivity(for: machine)
+            guard status.isConnected else { return }
+        }
+
         self.remoteMachineStore.selectTarget(target)
 
         self.cancelPolling()
@@ -46,7 +51,6 @@ extension AppSession {
             self.ensureAPIClient()
             self.lastSyncedEditableSettings = nil
             self.preserveLocalSettingsOnNextSync = false
-            self.remoteMachineStore.checkConnectivity(for: machine)
         }
 
         await self.refreshFromAPI(includeSlowCalls: true)
