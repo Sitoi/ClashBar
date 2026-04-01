@@ -24,6 +24,10 @@ extension AppSession {
         try MeasureGroupLatencyUseCase(repository: self.proxyRepository(using: self.clientOrThrow()))
     }
 
+    private func measureProxyLatencyUseCase() throws -> MeasureProxyLatencyUseCase {
+        try MeasureProxyLatencyUseCase(repository: self.proxyRepository(using: self.clientOrThrow()))
+    }
+
     func switchMode(to target: CoreMode) async {
         if !isModeSwitchEnabled || modeSwitchInFlight || target == currentMode { return }
         modeSwitchInFlight = true
@@ -158,6 +162,34 @@ extension AppSession {
                     await self?.refreshGroupLatency(group)
                 }
             }
+        }
+    }
+
+    func isProxyLatencyTesting(group: String, node: String) -> Bool {
+        self.proxyLatencyTesting.contains(ProxyLatencyTestKey(group: group, node: node))
+    }
+
+    func refreshProxyLatency(group: String, node: String) async {
+        let key = ProxyLatencyTestKey(group: group, node: node)
+        guard !self.proxyLatencyTesting.contains(key) else { return }
+
+        self.proxyLatencyTesting.insert(key)
+        defer { self.proxyLatencyTesting.remove(key) }
+
+        let proxyGroup = self.proxyGroups.first { $0.name == group }
+        let testURL = normalizedHealthcheckURL(proxyGroup?.testUrl) ?? defaultHealthcheckURL
+        let timeout = normalizedHealthcheckTimeout(proxyGroup?.timeout) ?? defaultHealthcheckTimeoutMilliseconds
+
+        await runRefresh {
+            let response = try await self.measureProxyLatencyUseCase().execute(
+                name: node,
+                url: testURL,
+                timeout: timeout)
+            guard let value = response.value else { return }
+
+            var groupDelays = self.groupLatencies[group] ?? [:]
+            groupDelays[node] = value
+            self.groupLatencies[group] = groupDelays
         }
     }
 

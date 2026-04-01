@@ -326,19 +326,23 @@ extension MenuBarRootView {
             let nodes = sortGroupNodesByLatency
                 ? sortedGroupNodes(group)
                 : defaultGroupNodes(group)
-            self.popoverNodesList(nodes) { node in
+            FrozenPopoverNodesList(nodes: nodes, emptyText: tr("ui.common.na")) { node in
                 ProxyGroupPopoverNodeItem(
                     title: node,
                     typeText: appSession.proxyNodeTypes[node].trimmedNonEmpty,
                     delayText: appSession.delayText(group: group.name, node: node),
                     delayValue: appSession.delayValue(group: group.name, node: node),
                     delayColor: latencyColor(appSession.delayValue(group: group.name, node: node)),
-                    isTesting: false,
-                    selected: node == group.now)
-                {
-                    dismiss()
-                    Task { await appSession.switchProxy(group: group.name, target: node) }
-                }
+                    isTesting: appSession.isProxyLatencyTesting(group: group.name, node: node),
+                    selected: node == group.now,
+                    testLatencyLabel: tr("ui.action.test_latency"),
+                    onTestLatency: {
+                        await appSession.refreshProxyLatency(group: group.name, node: node)
+                    },
+                    action: {
+                        dismiss()
+                        Task { await appSession.switchProxy(group: group.name, target: node) }
+                    })
             }
         }
     }
@@ -477,6 +481,38 @@ extension MenuBarRootView {
     }
 }
 
+private struct FrozenPopoverNodesList<Row: View>: View {
+    let nodes: [String]
+    let emptyText: String
+    let row: (String) -> Row
+
+    @State private var frozenNodes: [String]
+
+    init(nodes: [String], emptyText: String, @ViewBuilder row: @escaping (String) -> Row) {
+        self.nodes = nodes
+        self.emptyText = emptyText
+        self.row = row
+        self._frozenNodes = State(initialValue: nodes)
+    }
+
+    var body: some View {
+        if self.frozenNodes.isEmpty {
+            Text(self.emptyText)
+                .font(.app(size: T.FontSize.caption, weight: .regular))
+                .foregroundStyle(Color(nsColor: .secondaryLabelColor))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, T.space6)
+                .padding(.vertical, T.space4)
+        } else {
+            VStack(spacing: 0) {
+                ForEach(self.frozenNodes, id: \.self) { node in
+                    self.row(node)
+                }
+            }
+        }
+    }
+}
+
 private struct ProxyGroupPopoverNodeItem: View {
     let title: String
     let typeText: String?
@@ -485,59 +521,92 @@ private struct ProxyGroupPopoverNodeItem: View {
     let delayColor: Color
     let isTesting: Bool
     let selected: Bool
+    let testLatencyLabel: String
+    let onTestLatency: () async -> Void
     let action: () -> Void
 
     @State private var isHovered = false
+    @State private var isTestButtonHovered = false
 
     var body: some View {
-        Button(action: self.action) {
-            HStack(spacing: T.space1) {
-                Image(systemName: self.selected ? "checkmark.circle.fill" : "circle")
-                    .font(.app(size: T.FontSize.caption, weight: .semibold))
-                    .foregroundStyle(self
-                        .selected ? Color(nsColor: .controlAccentColor) : Color(nsColor: .tertiaryLabelColor))
-                    .frame(width: 11, alignment: .center)
+        HStack(spacing: T.space1) {
+            Button(action: self.action) {
+                HStack(spacing: T.space1) {
+                    Image(systemName: self.selected ? "checkmark.circle.fill" : "circle")
+                        .font(.app(size: T.FontSize.caption, weight: .semibold))
+                        .foregroundStyle(self
+                            .selected ? Color(nsColor: .controlAccentColor) : Color(nsColor: .tertiaryLabelColor))
+                        .frame(width: 11, alignment: .center)
 
-                Text(self.title)
-                    .font(.app(size: T.FontSize.body, weight: self.selected ? .semibold : .medium))
-                    .foregroundStyle(self.selected ? Color.primary : Color.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .minimumScaleFactor(T.minimumScale)
-
-                Spacer(minLength: 0)
-
-                if let typeText = self.typeText {
-                    Text(typeText)
-                        .font(.app(size: T.FontSize.caption, weight: .medium))
-                        .foregroundStyle(self.selected ? Color.primary.opacity(0.72) : Color.secondary.opacity(0.82))
+                    Text(self.title)
+                        .font(.app(size: T.FontSize.body, weight: self.selected ? .semibold : .medium))
+                        .foregroundStyle(self.selected ? Color.primary : Color.secondary)
                         .lineLimit(1)
-                        .truncationMode(.tail)
-                        .padding(.horizontal, T.space4)
-                        .padding(.vertical, T.space1)
-                        .background(
-                            RoundedRectangle(cornerRadius: T.cornerRadius, style: .continuous)
-                                .fill(Color(nsColor: .quaternaryLabelColor).opacity(self.selected ? 0.18 : 0.1)))
-                }
+                        .truncationMode(.middle)
+                        .minimumScaleFactor(T.minimumScale)
 
-                Group {
-                    if self.isTesting {
-                        LatencyLoadingIndicator()
-                    } else {
-                        self.delayMetricView
+                    Spacer(minLength: 0)
+
+                    if let typeText = self.typeText {
+                        Text(typeText)
+                            .font(.app(size: T.FontSize.caption, weight: .medium))
+                            .foregroundStyle(self.selected ? Color.primary.opacity(0.72) : Color.secondary
+                                .opacity(0.82))
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                            .padding(.horizontal, T.space4)
+                            .padding(.vertical, T.space1)
+                            .background(
+                                RoundedRectangle(cornerRadius: T.cornerRadius, style: .continuous)
+                                    .fill(Color(nsColor: .quaternaryLabelColor).opacity(self.selected ? 0.18 : 0.1)))
                     }
                 }
-                .frame(width: 56, alignment: .trailing)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            .frame(height: T.compactRowHeight)
-            .padding(.horizontal, T.space4)
-            .padding(.vertical, T.space1)
-            .background(
-                RoundedRectangle(cornerRadius: T.cornerRadius, style: .continuous)
-                    .fill(self.rowBackground))
+            .buttonStyle(.plain)
+
+            self.latencyControl
+                .frame(width: 56, alignment: .trailing)
         }
-        .buttonStyle(.plain)
-        .onHover { self.isHovered = $0 }
+        .frame(height: T.compactRowHeight)
+        .padding(.horizontal, T.space4)
+        .padding(.vertical, T.space1)
+        .background(
+            RoundedRectangle(cornerRadius: T.cornerRadius, style: .continuous)
+                .fill(self.rowBackground))
+        .onHover {
+            self.isHovered = $0
+            if !$0 {
+                self.isTestButtonHovered = false
+            }
+        }
+    }
+
+    @ViewBuilder
+    var latencyControl: some View {
+        if self.isHovered {
+            if self.isTesting {
+                LatencyLoadingIndicator()
+            } else {
+                Button {
+                    Task { await self.onTestLatency() }
+                } label: {
+                    Image(systemName: "gauge.with.dots.needle.50percent")
+                        .font(.app(size: T.FontSize.caption, weight: .semibold))
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(self.isTestButtonHovered ? self.testButtonTint : self.testButtonBaseTint)
+                        .frame(width: 18, height: 18, alignment: .center)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+                .help(self.testLatencyLabel)
+                .accessibilityLabel(self.testLatencyLabel)
+                .onHover { self.isTestButtonHovered = $0 }
+            }
+        } else {
+            self.delayMetricView
+        }
     }
 
     var rowBackground: Color {
@@ -548,6 +617,14 @@ private struct ProxyGroupPopoverNodeItem: View {
             return Color(nsColor: .selectedContentBackgroundColor).opacity(0.22)
         }
         return .clear
+    }
+
+    var testButtonTint: Color {
+        Color(nsColor: .systemTeal).opacity(T.Opacity.solid)
+    }
+
+    var testButtonBaseTint: Color {
+        Color(nsColor: .secondaryLabelColor)
     }
 
     @ViewBuilder

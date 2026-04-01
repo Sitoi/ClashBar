@@ -92,6 +92,11 @@ struct DataAcquisitionPolicy: Equatable {
     let lowFrequencyIntervalNanoseconds: UInt64
 }
 
+struct ProxyLatencyTestKey: Hashable {
+    let group: String
+    let node: String
+}
+
 enum ProviderRefreshTrigger {
     case start
     case restart
