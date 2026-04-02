@@ -37,6 +37,7 @@
 "ui.action.overwrite" = "覆盖";
 "ui.action.delete" = "删除";
 "ui.action.cancel" = "取消";
+"ui.action.close" = "关闭";
 "ui.action.ok" = "确定";
 "ui.action.flush_fakeip_cache" = "清理 FakeIP 缓存";
 "ui.action.flush_dns_cache" = "清理 DNS 缓存";
@@ -64,6 +65,7 @@
 "ui.machine.field.host" = "主机地址";
 "ui.machine.field.port" = "端口";
 "ui.machine.field.secret" = "密钥";
+"ui.machine.preview" = "预览：%@://%@:%@";
 "ui.machine.remote_readonly" = "(远程连接不可变更)";
 "ui.machine.return_local" = "返回本地内核";
 "ui.machine.active" = "当前";

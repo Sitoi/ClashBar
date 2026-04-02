@@ -37,6 +37,7 @@
 "ui.action.overwrite" = "Overwrite";
 "ui.action.delete" = "Delete";
 "ui.action.cancel" = "Cancel";
+"ui.action.close" = "Close";
 "ui.action.ok" = "OK";
 "ui.action.flush_fakeip_cache" = "Flush FakeIP Cache";
 "ui.action.flush_dns_cache" = "Flush DNS Cache";
@@ -64,6 +65,7 @@
 "ui.machine.field.host" = "Host";
 "ui.machine.field.port" = "Port";
 "ui.machine.field.secret" = "Secret";
+"ui.machine.preview" = "Preview: %@://%@:%@";
 "ui.machine.remote_readonly" = "(Remote, read-only)";
 "ui.machine.return_local" = "Return to Local Core";
 "ui.machine.active" = "Active";
