@@ -35,6 +35,7 @@ extension AppSession {
 
         // Optimistic UI update: keep interaction snappy, polling will reconcile if server differs.
         currentMode = target
+        persistEditableSettingsSnapshot()
 
         do {
             try await self.switchCoreModeUseCase().execute(mode: target)
