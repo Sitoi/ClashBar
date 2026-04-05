@@ -272,20 +272,48 @@ extension AppSession {
             "tcp-concurrent": .bool(overlay.tcpConcurrent),
             "log-level": .string(resolvedLogLevel),
         ]
-        let tunBody = await self.tunOverlayPatchBody(enabled: overlay.tunEnabled)
-        body["tun"] = .object(tunBody)
-        if overlay.tunEnabled {
-            body["dns"] = .object(["enable": .bool(true)])
-        }
         for (key, value) in portBody {
             body[key] = value
         }
 
-        return await self.patchConfigBody(
-            body,
-            syncingKey: syncingKey,
-            successMessage: successMessage,
-            syncSystemProxyPort: syncSystemProxyPort)
+        if !body.isEmpty {
+            let patched = await self.patchConfigBody(
+                body,
+                syncingKey: syncingKey,
+                successMessage: successMessage,
+                syncSystemProxyPort: syncSystemProxyPort)
+            if !patched {
+                return false
+            }
+        }
+
+        guard self.isTunEnabled != overlay.tunEnabled else {
+            if body.isEmpty {
+                settingsSavedMessage = successMessage
+                self.scheduleSettingsFeedbackAutoClearIfNeeded(message: successMessage)
+            }
+            return true
+        }
+
+        do {
+            try await self.applyTunRuntimeChange(enabled: overlay.tunEnabled)
+            await refreshFromAPI(includeSlowCalls: false)
+            await self.reconcileEditableSettingsWithRuntimeConfig()
+            settingsSavedMessage = successMessage
+            self.scheduleSettingsFeedbackAutoClearIfNeeded(message: successMessage)
+            return true
+        } catch {
+            let message = tr("app.settings.error.save_failed", syncingKey, error.localizedDescription)
+            if self.isOverlaySyncingKey(syncingKey) {
+                appendLog(level: "error", message: message)
+            } else {
+                settingsErrorMessage = message
+            }
+            settingsSavedMessage = nil
+            await refreshFromAPI(includeSlowCalls: false)
+            await self.reconcileEditableSettingsWithRuntimeConfig()
+            return false
+        }
     }
 
     func effectiveMixedPort() -> Int {
@@ -518,18 +546,6 @@ extension AppSession {
             SettingsPortField(key: "tproxy-port", value: settingsTProxyPort),
         ]
     }
-
-    private func tunOverlayPatchBody(enabled: Bool) async -> [String: ConfigPatchValue] {
-        var tunBody: [String: ConfigPatchValue] = ["enable": .bool(enabled)]
-        if enabled {
-            let hasConfiguredStack = await self.selectedConfigDeclaresTunStack()
-            if !hasConfiguredStack {
-                tunBody["stack"] = .string("mixed")
-            }
-        }
-        return tunBody
-    }
-
     private func validatedPortPatchBody(
         fields: [SettingsPortField],
         errorMessageKey: String,

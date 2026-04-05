@@ -40,6 +40,18 @@ final class DefaultSystemProxyRepository: SystemProxyRepository {
         await self.service.warmUpHelperIfPossible()
     }
 
+    func setDNSServers(dnsServer: String) async throws {
+        try await self.service.setDNSServers(dnsServer: dnsServer)
+    }
+
+    func restoreDNSServers() async throws {
+        try await self.service.restoreDNSServers()
+    }
+
+    func restoreDNSServersBlocking(timeout: TimeInterval = 2.0) {
+        self.service.restoreDNSServersBlocking(timeout: timeout)
+    }
+
     func clearBlocking(timeout: TimeInterval = 2.0) {
         self.service.clearSystemProxyBlocking(timeout: timeout)
     }

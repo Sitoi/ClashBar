@@ -411,8 +411,213 @@ private final class SystemProxyConfigurator {
     }
 }
 
+private final class DNSConfigurator {
+    private static let backupFilePath = "/var/db/clashbar/original-dns.txt"
+
+    private struct HardwarePortResult {
+        let port: String
+        let interface: String
+    }
+
+    private struct DNSState {
+        let port: String
+        let servers: String
+    }
+
+    func setDNSServers(dnsServer: String) throws {
+        guard Self.isValidIPv4(dnsServer) else {
+            throw ProxyHelperError.systemConfigurationFailure(
+                action: "Set DNS servers",
+                code: 0,
+                detail: "Invalid DNS server address: \(dnsServer)")
+        }
+
+        let ports = try detectPhysicalHardwarePorts()
+        guard !ports.isEmpty else {
+            throw ProxyHelperError.systemConfigurationFailure(
+                action: "Set DNS servers",
+                code: 0,
+                detail: "No physical network service found")
+        }
+
+        let currentStates = try ports.map { port in
+            DNSState(port: port.port, servers: try readCurrentDNS(port: port.port))
+        }
+
+        let backupFile = Self.backupFilePath
+        if !FileManager.default.fileExists(atPath: backupFile) {
+            let backup = currentStates.map { state in
+                "\(state.port)|\(state.servers)"
+            }.joined(separator: "\n")
+            let dir = (backupFile as NSString).deletingLastPathComponent
+            try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+            try backup.write(toFile: backupFile, atomically: true, encoding: .utf8)
+        }
+
+        var appliedStates: [DNSState] = []
+        do {
+            for state in currentStates {
+                try applyDNSServers(dnsServer, port: state.port)
+                appliedStates.append(state)
+            }
+        } catch {
+            try? rollbackDNSServers(appliedStates)
+            throw error
+        }
+    }
+
+    func restoreDNSServers() throws {
+        let backupFile = Self.backupFilePath
+        guard FileManager.default.fileExists(atPath: backupFile) else { return }
+
+        let backupContent = try String(contentsOfFile: backupFile, encoding: .utf8)
+
+        for line in backupContent.components(separatedBy: "\n") {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+            let parts = trimmed.split(separator: "|", maxSplits: 1)
+            guard parts.count == 2 else { continue }
+            let state = DNSState(port: String(parts[0]), servers: String(parts[1]))
+            try applyDNSState(state)
+        }
+
+        try? FileManager.default.removeItem(atPath: backupFile)
+    }
+
+    private func detectPhysicalHardwarePorts() throws -> [HardwarePortResult] {
+        let listResult = runProcessSynchronously(
+            executable: "/usr/sbin/networksetup",
+            arguments: ["-listnetworkserviceorder"])
+
+        var results: [HardwarePortResult] = []
+        let lines = listResult.stdout.components(separatedBy: "\n")
+        var currentPort: String?
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("("), let range = trimmed.range(of: ") ") {
+                currentPort = String(trimmed[range.upperBound...])
+            }
+            if trimmed.hasPrefix("(Hardware Port:"), let port = currentPort {
+                if let deviceRange = trimmed.range(of: "Device: ") {
+                    let device = String(trimmed[deviceRange.upperBound...])
+                        .trimmingCharacters(in: CharacterSet(charactersIn: ")"))
+                        .trimmingCharacters(in: .whitespaces)
+                    if isPhysicalInterface(device) {
+                        results.append(HardwarePortResult(port: port, interface: device))
+                    }
+                }
+            }
+        }
+        return results
+    }
+
+    private func isPhysicalInterface(_ device: String) -> Bool {
+        let normalized = device.lowercased()
+        if normalized.hasPrefix("en") { return true }
+        if normalized.hasPrefix("bridge") { return true }
+        return false
+    }
+
+    private func readCurrentDNS(port: String) throws -> String {
+        let result = runProcessSynchronously(
+            executable: "/usr/sbin/networksetup",
+            arguments: ["-getdnsservers", port])
+
+        let output = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+        if output.hasPrefix("There aren't any DNS Servers set on") {
+            return "empty"
+        }
+        guard !output.isEmpty else { return "empty" }
+        return output
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+    }
+
+    private func applyDNSServers(_ dnsServer: String, port: String) throws {
+        let result = runProcessSynchronously(
+            executable: "/usr/sbin/networksetup",
+            arguments: ["-setdnsservers", port, dnsServer])
+
+        guard result.exitCode == 0 else {
+            throw ProxyHelperError.systemConfigurationFailure(
+                action: "Set DNS servers",
+                code: result.exitCode,
+                detail: result.combinedOutput)
+        }
+    }
+
+    private func rollbackDNSServers(_ states: [DNSState]) throws {
+        for state in states.reversed() {
+            try applyDNSState(state)
+        }
+    }
+
+    private func applyDNSState(_ state: DNSState) throws {
+        let args: [String]
+        if state.servers.isEmpty || state.servers == "empty" {
+            args = ["-setdnsservers", state.port, "empty"]
+        } else {
+            args = ["-setdnsservers", state.port]
+                + state.servers.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+        }
+
+        let result = runProcessSynchronously(executable: "/usr/sbin/networksetup", arguments: args)
+        guard result.exitCode == 0 else {
+            throw ProxyHelperError.systemConfigurationFailure(
+                action: "Restore DNS for \(state.port)",
+                code: result.exitCode,
+                detail: result.combinedOutput)
+        }
+    }
+
+    private static func isValidIPv4(_ address: String) -> Bool {
+        let parts = address.split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count == 4 else { return false }
+        return parts.allSatisfy { part in
+            guard let octet = Int(part), (0...255).contains(octet) else { return false }
+            return part == String(octet)  // reject leading zeros like "01"
+        }
+    }
+
+    private func runProcessSynchronously(executable: String, arguments: [String]) -> ProcessResult {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: executable)
+        process.arguments = arguments
+        let stdoutPipe = Pipe()
+        let stderrPipe = Pipe()
+        process.standardOutput = stdoutPipe
+        process.standardError = stderrPipe
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            return ProcessResult(exitCode: -1, stdout: "", stderr: error.localizedDescription)
+        }
+
+        let stdout = String(data: stdoutPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        let stderr = String(data: stderrPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        return ProcessResult(exitCode: process.terminationStatus, stdout: stdout, stderr: stderr)
+    }
+}
+
+private struct ProcessResult {
+    let exitCode: Int32
+    let stdout: String
+    let stderr: String
+
+    var combinedOutput: String {
+        [self.stderr, self.stdout]
+            .first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? "Unknown command error."
+    }
+}
+
 private final class ProxyHelperService: NSObject, ProxyHelperProtocol {
     private let configurator = SystemProxyConfigurator()
+    private let dnsConfigurator = DNSConfigurator()
 
     func ping(completion: @escaping (Bool, String?) -> Void) {
         completion(true, nil)
@@ -496,6 +701,24 @@ private final class ProxyHelperService: NSObject, ProxyHelperProtocol {
         do {
             let exceptions = serializedExceptions.components(separatedBy: .newlines)
             try self.configurator.setSystemProxyExceptions(exceptions)
+            completion(true, nil)
+        } catch {
+            completion(false, error.localizedDescription)
+        }
+    }
+
+    func setDNSServers(dnsServer: String, completion: @escaping (Bool, String?) -> Void) {
+        do {
+            try dnsConfigurator.setDNSServers(dnsServer: dnsServer)
+            completion(true, nil)
+        } catch {
+            completion(false, error.localizedDescription)
+        }
+    }
+
+    func restoreDNSServers(completion: @escaping (Bool, String?) -> Void) {
+        do {
+            try dnsConfigurator.restoreDNSServers()
             completion(true, nil)
         } catch {
             completion(false, error.localizedDescription)

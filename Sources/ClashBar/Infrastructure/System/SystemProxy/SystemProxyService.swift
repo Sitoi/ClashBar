@@ -222,6 +222,56 @@ struct SystemProxyService {
         }
     }
 
+    func setDNSServers(dnsServer: String) async throws {
+        try await self.ensureHelperReadyForUse()
+        try await self.invokeMutation { helper, completion in
+            helper.setDNSServers(dnsServer: dnsServer, completion: completion)
+        }
+    }
+
+    func restoreDNSServers() async throws {
+        try await self.ensureHelperReadyForUse()
+        try await self.invokeMutation { helper, completion in
+            helper.restoreDNSServers(completion: completion)
+        }
+    }
+
+    func restoreDNSServersBlocking(timeout: TimeInterval = 2.0) {
+        self.invokeBlockingHelper(timeout: timeout) { helper, completion in
+            helper.restoreDNSServers(completion: completion)
+        }
+    }
+
+    private func invokeBlockingHelper(
+        timeout: TimeInterval,
+        operation: @Sendable @escaping (ProxyHelperProtocol, @escaping (Bool, String?) -> Void) -> Void)
+    {
+        let semaphore = DispatchSemaphore(value: 0)
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            let connection = NSXPCConnection(
+                machServiceName: ProxyHelperConstants.machServiceName,
+                options: .privileged)
+            connection.remoteObjectInterface = NSXPCInterface(with: ProxyHelperProtocol.self)
+            connection.activate()
+
+            guard let helper = connection.remoteObjectProxyWithErrorHandler({ _ in
+                semaphore.signal()
+            }) as? ProxyHelperProtocol else {
+                connection.invalidate()
+                semaphore.signal()
+                return
+            }
+
+            operation(helper) { _, _ in
+                connection.invalidate()
+                semaphore.signal()
+            }
+        }
+
+        _ = semaphore.wait(timeout: .now() + timeout)
+    }
+
     private func validateHost(_ host: String) throws {
         let trimmedHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedHost.isEmpty else {
@@ -721,30 +771,9 @@ struct SystemProxyService {
     }
 
     func clearSystemProxyBlocking(timeout: TimeInterval = 2.0) {
-        let semaphore = DispatchSemaphore(value: 0)
-
-        DispatchQueue.global(qos: .userInitiated).async {
-            let connection = NSXPCConnection(
-                machServiceName: ProxyHelperConstants.machServiceName,
-                options: .privileged)
-            connection.remoteObjectInterface = NSXPCInterface(with: ProxyHelperProtocol.self)
-            connection.activate()
-
-            guard let helper = connection.remoteObjectProxyWithErrorHandler({ _ in
-                semaphore.signal()
-            }) as? ProxyHelperProtocol else {
-                connection.invalidate()
-                semaphore.signal()
-                return
-            }
-
-            helper.clearSystemProxy { _, _ in
-                connection.invalidate()
-                semaphore.signal()
-            }
+        self.invokeBlockingHelper(timeout: timeout) { helper, completion in
+            helper.clearSystemProxy(completion: completion)
         }
-
-        _ = semaphore.wait(timeout: .now() + timeout)
     }
 
     private func makeConnection() -> NSXPCConnection {

@@ -38,4 +38,7 @@ protocol SystemProxyRepository: AnyObject {
     func isConfigured(host: String, ports: SystemProxyPorts) async throws -> Bool
     func warmUpHelperIfPossible() async
     func clearBlocking(timeout: TimeInterval)
+    func setDNSServers(dnsServer: String) async throws
+    func restoreDNSServers() async throws
+    func restoreDNSServersBlocking(timeout: TimeInterval)
 }

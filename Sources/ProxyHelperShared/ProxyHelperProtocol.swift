@@ -28,4 +28,7 @@ public protocol ProxyHelperProtocol {
         completion: @escaping (Bool, Bool, String?) -> Void)
     func getSystemProxyExceptions(completion: @escaping (Bool, String?, String?) -> Void)
     func setSystemProxyExceptions(serializedExceptions: String, completion: @escaping (Bool, String?) -> Void)
+
+    func setDNSServers(dnsServer: String, completion: @escaping (Bool, String?) -> Void)
+    func restoreDNSServers(completion: @escaping (Bool, String?) -> Void)
 }

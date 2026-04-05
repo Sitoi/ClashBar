@@ -692,8 +692,7 @@ extension AppSession {
 
     private func restoreTunAfterConfigReloadIfNeeded(expectedEnabled: Bool) async throws {
         guard isRuntimeRunning else { return }
-        try await self.patchTunConfig(enable: expectedEnabled)
-        try await self.verifyTunRuntimeState(expectedEnabled: expectedEnabled)
+        try await self.applyTunRuntimeChange(enabled: expectedEnabled)
         if isTunEnabled != expectedEnabled {
             isTunEnabled = expectedEnabled
             persistEditableSettingsSnapshot()

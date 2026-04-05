@@ -221,6 +221,10 @@ extension AppSession {
     func shutdownForTermination() {
         self.prepareForTermination()
         self.clearSystemProxyBlockingUseCase.execute(timeout: 2.0)
+        // Restore DNS before stopping core (TUN mode may have set system DNS)
+        if isTunEnabled {
+            self.systemProxyRepository.restoreDNSServersBlocking(timeout: 2.0)
+        }
         if coreRepository.isRunning {
             self.stopCoreUseCase.executeImmediately()
         }
@@ -439,6 +443,8 @@ extension AppSession {
         if runtimeRunningBeforeTransition, recovery.tunEnabled {
             self.isTunEnabled = false
             self.appendLog(level: "info", message: self.tr("log.tun.toggled", self.tr("log.tun.disabled")))
+            // Restore DNS before core stops/restarts (TUN interface will disappear)
+            await self.restoreTunDNSSafely(context: "during core transition")
         }
 
         guard self.isSystemProxyEnabled else { return }
@@ -497,6 +503,8 @@ extension AppSession {
                     try await self.verifyTunRuntimeState(expectedEnabled: true)
                     tunRestored = true
                 } else if self.isTunEnabled {
+                    // TUN already active — ensure DNS is set since patchTunConfig was skipped
+                    await self.setTunDNSSafely(context: "during restore")
                     tunRestored = true
                 }
             } catch {

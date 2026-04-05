@@ -151,80 +151,20 @@ extension AppSession {
         }
 
         let prefixPattern = #"^\#(escapedKey)\s*:\s*"#
-        var value = String(line[range]).replacingOccurrences(
+        let rawValue = String(line[range]).replacingOccurrences(
             of: prefixPattern,
             with: "",
             options: [.regularExpression])
 
-        value = self.stripYAMLInlineComment(value).trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !value.isEmpty else { return nil }
-
-        if (value.hasPrefix("\"") && value.hasSuffix("\"")) || (value.hasPrefix("'") && value.hasSuffix("'")) {
-            value.removeFirst()
-            value.removeLast()
-            value = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-
-        guard !value.isEmpty else { return nil }
-        if value == "~" || value.lowercased() == "null" {
-            return nil
-        }
-        return value
+        return normalizedYAMLScalar(stripYAMLInlineComment(rawValue))
     }
 
     private func normalizedControllerSecret(_ value: String?) -> String? {
-        guard let value else { return nil }
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
-        if trimmed == "~" || trimmed.lowercased() == "null" {
-            return nil
-        }
-        return trimmed
+        normalizedYAMLScalar(value)
     }
 
-    private func leadingWhitespaceCount(in line: String) -> Int {
+    func leadingWhitespaceCount(in line: String) -> Int {
         line.prefix { $0 == " " || $0 == "\t" }.count
-    }
-
-    private func stripYAMLInlineComment(_ value: String) -> String {
-        var inSingleQuote = false
-        var inDoubleQuote = false
-        var isEscaped = false
-        var result = ""
-
-        for char in value {
-            if isEscaped {
-                result.append(char)
-                isEscaped = false
-                continue
-            }
-
-            if char == "\\", inDoubleQuote {
-                result.append(char)
-                isEscaped = true
-                continue
-            }
-
-            if char == "'", !inDoubleQuote {
-                inSingleQuote.toggle()
-                result.append(char)
-                continue
-            }
-
-            if char == "\"", !inSingleQuote {
-                inDoubleQuote.toggle()
-                result.append(char)
-                continue
-            }
-
-            if char == "#", !inSingleQuote, !inDoubleQuote {
-                break
-            }
-
-            result.append(char)
-        }
-
-        return result
     }
 
     private func resolvedControllerFromSelectedConfigFile(configPath: String) -> String {
