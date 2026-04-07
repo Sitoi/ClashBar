@@ -357,6 +357,7 @@ final class AppSession: ObservableObject {
     let selectedConfigKey = "clashbar.config.selected.filename"
     let legacySelectedConfigKey = "clashbar.config.selected"
     let remoteConfigSourcesKey = "clashbar.config.remote.sources.v1"
+    let remoteConfigSubscriptionsKey = "clashbar.config.remote.subscriptions.v2"
     let lastSuccessfulConfigPathKey = "clashbar.last.success.config.path"
     let editableSettingsSnapshotKey = "clashbar.settings.editable.snapshot.v1"
     let systemProxyEnabledOnQuitKey = "clashbar.system_proxy.enabled_on_quit"
@@ -397,7 +398,9 @@ final class AppSession: ObservableObject {
     var isNetworkReachabilityMonitoring = false
     var pendingCoreFeatureRecoveryState: CoreFeatureRecoveryState?
     var deferredEditableSettingsOverlay: (snapshot: EditableSettingsSnapshot, syncingKey: String)?
-    var remoteConfigSources: [String: String] = [:]
+    var remoteConfigSubscriptions: [String: RemoteConfigSubscription] = [:]
+    var remoteConfigAutoUpdateTask: Task<Void, Never>?
+    var remoteConfigMenuRefreshTask: Task<Void, Never>?
     var externalControllerWarningKeys: Set<String> = []
     let streamJSONDecoder = JSONDecoder()
     let initialNoCoreSetupGuideShownKey = "clashbar.core.install.guide.shown.v1"
@@ -490,8 +493,9 @@ final class AppSession: ObservableObject {
         }
         restoreSavedConfigDirectory()
         restoreLastSuccessfulConfigIfAvailable()
-        self.remoteConfigSources = loadPersistedRemoteConfigSources()
-        pruneRemoteConfigSourcesIfNeeded()
+        self.remoteConfigSubscriptions = loadPersistedRemoteConfigSubscriptions()
+        pruneRemoteConfigSubscriptionsIfNeeded()
+        restartRemoteConfigBackgroundTasksIfNeeded()
         // Always start in local mode. Remote target is session-level only.
         self.remoteMachineStore.resetActiveTarget()
         self.controllerUIURL = makeControllerUIURL(self.controller)

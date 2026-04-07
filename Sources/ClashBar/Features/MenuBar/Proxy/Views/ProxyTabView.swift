@@ -34,7 +34,7 @@ extension MenuBarRootView {
     }
 
     func isRemoteConfigFile(_ name: String) -> Bool {
-        self.appSession.remoteConfigSources[name] != nil
+        self.appSession.remoteConfigSubscriptions[name] != nil
     }
 
     func configMenuLeadingSymbol(for name: String) -> String {
@@ -49,21 +49,28 @@ extension MenuBarRootView {
 
     func configMenuSubtitle(state: RemoteConfigMenuState?) -> String? {
         guard let state else { return nil }
-        return state.updatedAt.map(ValueFormatter.dateTime) ?? "--"
+        return ValueFormatter.remoteConfigMenuStatusLine(
+            autoUpdateEnabled: state.autoUpdateEnabled,
+            nextUpdateAt: state.nextUpdateAt,
+            lastUpdateAt: state.updatedAt,
+            language: appSession.uiLanguage)
+            ?? state.updatedAt.map(ValueFormatter.dateTime)
+            ?? "--"
     }
 
     @ViewBuilder
     func configMenuContent(dismiss: @escaping () -> Void) -> some View {
         ForEach(appSession.availableConfigFileNames, id: \.self) { name in
             let remoteState = self.appSession.remoteConfigMenuState(for: name)
+            let isRemote = self.isRemoteConfigFile(name)
 
             ConfigMenuItemView(
                 title: name,
-                subtitle: self.configMenuSubtitle(state: self.isRemoteConfigFile(name) ? remoteState : nil),
+                subtitle: self.configMenuSubtitle(state: isRemote ? remoteState : nil),
                 leadingSymbol: self.configMenuLeadingSymbol(for: name),
                 leadingTint: self.configMenuLeadingTint(for: name),
                 selected: name == appSession.selectedConfigName,
-                refreshPhase: self.isRemoteConfigFile(name) ? remoteState.phase : nil,
+                refreshPhase: isRemote ? remoteState.phase : nil,
                 refreshHelpText: tr("ui.action.refresh"),
                 refreshingAccessibilityLabel: tr("ui.quick.remote.refreshing"),
                 refreshFailedHelpText: tr("ui.quick.remote.refresh_failed"))
@@ -72,6 +79,21 @@ extension MenuBarRootView {
                 Task { await appSession.selectConfigFile(named: name) }
             } onRefresh: {
                 Task { await appSession.refreshRemoteConfigFile(named: name) }
+            }
+            .contextMenu {
+                if isRemote,
+                   let urlString = self.appSession.remoteConfigSubscriptions[name]?.urlString
+                {
+                    Button(tr("ui.action.copy_subscription_url")) {
+                        self.appSession.copyTextToPasteboard(urlString)
+                    }
+                    Divider()
+                }
+                Button(role: .destructive) {
+                    Task { await self.appSession.deleteConfigFile(named: name) }
+                } label: {
+                    Text(tr("ui.action.delete"))
+                }
             }
         }
         AttachedPopoverMenuDivider()

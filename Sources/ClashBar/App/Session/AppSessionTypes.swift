@@ -120,8 +120,14 @@ enum RemoteConfigRefreshPhase: Equatable {
 struct RemoteConfigMenuState: Equatable {
     let updatedAt: Date?
     let phase: RemoteConfigRefreshPhase
+    let autoUpdateEnabled: Bool
+    let nextUpdateAt: Date?
 
-    static let idle = RemoteConfigMenuState(updatedAt: nil, phase: .idle)
+    static let idle = RemoteConfigMenuState(
+        updatedAt: nil,
+        phase: .idle,
+        autoUpdateEnabled: false,
+        nextUpdateAt: nil)
 }
 
 struct ProviderRefreshStatus {

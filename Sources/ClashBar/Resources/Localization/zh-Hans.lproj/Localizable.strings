@@ -362,3 +362,18 @@
 "fmt.expiry_short.today" = "今天过期";
 "fmt.expiry_short.days" = "剩 %d 天";
 "fmt.expiry_short.long_term" = "长期有效";
+
+// 远程配置订阅
+"ui.quick.remote.auto_update_label" = "自动更新";
+"ui.quick.remote.interval_label" = "自动更新间隔";
+"ui.quick.remote.interval_each" = "每隔";
+"ui.quick.remote.interval_unit" = "小时";
+"fmt.remote_config.next_update_hours_minutes" = "自动 %d 小时 %d 分后";
+"fmt.remote_config.next_update_minutes" = "自动 %d 分后";
+"fmt.remote_config.last_update" = "上次 %@";
+"ui.action.copy_subscription_url" = "复制订阅链接";
+"ui.action.delete" = "删除";
+"app.config.delete.title" = "删除 %@";
+"app.config.delete.message" = "此操作将永久删除配置文件。如果这是远程订阅，订阅元数据也会被一并删除。";
+"log.config.delete.success" = "已删除配置：%@";
+"log.config.delete.failed" = "删除配置失败（%@）：%@";

@@ -234,6 +234,8 @@ extension AppSession {
         self.cancelDeferredEditableSettingsOverlaySync()
         cancelProviderRefresh(reason: "quit requested")
         cancelPolling()
+        stopRemoteConfigAutoUpdateTask()
+        stopRemoteConfigMenuRefreshTimer()
     }
 
     func applyAppAppearance() {

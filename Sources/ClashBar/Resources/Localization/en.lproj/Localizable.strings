@@ -362,3 +362,18 @@
 "fmt.expiry_short.today" = "Expires today";
 "fmt.expiry_short.days" = "%d days left";
 "fmt.expiry_short.long_term" = "Permanent";
+
+// Remote config subscription
+"ui.quick.remote.auto_update_label" = "Auto Update";
+"ui.quick.remote.interval_label" = "Update Interval (hours)";
+"ui.quick.remote.interval_each" = "Every";
+"ui.quick.remote.interval_unit" = "hours";
+"fmt.remote_config.next_update_hours_minutes" = "Auto in %dh %dm";
+"fmt.remote_config.next_update_minutes" = "Auto in %dm";
+"fmt.remote_config.last_update" = "Last %@";
+"ui.action.copy_subscription_url" = "Copy Subscription URL";
+"ui.action.delete" = "Delete";
+"app.config.delete.title" = "Delete %@";
+"app.config.delete.message" = "This will permanently delete the config file. If it is a remote subscription, the subscription metadata will also be removed.";
+"log.config.delete.success" = "Config deleted: %@";
+"log.config.delete.failed" = "Failed to delete config (%@): %@";

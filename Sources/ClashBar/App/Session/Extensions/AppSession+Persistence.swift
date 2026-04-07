@@ -69,7 +69,8 @@ extension AppSession {
         if selectedConfigName == "-", let first = availableConfigFileNames.first {
             selectedConfigName = first
         }
-        self.pruneRemoteConfigSourcesIfNeeded()
+        self.pruneRemoteConfigSubscriptionsIfNeeded()
+        self.refreshRemoteConfigMenuStates()
     }
 
     func ensureAPIClient() {
@@ -113,6 +114,61 @@ extension AppSession {
         return .system
     }
 
+    // MARK: - v2 Remote Config Subscriptions
+
+    func loadPersistedRemoteConfigSubscriptions() -> [String: RemoteConfigSubscription] {
+        // Try loading v2 format first
+        if let data = defaults.data(forKey: remoteConfigSubscriptionsKey),
+           let subscriptions = try? JSONDecoder().decode([String: RemoteConfigSubscription].self, from: data)
+        {
+            var result: [String: RemoteConfigSubscription] = [:]
+            for (fileName, sub) in subscriptions {
+                guard let normalizedName = normalizedConfigFileName(fileName), normalizedName == fileName else {
+                    continue
+                }
+                guard URL(string: sub.urlString).map({ isSupportedRemoteConfigURL($0) }) == true else { continue }
+                result[normalizedName] = sub
+            }
+            return result
+        }
+
+        // Migrate from v1 format: [String: String] (fileName -> urlString)
+        let v1 = self.loadPersistedRemoteConfigSources()
+        guard !v1.isEmpty else { return [:] }
+
+        var migrated: [String: RemoteConfigSubscription] = [:]
+        for (fileName, urlString) in v1 {
+            migrated[fileName] = RemoteConfigSubscription(
+                urlString: urlString,
+                autoUpdateEnabled: false,
+                autoUpdateIntervalHours: RemoteConfigSubscription.defaultAutoUpdateIntervalHours,
+                lastUpdateCheckAt: nil)
+        }
+
+        // Persist v2 and clear v1
+        if let data = try? JSONEncoder().encode(migrated) {
+            defaults.set(data, forKey: remoteConfigSubscriptionsKey)
+        }
+        defaults.removeObject(forKey: remoteConfigSourcesKey)
+        return migrated
+    }
+
+    func persistRemoteConfigSubscriptions() {
+        guard let data = try? JSONEncoder().encode(remoteConfigSubscriptions) else { return }
+        defaults.set(data, forKey: remoteConfigSubscriptionsKey)
+    }
+
+    func pruneRemoteConfigSubscriptionsIfNeeded() {
+        let availableNames = Set(availableConfigFileNames)
+        let filtered = remoteConfigSubscriptions.filter { availableNames.contains($0.key) }
+        guard filtered.count != remoteConfigSubscriptions.count else { return }
+        remoteConfigSubscriptions = filtered
+        self.persistRemoteConfigSubscriptions()
+        self.restartRemoteConfigBackgroundTasksIfNeeded()
+    }
+
+    // MARK: - Legacy v1 helpers (kept for migration only)
+
     func loadPersistedRemoteConfigSources() -> [String: String] {
         guard let stored = defaults.dictionary(forKey: remoteConfigSourcesKey) as? [String: String] else {
             return [:]
@@ -125,17 +181,5 @@ extension AppSession {
             result[normalizedName] = url.absoluteString
         }
         return result
-    }
-
-    func persistRemoteConfigSources() {
-        defaults.set(remoteConfigSources, forKey: remoteConfigSourcesKey)
-    }
-
-    func pruneRemoteConfigSourcesIfNeeded() {
-        let availableNames = Set(availableConfigFileNames)
-        let filtered = remoteConfigSources.filter { availableNames.contains($0.key) }
-        guard filtered != remoteConfigSources else { return }
-        remoteConfigSources = filtered
-        self.persistRemoteConfigSources()
     }
 }

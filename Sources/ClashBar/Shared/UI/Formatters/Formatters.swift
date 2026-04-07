@@ -233,4 +233,67 @@ enum ValueFormatter {
         Thread.current.threadDictionary[key] = formatter
         return formatter
     }
+
+    /// Returns a compact one-line status string for a remote config menu item, e.g.
+    /// "自动 1h 30m后 · 上次 14:05" or nil when there is nothing useful to show.
+    static func remoteConfigMenuStatusLine(
+        autoUpdateEnabled: Bool,
+        nextUpdateAt: Date?,
+        lastUpdateAt: Date?,
+        language: AppLanguage,
+        now: Date = Date()) -> String?
+    {
+        var parts: [String] = []
+
+        if autoUpdateEnabled, let next = nextUpdateAt {
+            let remaining = max(0, Int(next.timeIntervalSince(now)))
+            let minutes = (remaining / 60) % 60
+            let hours = remaining / 3600
+            if hours > 0 {
+                parts.append(L10n.t("fmt.remote_config.next_update_hours_minutes", language: language, hours, minutes))
+            } else {
+                parts.append(L10n.t("fmt.remote_config.next_update_minutes", language: language, max(1, minutes)))
+            }
+        }
+
+        if let last = lastUpdateAt {
+            let calendar = Calendar.current
+            let timeFormatter = self.threadLocalShortTimeFormatter()
+            if calendar.isDate(last, inSameDayAs: now) {
+                parts.append(L10n.t(
+                    "fmt.remote_config.last_update",
+                    language: language,
+                    timeFormatter.string(from: last)))
+            } else {
+                let dateTimeFormatter = self.threadLocalShortDateTimeFormatter()
+                parts.append(L10n.t(
+                    "fmt.remote_config.last_update",
+                    language: language,
+                    dateTimeFormatter.string(from: last)))
+            }
+        }
+
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    private static let shortTimeFormatterKey = "clashbar.formatter.shortTime"
+    private static let shortDateTimeFormatterKey = "clashbar.formatter.shortDateTime"
+
+    private static func threadLocalShortTimeFormatter() -> DateFormatter {
+        if let f = Thread.current.threadDictionary[shortTimeFormatterKey] as? DateFormatter { return f }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "HH:mm"
+        Thread.current.threadDictionary[self.shortTimeFormatterKey] = f
+        return f
+    }
+
+    private static func threadLocalShortDateTimeFormatter() -> DateFormatter {
+        if let f = Thread.current.threadDictionary[shortDateTimeFormatterKey] as? DateFormatter { return f }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "MM-dd HH:mm"
+        Thread.current.threadDictionary[self.shortDateTimeFormatterKey] = f
+        return f
+    }
 }
