@@ -155,6 +155,19 @@ struct SystemProxyService {
         return self.formatProxyDisplay(host: target.host, port: target.port)
     }
 
+    func readExceptionsList() async throws -> [String] {
+        try await self.ensureHelperReadyForUse()
+        return try await self.invokeExceptionsQuery()
+    }
+
+    func setExceptionsList(_ exceptions: [String]) async throws {
+        try await self.ensureHelperReadyForUse()
+        let serialized = self.serializeExceptions(exceptions)
+        try await self.invokeMutation { helper, completion in
+            helper.setSystemProxyExceptions(serializedExceptions: serialized, completion: completion)
+        }
+    }
+
     func readHelperHealthSnapshot() async -> SystemProxyHelperHealthSnapshot {
         let registrationState = self.registrationState(from: self.helperService().status)
         let backgroundActivityAllowed = registrationState != .requiresApproval
@@ -562,12 +575,45 @@ struct SystemProxyService {
         }
     }
 
+    private func invokeExceptionsQuery() async throws -> [String] {
+        try await self.invokeHelper { helper, completion in
+            helper.getSystemProxyExceptions { success, serialized, message in
+                if success {
+                    completion(.success(self.deserializeExceptions(serialized)))
+                    return
+                }
+                completion(.failure(SystemProxyServiceError.helperOperationFailed(message ?? "Unknown helper error.")))
+            }
+        }
+    }
+
     private func formatProxyDisplay(host: String, port: Int) -> String {
         let trimmedHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmedHost.contains(":"), !trimmedHost.hasPrefix("[") {
             return "[\(trimmedHost)]:\(port)"
         }
         return "\(trimmedHost):\(port)"
+    }
+
+    private func serializeExceptions(_ exceptions: [String]) -> String {
+        exceptions.joined(separator: "\n")
+    }
+
+    private func deserializeExceptions(_ serialized: String?) -> [String] {
+        guard let serialized else { return [] }
+
+        var result: [String] = []
+        var seen: Set<String> = []
+
+        for value in serialized.components(separatedBy: .newlines) {
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+            let key = trimmed.lowercased()
+            guard seen.insert(key).inserted else { continue }
+            result.append(trimmed)
+        }
+
+        return result
     }
 
     private func helperFailureMessage(_ error: Error) -> String {

@@ -20,6 +20,14 @@ final class DefaultSystemProxyRepository: SystemProxyRepository {
         try await self.service.readSystemProxyActiveDisplay()
     }
 
+    func readExceptionsList() async throws -> [String] {
+        try await self.service.readExceptionsList()
+    }
+
+    func setExceptionsList(_ exceptions: [String]) async throws {
+        try await self.service.setExceptionsList(exceptions)
+    }
+
     func readHelperHealthSnapshot() async -> SystemProxyHelperHealthSnapshot {
         await self.service.readHelperHealthSnapshot()
     }

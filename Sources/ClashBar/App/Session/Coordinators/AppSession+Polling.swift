@@ -366,6 +366,7 @@ extension AppSession {
             } else {
                 systemProxyActiveDisplay = nil
             }
+            await self.refreshSystemProxyExceptionsFromSystemIfPossible()
             await self.refreshSystemProxyHelperRuntimeSnapshot()
             self.systemProxyHelperFailureReason = nil
             self.systemProxyHelperFailureMessage = nil

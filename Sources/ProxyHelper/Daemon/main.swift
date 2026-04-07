@@ -161,6 +161,40 @@ private final class SystemProxyConfigurator {
         return nil
     }
 
+    func systemProxyExceptions() throws -> [String] {
+        let preferences = try makePreferences()
+        let protocols = try proxyProtocols(from: preferences)
+        var aggregated: [String] = []
+        var seen: Set<String> = []
+
+        for proxyProtocol in protocols {
+            let config = self.configuration(for: proxyProtocol)
+            for value in self.exceptionsList(from: config) {
+                let key = value.lowercased()
+                guard seen.insert(key).inserted else { continue }
+                aggregated.append(value)
+            }
+        }
+
+        return aggregated
+    }
+
+    func setSystemProxyExceptions(_ exceptions: [String]) throws {
+        let normalized = self.normalizedExceptions(exceptions)
+
+        try self.withMutableProxyProtocols { protocols in
+            for proxyProtocol in protocols {
+                var config = self.configuration(for: proxyProtocol)
+                config[kSCPropNetProxiesExceptionsList as String] = normalized
+                config[kSCPropNetProxiesExcludeSimpleHostnames as String] = 0
+
+                guard SCNetworkProtocolSetConfiguration(proxyProtocol, config as CFDictionary) else {
+                    throw self.systemConfigurationError(action: "Set proxy exceptions")
+                }
+            }
+        }
+    }
+
     private func validate(host: String) throws {
         let trimmedHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedHost.isEmpty else {
@@ -260,6 +294,48 @@ private final class SystemProxyConfigurator {
 
     private func configuration(for proxyProtocol: SCNetworkProtocol) -> [String: Any] {
         (SCNetworkProtocolGetConfiguration(proxyProtocol) as? [String: Any]) ?? [:]
+    }
+
+    private func exceptionsList(from config: [String: Any]) -> [String] {
+        let key = kSCPropNetProxiesExceptionsList as String
+
+        if let values = config[key] as? [String] {
+            return self.normalizedExceptions(values)
+        }
+
+        if let values = config[key] as? [NSString] {
+            return self.normalizedExceptions(values.map(String.init))
+        }
+
+        if let values = config[key] as? [Any] {
+            let strings = values.compactMap { value -> String? in
+                if let string = value as? String {
+                    return string
+                }
+                if let string = value as? NSString {
+                    return String(string)
+                }
+                return nil
+            }
+            return self.normalizedExceptions(strings)
+        }
+
+        return []
+    }
+
+    private func normalizedExceptions(_ values: [String]) -> [String] {
+        var result: [String] = []
+        var seen: Set<String> = []
+
+        for value in values {
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+            let key = trimmed.lowercased()
+            guard seen.insert(key).inserted else { continue }
+            result.append(trimmed)
+        }
+
+        return result
     }
 
     private func isEnabled(config: [String: Any], key: String) -> Bool {
@@ -404,6 +480,25 @@ private final class ProxyHelperService: NSObject, ProxyHelperProtocol {
             completion(true, configured, nil)
         } catch {
             completion(false, false, error.localizedDescription)
+        }
+    }
+
+    func getSystemProxyExceptions(completion: @escaping (Bool, String?, String?) -> Void) {
+        do {
+            let exceptions = try self.configurator.systemProxyExceptions()
+            completion(true, exceptions.joined(separator: "\n"), nil)
+        } catch {
+            completion(false, nil, error.localizedDescription)
+        }
+    }
+
+    func setSystemProxyExceptions(serializedExceptions: String, completion: @escaping (Bool, String?) -> Void) {
+        do {
+            let exceptions = serializedExceptions.components(separatedBy: .newlines)
+            try self.configurator.setSystemProxyExceptions(exceptions)
+            completion(true, nil)
+        } catch {
+            completion(false, error.localizedDescription)
         }
     }
 }

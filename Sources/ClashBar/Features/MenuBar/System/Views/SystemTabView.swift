@@ -139,6 +139,41 @@ extension MenuBarRootView {
         }
     }
 
+    func systemProxyExceptionBinding(id: EditableSystemProxyException.ID) -> Binding<String> {
+        Binding(
+            get: {
+                self.appSession.systemProxyExceptions.first(where: { $0.id == id })?.value ?? ""
+            },
+            set: { value in
+                guard let index = self.appSession.systemProxyExceptions.firstIndex(where: { $0.id == id }) else {
+                    return
+                }
+                self.appSession.systemProxyExceptions[index].value = value
+            })
+    }
+
+    func systemProxyExceptionRow(_ exception: EditableSystemProxyException) -> some View {
+        HStack(spacing: T.space4) {
+            TextField(
+                tr("ui.placeholder.system_proxy_exception"),
+                text: self.systemProxyExceptionBinding(id: exception.id))
+                .textFieldStyle(.roundedBorder)
+                .controlSize(.small)
+                .font(.app(size: T.FontSize.body, weight: .regular))
+                .foregroundStyle(nativePrimaryLabel)
+
+            Button {
+                self.appSession.removeSystemProxyExceptionDraft(id: exception.id)
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(nativeCritical.opacity(T.Opacity.solid))
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(tr("ui.action.remove_exception"))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     func maintenanceActionButton(_ title: String, symbol: String, action: @escaping () async -> Void) -> some View {
         Button {
             Task { await action() }
@@ -217,8 +252,19 @@ extension MenuBarRootView {
         min(108, max(92, contentWidth * 0.30))
     }
 
+    var systemProxyExceptionGridColumns: [GridItem] {
+        [
+            GridItem(.flexible(minimum: 0, maximum: .infinity), spacing: T.space6, alignment: .leading),
+            GridItem(.flexible(minimum: 0, maximum: .infinity), spacing: T.space6, alignment: .leading),
+        ]
+    }
+
     var maintenanceActionEnabled: Bool {
         SystemTabViewModel.maintenanceActionEnabled(session: appSession)
+    }
+
+    var isSystemProxyExceptionsSyncing: Bool {
+        self.appSession.settingsSyncingKey == "system-proxy-exceptions"
     }
 
     var settingsFeedbackState: (message: String, color: Color, symbol: String)? {
@@ -296,6 +342,9 @@ extension MenuBarRootView {
             ("ui.action.flush_dns_cache", "network.badge.shield.half.filled", { await appSession.flushDNSCache() }),
         ]
         let selectedLogLevel = appSession.stringValue(for: .logLevel)
+        let systemProxyExceptionsTitle = isRemote
+            ? "\(tr("ui.section.system_proxy_exceptions")) (\(tr("ui.machine.local_label")))"
+            : tr("ui.section.system_proxy_exceptions")
 
         return VStack(alignment: .leading, spacing: T.space6) {
             VStack(spacing: 0) {
@@ -368,6 +417,78 @@ extension MenuBarRootView {
                             tr(item.titleKey),
                             symbol: item.symbol,
                             text: item.text)
+                    }
+                }
+                .menuRowPadding(vertical: T.space4)
+            }
+
+            VStack(spacing: 0) {
+                self.settingsCardHeader(
+                    systemProxyExceptionsTitle,
+                    symbol: "arrowshape.turn.up.right.circle")
+
+                VStack(alignment: .leading, spacing: T.space4) {
+                    Text(tr("ui.settings.system_proxy_exceptions_hint"))
+                        .font(.app(size: T.FontSize.caption, weight: .regular))
+                        .foregroundStyle(nativeSecondaryLabel)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if appSession.systemProxyExceptions.isEmpty {
+                        Text(tr("ui.settings.system_proxy_exceptions_empty"))
+                            .font(.app(size: T.FontSize.body, weight: .regular))
+                            .foregroundStyle(nativeSecondaryLabel)
+                    } else {
+                        LazyVGrid(
+                            columns: self.systemProxyExceptionGridColumns,
+                            alignment: .leading,
+                            spacing: T.space4)
+                        {
+                            ForEach(appSession.systemProxyExceptions) { item in
+                                self.systemProxyExceptionRow(item)
+                            }
+                        }
+                    }
+
+                    HStack(spacing: T.space4) {
+                        TextField(
+                            tr("ui.placeholder.system_proxy_exception"),
+                            text: $appSession.systemProxyNewException)
+                            .textFieldStyle(.roundedBorder)
+                            .controlSize(.small)
+                            .font(.app(size: T.FontSize.body, weight: .regular))
+                            .foregroundStyle(nativePrimaryLabel)
+                            .onSubmit {
+                                self.appSession.addSystemProxyExceptionDraft()
+                            }
+
+                        Button(tr("ui.action.add_exception")) {
+                            self.appSession.addSystemProxyExceptionDraft()
+                        }
+                        .appBorderedButtonStyle()
+                        .controlSize(.small)
+                        .disabled(!appSession.canAddSystemProxyException || self.isSystemProxyExceptionsSyncing)
+                    }
+
+                    HStack(spacing: T.space4) {
+                        Button {
+                            self.appSession.restoreDefaultSystemProxyExceptionsDraft()
+                        } label: {
+                            Label(tr("ui.action.restore_defaults"), systemImage: "arrow.counterclockwise")
+                                .frame(maxWidth: .infinity, alignment: .center)
+                        }
+                        .appBorderedButtonStyle()
+                        .controlSize(.small)
+                        .disabled(self.isSystemProxyExceptionsSyncing)
+
+                        Button {
+                            Task { await self.appSession.saveSystemProxyExceptions() }
+                        } label: {
+                            Label(tr("ui.action.save_exceptions"), systemImage: "checkmark.circle")
+                                .frame(maxWidth: .infinity, alignment: .center)
+                        }
+                        .appBorderedButtonStyle()
+                        .controlSize(.small)
+                        .disabled(self.isSystemProxyExceptionsSyncing)
                     }
                 }
                 .menuRowPadding(vertical: T.space4)

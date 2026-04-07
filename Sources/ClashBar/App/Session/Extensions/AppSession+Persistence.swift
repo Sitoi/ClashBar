@@ -94,6 +94,20 @@ extension AppSession {
         return try? JSONDecoder().decode(EditableSettingsSnapshot.self, from: data)
     }
 
+    func persistSystemProxyExceptions() {
+        guard let data = try? JSONEncoder().encode(self.lastSavedSystemProxyExceptions) else { return }
+        defaults.set(data, forKey: systemProxyExceptionsKey)
+    }
+
+    func loadPersistedSystemProxyExceptions() -> [String]? {
+        guard let data = defaults.data(forKey: systemProxyExceptionsKey),
+              let values = try? JSONDecoder().decode([String].self, from: data)
+        else {
+            return nil
+        }
+        return self.normalizedSystemProxyExceptionValues(values)
+    }
+
     func loadPersistedUILanguage() -> AppLanguage {
         if let raw = defaults.string(forKey: uiLanguageKey),
            let language = AppLanguage(rawValue: raw)

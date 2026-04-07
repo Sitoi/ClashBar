@@ -97,6 +97,16 @@ struct ProxyLatencyTestKey: Hashable {
     let node: String
 }
 
+struct EditableSystemProxyException: Identifiable, Equatable {
+    let id: UUID
+    var value: String
+
+    init(id: UUID = UUID(), value: String) {
+        self.id = id
+        self.value = value
+    }
+}
+
 enum ProviderRefreshTrigger {
     case start
     case restart

@@ -2,6 +2,85 @@ import Foundation
 
 @MainActor
 extension AppSession {
+    static let defaultSystemProxyExceptions: [String] = [
+        "::1",
+        "*.local",
+        "<local>",
+        "localhost",
+        "127.0.0.1",
+        "192.168.0.0/16",
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+    ]
+
+    var hasPendingSystemProxyExceptionsChanges: Bool {
+        self.currentSystemProxyExceptionValues() != self.lastSavedSystemProxyExceptions
+    }
+
+    var canAddSystemProxyException: Bool {
+        self.systemProxyNewException.trimmedNonEmpty != nil
+    }
+
+    func addSystemProxyExceptionDraft() {
+        guard let value = self.systemProxyNewException.trimmedNonEmpty else { return }
+        let existing = Set(self.currentSystemProxyExceptionValues().map { $0.lowercased() })
+        guard !existing.contains(value.lowercased()) else {
+            self.systemProxyNewException = ""
+            return
+        }
+
+        self.systemProxyExceptions.append(EditableSystemProxyException(value: value))
+        self.systemProxyNewException = ""
+    }
+
+    func removeSystemProxyExceptionDraft(id: EditableSystemProxyException.ID) {
+        self.systemProxyExceptions.removeAll { $0.id == id }
+    }
+
+    func replaceSystemProxyExceptionsDraft(with values: [String]) {
+        self.systemProxyExceptions = self.systemProxyExceptionRows(from: values)
+        self.systemProxyNewException = ""
+    }
+
+    func restoreDefaultSystemProxyExceptionsDraft() {
+        self.replaceSystemProxyExceptionsDraft(with: Self.defaultSystemProxyExceptions)
+    }
+
+    func saveSystemProxyExceptions() async {
+        let normalized = self.currentSystemProxyExceptionValues()
+        self.replaceSystemProxyExceptionsDraft(with: normalized)
+
+        let success = await self.runSystemProxySettingsOperation(
+            syncingKey: "system-proxy-exceptions",
+            successMessage: tr("app.settings.saved.system_proxy_exceptions"))
+        {
+            try await self.systemProxyRepository.setExceptionsList(normalized)
+        }
+
+        guard success else { return }
+        self.lastSavedSystemProxyExceptions = normalized
+        self.persistSystemProxyExceptions()
+    }
+
+    func refreshSystemProxyExceptionsFromSystemIfPossible(overwriteEmpty: Bool = false) async {
+        guard !self.hasPendingSystemProxyExceptionsChanges else { return }
+
+        do {
+            let values = try await self.systemProxyRepository.readExceptionsList()
+            let normalized = self.normalizedSystemProxyExceptionValues(values)
+            guard overwriteEmpty || !normalized.isEmpty else { return }
+            self.replaceSystemProxyExceptionsDraft(with: normalized)
+            self.lastSavedSystemProxyExceptions = normalized
+            self.persistSystemProxyExceptions()
+        } catch {
+            return
+        }
+    }
+
+    func applyCurrentSystemProxyExceptionsIfNeeded() async throws {
+        try await self.systemProxyRepository.setExceptionsList(self.currentSystemProxyExceptionValues())
+    }
+
     var isSystemProxyUsingRemoteCore: Bool {
         guard self.isSystemProxyEnabled,
               let activeDisplay = self.systemProxyActiveDisplay?.trimmedNonEmpty,
@@ -93,6 +172,10 @@ extension AppSession {
         try await self.systemProxyRepository.readActiveDisplay()
     }
 
+    func readSystemProxyExceptions() async throws -> [String] {
+        try await self.systemProxyRepository.readExceptionsList()
+    }
+
     func isSystemProxyConfigured(host: String, ports: SystemProxyPorts) async throws -> Bool {
         try await self.checkSystemProxyConfiguredUseCase.execute(host: host, ports: ports)
     }
@@ -177,6 +260,7 @@ extension AppSession {
                     level: "info",
                     message: tr("log.system_proxy.startup_repaired", target.host, target.ports.primaryPort ?? 0))
             }
+            try await self.applyCurrentSystemProxyExceptionsIfNeeded()
             self.clearSystemProxyOpenFailureHint()
             self.systemProxyHelperFailureReason = nil
             self.systemProxyHelperFailureMessage = nil
@@ -311,6 +395,62 @@ extension AppSession {
             "loopback"
         default:
             host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        }
+    }
+
+    func normalizedSystemProxyExceptionValues(_ values: [String]) -> [String] {
+        var result: [String] = []
+        var seen: Set<String> = []
+
+        for value in values {
+            let trimmed = value.trimmed
+            guard !trimmed.isEmpty else { continue }
+            let key = trimmed.lowercased()
+            guard seen.insert(key).inserted else { continue }
+            result.append(trimmed)
+        }
+
+        return result
+    }
+
+    func currentSystemProxyExceptionValues() -> [String] {
+        self.normalizedSystemProxyExceptionValues(self.systemProxyExceptions.map(\.value))
+    }
+
+    private func systemProxyExceptionRows(from values: [String]) -> [EditableSystemProxyException] {
+        self.normalizedSystemProxyExceptionValues(values).map { EditableSystemProxyException(value: $0) }
+    }
+
+    @discardableResult
+    private func runSystemProxySettingsOperation(
+        syncingKey: String,
+        successMessage: String,
+        operation: () async throws -> Void) async -> Bool
+    {
+        self.settingsFeedbackClearTask?.cancel()
+        self.settingsFeedbackClearTask = nil
+        self.settingsSyncingKey = syncingKey
+        self.settingsErrorMessage = nil
+        self.settingsSavedMessage = nil
+        defer { self.settingsSyncingKey = nil }
+
+        do {
+            try await operation()
+            self.settingsSavedMessage = successMessage
+            self.scheduleSettingsFeedbackAutoClearIfNeeded(message: successMessage)
+            await self.refreshSystemProxyHelperStatus()
+            if self.hasSystemProxyOpenIntent {
+                await self.refreshSystemProxyStatus()
+            }
+            return true
+        } catch {
+            self.settingsErrorMessage = tr(
+                "app.settings.error.save_failed",
+                tr("ui.section.system_proxy_exceptions"),
+                self.systemProxyErrorMessage(error))
+            self.settingsSavedMessage = nil
+            await self.refreshSystemProxyHelperStatus()
+            return false
         }
     }
 }

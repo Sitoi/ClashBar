@@ -81,6 +81,8 @@ final class AppSession: ObservableObject {
     @Published var systemProxyHelperProcessRunning: Bool?
     @Published var systemProxyActiveDisplay: String?
     @Published var systemProxyOpenFailureHint: String?
+    @Published var systemProxyExceptions: [EditableSystemProxyException] = []
+    @Published var systemProxyNewException: String = ""
 
     @Published var isProxySyncing: Bool = false
     @Published var isTunEnabled: Bool = false
@@ -340,6 +342,7 @@ final class AppSession: ObservableObject {
     var providerRefreshGeneration: Int = 0
     var lastTrafficSampleAt: Date?
     var lastTrafficDecodeAt: Date = .distantPast
+    var lastSavedSystemProxyExceptions: [String] = []
     var pendingTrafficPayload: Data?
     var pendingMihomoLogs: [AppErrorLogEntry] = []
     var modeSwitchInFlight = false
@@ -361,6 +364,7 @@ final class AppSession: ObservableObject {
     let lastSuccessfulConfigPathKey = "clashbar.last.success.config.path"
     let editableSettingsSnapshotKey = "clashbar.settings.editable.snapshot.v1"
     let systemProxyEnabledOnQuitKey = "clashbar.system_proxy.enabled_on_quit"
+    let systemProxyExceptionsKey = "clashbar.system_proxy.exceptions.v1"
     let uiLanguageKey = "clashbar.ui.language"
     let appearanceModeKey = "clashbar.ui.appearance.mode"
     let maxLogEntries = 200
@@ -504,6 +508,9 @@ final class AppSession: ObservableObject {
             self.preserveLocalSettingsOnNextSync = true
             self.pendingAppLaunchOverlaySettings = persisted
         }
+        let persistedSystemProxyExceptions = loadPersistedSystemProxyExceptions() ?? Self.defaultSystemProxyExceptions
+        self.replaceSystemProxyExceptionsDraft(with: persistedSystemProxyExceptions)
+        self.lastSavedSystemProxyExceptions = self.normalizedSystemProxyExceptionValues(persistedSystemProxyExceptions)
 
         if startBackgroundRefresh {
             Task {

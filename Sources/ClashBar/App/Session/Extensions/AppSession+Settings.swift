@@ -476,6 +476,7 @@ extension AppSession {
         do {
             let target = try await resolveSystemProxyTargetFromRuntimeConfig()
             try await applySystemProxy(enabled: true, host: target.host, ports: target.ports)
+            try await self.applyCurrentSystemProxyExceptionsIfNeeded()
             systemProxyActiveDisplay = buildSystemProxyDisplayString(host: target.host, ports: target.ports)
             appendLog(level: "info", message: tr("log.system_proxy.port_synced", target.ports.primaryPort ?? 0))
 

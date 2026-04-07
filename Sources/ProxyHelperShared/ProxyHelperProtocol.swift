@@ -26,4 +26,6 @@ public protocol ProxyHelperProtocol {
         httpsPort: Int,
         socksPort: Int,
         completion: @escaping (Bool, Bool, String?) -> Void)
+    func getSystemProxyExceptions(completion: @escaping (Bool, String?, String?) -> Void)
+    func setSystemProxyExceptions(serializedExceptions: String, completion: @escaping (Bool, String?) -> Void)
 }

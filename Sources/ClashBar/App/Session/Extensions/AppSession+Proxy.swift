@@ -55,6 +55,7 @@ extension AppSession {
             if enabled {
                 let target = try await resolveSystemProxyTargetFromRuntimeConfig()
                 try await applySystemProxy(enabled: true, host: target.host, ports: target.ports)
+                try await self.applyCurrentSystemProxyExceptionsIfNeeded()
                 systemProxyActiveDisplay = self.buildSystemProxyDisplayString(host: target.host, ports: target.ports)
             } else {
                 try await applySystemProxy(enabled: false, host: self.controllerHost(), ports: .disabled)
