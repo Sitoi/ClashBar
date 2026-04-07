@@ -247,15 +247,21 @@ struct SystemProxyService {
         operation: @Sendable @escaping (ProxyHelperProtocol, @escaping (Bool, String?) -> Void) -> Void)
     {
         let semaphore = DispatchSemaphore(value: 0)
+        // Intentionally unsynchronized: write precedes any I/O, and timeout is long
+        // enough to guarantee the dispatch block has started.
+        nonisolated(unsafe) var connectionRef: NSXPCConnection?
 
         DispatchQueue.global(qos: .userInitiated).async {
             let connection = NSXPCConnection(
                 machServiceName: ProxyHelperConstants.machServiceName,
                 options: .privileged)
+
+            connectionRef = connection
             connection.remoteObjectInterface = NSXPCInterface(with: ProxyHelperProtocol.self)
             connection.activate()
 
             guard let helper = connection.remoteObjectProxyWithErrorHandler({ _ in
+                connection.invalidate()
                 semaphore.signal()
             }) as? ProxyHelperProtocol else {
                 connection.invalidate()
@@ -269,7 +275,9 @@ struct SystemProxyService {
             }
         }
 
-        _ = semaphore.wait(timeout: .now() + timeout)
+        if semaphore.wait(timeout: .now() + timeout) == .timedOut {
+            connectionRef?.invalidate()
+        }
     }
 
     private func validateHost(_ host: String) throws {

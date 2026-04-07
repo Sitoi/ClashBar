@@ -450,8 +450,13 @@ private final class DNSConfigurator {
                 "\(state.port)|\(state.servers)"
             }.joined(separator: "\n")
             let dir = (backupFile as NSString).deletingLastPathComponent
-            try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+            try? FileManager.default.createDirectory(
+                atPath: dir,
+                withIntermediateDirectories: true,
+                attributes: [.posixPermissions: 0o700]
+            )
             try backup.write(toFile: backupFile, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: backupFile)
         }
 
         var appliedStates: [DNSState] = []
@@ -489,6 +494,16 @@ private final class DNSConfigurator {
             executable: "/usr/sbin/networksetup",
             arguments: ["-listnetworkserviceorder"])
 
+        guard listResult.exitCode == 0 else {
+            let detail = listResult.combinedOutput.trimmingCharacters(in: .whitespacesAndNewlines)
+            throw ProxyHelperError.systemConfigurationFailure(
+                action: "List network service order",
+                code: listResult.exitCode,
+                detail: detail.isEmpty
+                    ? "networksetup -listnetworkserviceorder failed with no output"
+                    : detail)
+        }
+
         var results: [HardwarePortResult] = []
         let lines = listResult.stdout.components(separatedBy: "\n")
         var currentPort: String?
@@ -522,6 +537,13 @@ private final class DNSConfigurator {
         let result = runProcessSynchronously(
             executable: "/usr/sbin/networksetup",
             arguments: ["-getdnsservers", port])
+
+        guard result.exitCode == 0 else {
+            throw ProxyHelperError.systemConfigurationFailure(
+                action: "Read DNS servers for \(port)",
+                code: result.exitCode,
+                detail: result.combinedOutput)
+        }
 
         let output = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
         if output.hasPrefix("There aren't any DNS Servers set on") {

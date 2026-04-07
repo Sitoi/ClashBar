@@ -177,10 +177,8 @@ extension AppSession {
 
     func applyTunRuntimeChange(enabled: Bool) async throws {
         guard self.isRemoteTarget || self.isRuntimeRunning else { return }
-        try await self.patchTunConfig(enable: enabled)
-
         do {
-            try await self.verifyTunRuntimeState(expectedEnabled: enabled)
+            try await self.patchTunConfig(enable: enabled)
         } catch {
             if enabled {
                 await self.restoreTunDNSSafely(context: "after enable failure")
@@ -200,8 +198,9 @@ extension AppSession {
     func patchTunConfig(enable: Bool) async throws {
         if enable {
             // Set DNS BEFORE enabling TUN so that route -n get default still returns
-            // the physical interface. This also covers the case where no en* service
-            // is found by falling back to the default route approach.
+            // the physical interface while DNS is being prepared for TUN enablement.
+            // This path relies on setTunDNSForEnable() succeeding; there is no
+            // default-route fallback implemented here when no physical service is found.
             try await self.setTunDNSForEnable()
         }
 
@@ -227,8 +226,18 @@ extension AppSession {
         }
 
         if !enable {
-            // Restore DNS AFTER disabling TUN, once the default route is back on the physical interface.
-            try await self.restoreTunDNS()
+            // Restore DNS only AFTER the runtime confirms TUN is disabled, so we do not
+            // reintroduce DNS bypass if the PATCH returns before the TUN state changes.
+            do {
+                try await self.verifyTunRuntimeState(expectedEnabled: false)
+                try await self.restoreTunDNS()
+            } catch {
+                appendLog(
+                    level: "error",
+                    message: "TUN disable verification failed, DNS not restored: \(error.localizedDescription)"
+                )
+                throw error
+            }
         }
     }
 
