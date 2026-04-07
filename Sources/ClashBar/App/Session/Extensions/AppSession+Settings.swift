@@ -184,6 +184,7 @@ extension AppSession {
 
     func currentEditableSettingsSnapshot() -> EditableSettingsSnapshot {
         EditableSettingsSnapshot(
+            mode: currentMode,
             allowLan: settingsAllowLan,
             ipv6: settingsIPv6,
             tcpConcurrent: settingsTCPConcurrent,
@@ -265,6 +266,7 @@ extension AppSession {
         else { return false }
 
         var body: [String: ConfigPatchValue] = [
+            "mode": .string(overlay.mode.rawValue),
             "allow-lan": .bool(overlay.allowLan),
             "ipv6": .bool(overlay.ipv6),
             "tcp-concurrent": .bool(overlay.tcpConcurrent),
@@ -294,6 +296,7 @@ extension AppSession {
 
     func applyEditableSettingsSnapshotToUI(_ snapshot: EditableSettingsSnapshot) {
         suppressSettingsPersistence = true
+        currentMode = snapshot.mode
         settingsAllowLan = snapshot.allowLan
         settingsIPv6 = snapshot.ipv6
         settingsTCPConcurrent = snapshot.tcpConcurrent

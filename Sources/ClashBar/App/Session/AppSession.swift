@@ -47,10 +47,12 @@ final class AppSession: ObservableObject {
     @Published var selectedConfigName: String = "-"
     @Published var configDirectoryPath: String = "-"
     @Published var availableConfigFileNames: [String] = []
+    @Published var remoteConfigMenuStates: [String: RemoteConfigMenuState] = [:]
 
     @Published var proxyGroups: [ProxyGroup] = []
     @Published var groupLatencyLoading: Set<String> = []
     @Published var groupLatencies: [String: [String: Int]] = [:]
+    @Published var proxyLatencyTesting: Set<ProxyLatencyTestKey> = []
     @Published var proxyHistoryLatestDelay: [String: Int] = [:]
     @Published var proxyNodeTypes: [String: String] = [:]
 
@@ -79,14 +81,6 @@ final class AppSession: ObservableObject {
     @Published var systemProxyHelperProcessRunning: Bool?
     @Published var systemProxyActiveDisplay: String?
     @Published var systemProxyOpenFailureHint: String?
-    var isSystemProxyActiveNonLocal: Bool {
-        guard let display = systemProxyActiveDisplay,
-              let host = self.hostFromSystemProxyDisplay(display)?
-                  .trimmingCharacters(in: .whitespacesAndNewlines)
-                  .lowercased()
-        else { return false }
-        return host != "127.0.0.1" && host != "localhost" && host != "::1"
-    }
 
     @Published var isProxySyncing: Bool = false
     @Published var isTunEnabled: Bool = false
@@ -192,24 +186,6 @@ final class AppSession: ObservableObject {
         }
     }
 
-    private func hostFromSystemProxyDisplay(_ display: String) -> String? {
-        let trimmed = display.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
-
-        if trimmed.hasPrefix("["),
-           let closing = trimmed.firstIndex(of: "]"),
-           trimmed.index(after: closing) < trimmed.endIndex,
-           trimmed[trimmed.index(after: closing)] == ":"
-        {
-            return String(trimmed[trimmed.index(after: trimmed.startIndex)..<closing])
-        }
-
-        guard let separator = trimmed.lastIndex(of: ":") else {
-            return nil
-        }
-        return String(trimmed[..<separator])
-    }
-
     var statusBarDisplayMode: StatusBarDisplayMode {
         get { StatusBarDisplayMode(rawValue: self.statusBarDisplayModeRaw) ?? .iconOnly }
         set {
@@ -270,8 +246,14 @@ final class AppSession: ObservableObject {
             unitIndex += 1
         }
 
-        let integer = min(999, max(1, Int(value)))
-        return "\(integer)\(units[unitIndex])"
+        let unit = units[unitIndex]
+        if value < 10 {
+            return String(format: "%.2f%@", value, unit)
+        } else if value < 100 {
+            return String(format: "%.1f%@", value, unit)
+        } else {
+            return String(format: "%.0f%@", min(value, 999), unit)
+        }
     }
 
     func refreshMenuBarDisplaySnapshotIfNeeded() {
@@ -375,6 +357,7 @@ final class AppSession: ObservableObject {
     let selectedConfigKey = "clashbar.config.selected.filename"
     let legacySelectedConfigKey = "clashbar.config.selected"
     let remoteConfigSourcesKey = "clashbar.config.remote.sources.v1"
+    let remoteConfigSubscriptionsKey = "clashbar.config.remote.subscriptions.v2"
     let lastSuccessfulConfigPathKey = "clashbar.last.success.config.path"
     let editableSettingsSnapshotKey = "clashbar.settings.editable.snapshot.v1"
     let systemProxyEnabledOnQuitKey = "clashbar.system_proxy.enabled_on_quit"
@@ -415,7 +398,9 @@ final class AppSession: ObservableObject {
     var isNetworkReachabilityMonitoring = false
     var pendingCoreFeatureRecoveryState: CoreFeatureRecoveryState?
     var deferredEditableSettingsOverlay: (snapshot: EditableSettingsSnapshot, syncingKey: String)?
-    var remoteConfigSources: [String: String] = [:]
+    var remoteConfigSubscriptions: [String: RemoteConfigSubscription] = [:]
+    var remoteConfigAutoUpdateTask: Task<Void, Never>?
+    var remoteConfigMenuRefreshTask: Task<Void, Never>?
     var externalControllerWarningKeys: Set<String> = []
     let streamJSONDecoder = JSONDecoder()
     let initialNoCoreSetupGuideShownKey = "clashbar.core.install.guide.shown.v1"
@@ -508,8 +493,9 @@ final class AppSession: ObservableObject {
         }
         restoreSavedConfigDirectory()
         restoreLastSuccessfulConfigIfAvailable()
-        self.remoteConfigSources = loadPersistedRemoteConfigSources()
-        pruneRemoteConfigSourcesIfNeeded()
+        self.remoteConfigSubscriptions = loadPersistedRemoteConfigSubscriptions()
+        pruneRemoteConfigSubscriptionsIfNeeded()
+        restartRemoteConfigBackgroundTasksIfNeeded()
         // Always start in local mode. Remote target is session-level only.
         self.remoteMachineStore.resetActiveTarget()
         self.controllerUIURL = makeControllerUIURL(self.controller)

@@ -130,8 +130,11 @@ extension MenuBarRootView {
             content: { dismiss in
                 self.headerPopoverSection(self.tr("ui.machine.local_label"))
                 AttachedPopoverMenuItem(
-                    title: tr("ui.machine.return_local"),
-                    selected: remoteMachineStore.activeTarget.isLocal)
+                    title: tr("ui.machine.local"),
+                    leadingSymbol: "desktopcomputer",
+                    leadingTint: self.nativeInfo.opacity(MenuBarLayoutTokens.Opacity.solid),
+                    selected: remoteMachineStore.activeTarget.isLocal,
+                    selectionIndicatorPlacement: .trailing)
                 {
                     dismiss()
                     guard !remoteMachineStore.activeTarget.isLocal else { return }
@@ -144,30 +147,36 @@ extension MenuBarRootView {
 
                 if !remoteMachineStore.machines.isEmpty {
                     AttachedPopoverMenuDivider()
-                    self.headerPopoverSection(self.tr("ui.machine.manage"))
+                    self.headerPopoverSection(self.tr("ui.machine.remote_label"))
                 }
 
                 ForEach(remoteMachineStore.machines) { machine in
                     let status = remoteMachineStore.statusFor(machine.id)
+                    let isSelected = remoteMachineStore.activeTargetID == machine.id
                     AttachedPopoverMenuItem(
                         title: machine.name,
-                        leadingSymbol: nil,
+                        leadingSymbol: "network",
                         leadingTint: self.machineStatusTint(status),
-                        showLeadingDot: true,
-                        selected: remoteMachineStore.activeTargetID == machine.id)
+                        selected: isSelected,
+                        selectionIndicatorPlacement: .trailing)
                     {
                         dismiss()
-                        guard remoteMachineStore.activeTargetID != machine.id else { return }
+                        guard !isSelected else { return }
                         isSwitchingMachine = true
                         Task { @MainActor in
                             await appSession.switchToMachineTarget(.remote(machine))
                             isSwitchingMachine = false
                         }
                     }
+                    .disabled(!status.isConnected && !isSelected)
                 }
 
                 AttachedPopoverMenuDivider()
-                AttachedPopoverMenuItem(title: tr("ui.machine.manage")) {
+                AttachedPopoverMenuItem(
+                    title: tr("ui.machine.manage"),
+                    leadingSymbol: "slider.horizontal.3",
+                    leadingTint: self.nativeSecondaryLabel)
+                {
                     dismiss()
                     showRemoteMachineManager = true
                 }

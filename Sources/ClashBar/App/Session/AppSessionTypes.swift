@@ -92,6 +92,11 @@ struct DataAcquisitionPolicy: Equatable {
     let lowFrequencyIntervalNanoseconds: UInt64
 }
 
+struct ProxyLatencyTestKey: Hashable {
+    let group: String
+    let node: String
+}
+
 enum ProviderRefreshTrigger {
     case start
     case restart
@@ -104,6 +109,25 @@ enum ProviderRefreshPhase {
     case succeeded
     case failed
     case cancelled
+}
+
+enum RemoteConfigRefreshPhase: Equatable {
+    case idle
+    case refreshing
+    case failed
+}
+
+struct RemoteConfigMenuState: Equatable {
+    let updatedAt: Date?
+    let phase: RemoteConfigRefreshPhase
+    let autoUpdateEnabled: Bool
+    let nextUpdateAt: Date?
+
+    static let idle = RemoteConfigMenuState(
+        updatedAt: nil,
+        phase: .idle,
+        autoUpdateEnabled: false,
+        nextUpdateAt: nil)
 }
 
 struct ProviderRefreshStatus {
@@ -127,7 +151,7 @@ struct MenuBarSpeedLines: Equatable {
     let up: String
     let down: String
 
-    static let zero = MenuBarSpeedLines(up: "↑0K", down: "↓0K")
+    static let zero = MenuBarSpeedLines(up: "0K↑", down: "0K↓")
 }
 
 struct MenuBarDisplay: Equatable {
@@ -147,6 +171,7 @@ struct CoreFeatureRecoveryState {
 }
 
 struct EditableSettingsSnapshot: Equatable, Codable {
+    let mode: CoreMode
     let allowLan: Bool
     let ipv6: Bool
     let tcpConcurrent: Bool
@@ -159,6 +184,7 @@ struct EditableSettingsSnapshot: Equatable, Codable {
     let tproxyPort: String
 
     private enum CodingKeys: String, CodingKey {
+        case mode
         case allowLan
         case ipv6
         case tcpConcurrent
@@ -172,6 +198,7 @@ struct EditableSettingsSnapshot: Equatable, Codable {
     }
 
     init(config: ConfigSnapshot) {
+        self.mode = CoreMode(rawValue: (config.mode ?? "").lowercased()) ?? .rule
         self.allowLan = config.allowLan ?? false
         self.ipv6 = config.ipv6 ?? false
         self.tcpConcurrent = config.tcpConcurrent ?? false
@@ -185,6 +212,7 @@ struct EditableSettingsSnapshot: Equatable, Codable {
     }
 
     init(
+        mode: CoreMode,
         allowLan: Bool,
         ipv6: Bool,
         tcpConcurrent: Bool,
@@ -196,6 +224,7 @@ struct EditableSettingsSnapshot: Equatable, Codable {
         redirPort: String,
         tproxyPort: String)
     {
+        self.mode = mode
         self.allowLan = allowLan
         self.ipv6 = ipv6
         self.tcpConcurrent = tcpConcurrent
@@ -210,6 +239,7 @@ struct EditableSettingsSnapshot: Equatable, Codable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.mode = try container.decodeIfPresent(CoreMode.self, forKey: .mode) ?? .rule
         self.allowLan = try container.decode(Bool.self, forKey: .allowLan)
         self.ipv6 = try container.decode(Bool.self, forKey: .ipv6)
         self.tcpConcurrent = try container.decodeIfPresent(Bool.self, forKey: .tcpConcurrent) ?? false
@@ -226,6 +256,7 @@ struct EditableSettingsSnapshot: Equatable, Codable {
 extension EditableSettingsSnapshot {
     func withTunEnabled(_ enabled: Bool) -> EditableSettingsSnapshot {
         EditableSettingsSnapshot(
+            mode: self.mode,
             allowLan: self.allowLan,
             ipv6: self.ipv6,
             tcpConcurrent: self.tcpConcurrent,

@@ -59,6 +59,7 @@ enum Endpoint {
     case groupDelay(name: String, url: String, timeout: Int)
 
     case proxies
+    case proxyDelay(name: String, url: String, timeout: Int)
     case switchProxy(name: String, target: String)
 
     case proxyProviders
@@ -80,7 +81,7 @@ enum Endpoint {
 
     var method: HTTPMethod {
         switch self {
-        case .version, .traffic, .memory, .logs, .getConfigs, .groupDelay, .proxies, .proxyProviders,
+        case .version, .traffic, .memory, .logs, .getConfigs, .groupDelay, .proxies, .proxyDelay, .proxyProviders,
              .proxyProvider, .proxyProviderHealthcheck, .proxyProviderProxyHealthcheck, .rules,
              .ruleProviders, .connections:
             .get
@@ -104,6 +105,7 @@ enum Endpoint {
         case .getConfigs, .putConfigs, .patchConfigs: "/configs"
         case let .groupDelay(name, _, _): "/group/\(name.urlPathSegmentEscaped)/delay"
         case .proxies: "/proxies"
+        case let .proxyDelay(name, _, _): "/proxies/\(name.urlPathSegmentEscaped)/delay"
         case let .switchProxy(name, _): "/proxies/\(name.urlPathSegmentEscaped)"
         case .proxyProviders:
             Self.proxyProvidersPath
@@ -132,7 +134,7 @@ enum Endpoint {
             self.optionalQueryItem(name: "level", value: level)
         case let .putConfigs(force):
             force ? [URLQueryItem(name: "force", value: "true")] : []
-        case let .groupDelay(_, url, timeout):
+        case let .groupDelay(_, url, timeout), let .proxyDelay(_, url, timeout):
             self.healthcheckQueryItems(url: url, timeout: timeout)
         case let .proxyProviderHealthcheck(_, url, timeout), let .proxyProviderProxyHealthcheck(_, _, url, timeout):
             self.healthcheckQueryItems(url: url, timeout: timeout)
@@ -162,6 +164,7 @@ enum Endpoint {
         case .proxyProviderHealthcheck:
             180
         case let .groupDelay(_, _, timeout),
+             let .proxyDelay(_, _, timeout),
              let .proxyProviderProxyHealthcheck(_, _, _, timeout):
             max(5, TimeInterval(timeout) / 1000.0 + 2)
         case .upgradeCore:
@@ -175,7 +178,7 @@ enum Endpoint {
     /// control-plane requests like reload/restart/toggle actions.
     var usesLongRunningSession: Bool {
         switch self {
-        case .groupDelay, .proxyProviderHealthcheck, .proxyProviderProxyHealthcheck:
+        case .groupDelay, .proxyDelay, .proxyProviderHealthcheck, .proxyProviderProxyHealthcheck:
             true
         default:
             false

@@ -253,6 +253,7 @@ extension AppSession {
         proxyGroups.removeAll(keepingCapacity: false)
         groupLatencyLoading.removeAll(keepingCapacity: false)
         groupLatencies.removeAll(keepingCapacity: false)
+        proxyLatencyTesting.removeAll(keepingCapacity: false)
         proxyHistoryLatestDelay.removeAll(keepingCapacity: false)
         proxyNodeTypes.removeAll(keepingCapacity: false)
 

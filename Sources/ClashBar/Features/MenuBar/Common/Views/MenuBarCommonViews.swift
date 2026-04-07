@@ -547,7 +547,7 @@ extension MenuBarRootView {
     }
 }
 
-private struct CompactAsyncIconButton: View {
+struct CompactAsyncIconButton: View {
     let symbol: String
     let tint: Color
     let baseTint: Color

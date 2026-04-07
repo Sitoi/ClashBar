@@ -1,769 +1,558 @@
 import SwiftUI
 
-struct RemoteMachineManagerView: View {
-    private enum EditorMode {
-        case add
-        case edit(RemoteMachine)
+// swiftlint:disable:next type_name
+private typealias T = MenuBarLayoutTokens
 
-        var machine: RemoteMachine? {
-            switch self {
-            case .add:
-                nil
-            case let .edit(machine):
-                machine
-            }
+private enum EditorMode: Hashable {
+    case add
+    case edit(RemoteMachine)
+
+    var machine: RemoteMachine? {
+        if case let .edit(machine) = self {
+            return machine
         }
+        return nil
     }
+}
 
-    private enum RowAction: Hashable {
-        case edit
-        case delete
+private enum RemoteMachineManagerTokens {
+    static let panelHeight: CGFloat = 500
+    static let contentPadding: CGFloat = T.space8 * 2
+    static let headerBottomPadding: CGFloat = T.space6 * 2
+    static let rowSpacing: CGFloat = T.space8
+    static let rowContentSpacing: CGFloat = 12
+    static let rowPadding: CGFloat = 10
+    static let rowCornerRadius: CGFloat = T.panelCornerRadius
+    static let rowIconSize: CGFloat = T.rowHeight
+    static let rowActionSize: CGFloat = 26
+    static let editorSpacing: CGFloat = 20
+    static let formSpacing: CGFloat = T.space8 * 2
+    static let fieldSpacing: CGFloat = T.space6
+    static let portFieldWidth: CGFloat = 100
+    static let switchAnimationDuration: CGFloat = 0.15
+    static let editorAnimationResponse: CGFloat = 0.35
+    static let selectionFillOpacity: CGFloat = 0.10
+}
 
-        var symbol: String {
-            switch self {
-            case .edit:
-                "pencil"
-            case .delete:
-                "trash"
-            }
-        }
-
-        var accessibilityKey: String {
-            switch self {
-            case .edit:
-                "ui.machine.edit"
-            case .delete:
-                "ui.action.delete"
-            }
-        }
-
-        var isDestructive: Bool {
-            switch self {
-            case .edit:
-                false
-            case .delete:
-                true
-            }
-        }
-    }
-
-    private struct HoveredRowAction: Hashable {
-        let machineID: UUID
-        let action: RowAction
-    }
-
-    @ObservedObject var store: RemoteMachineStore
-    let localControllerDisplay: String
-    let onSwitchTarget: (MachineTarget) -> Void
-
-    @State private var editorMode: EditorMode?
-    @State private var hoveredMachineID: UUID?
-    @State private var hoveredRowAction: HoveredRowAction?
-    @State private var hoveringLocalCard = false
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) private var colorScheme
-
-    private var language: AppLanguage {
-        AppLanguage(rawValue: UserDefaults.standard.string(forKey: "clashbar.ui.language") ?? "") ?? .zhHans
-    }
-
-    private var panelWidth: CGFloat {
-        MenuBarLayoutTokens.panelWidth
-    }
-
-    private var panelHeight: CGFloat {
-        500
-    }
-
-    private var outerPadding: CGFloat {
-        16
-    }
-
-    private var cardPadding: CGFloat {
-        12
-    }
-
-    private var cardCornerRadius: CGFloat {
-        12
-    }
-
-    private var trailingActionAreaWidth: CGFloat {
-        66
-    }
+private struct RemoteMachineManagerPalette {
+    let colorScheme: ColorScheme
 
     private var isDarkAppearance: Bool {
         self.colorScheme == .dark
     }
 
-    private var panelBackground: Color {
+    var panelBackground: Color {
         Color(nsColor: .windowBackgroundColor)
     }
 
-    private var primaryTextColor: Color {
+    var primaryLabel: Color {
         Color(nsColor: .labelColor)
     }
 
-    private var secondaryTextColor: Color {
+    var secondaryLabel: Color {
         Color(nsColor: .labelColor)
-            .opacity(self.isDarkAppearance ? MenuBarLayoutTokens.Theme.Dark.labelSecondary : MenuBarLayoutTokens.Theme
-                .Light.labelSecondary)
+            .opacity(self.isDarkAppearance ? T.Theme.Dark.labelSecondary : T.Theme.Light.labelSecondary)
     }
 
-    private var tertiaryTextColor: Color {
+    var tertiaryLabel: Color {
         Color(nsColor: .labelColor)
-            .opacity(self.isDarkAppearance ? MenuBarLayoutTokens.Theme.Dark.labelTertiary : MenuBarLayoutTokens.Theme
-                .Light.labelTertiary)
+            .opacity(self.isDarkAppearance ? T.Theme.Dark.labelTertiary : T.Theme.Light.labelTertiary)
     }
 
-    private var borderColor: Color {
-        Color(nsColor: .separatorColor)
-            .opacity(self.isDarkAppearance ? 0.22 : 0.10)
+    var accent: Color {
+        Color(nsColor: .controlAccentColor).opacity(T.Opacity.solid)
     }
 
-    private var separatorColor: Color {
-        Color(nsColor: .separatorColor)
-            .opacity(self.isDarkAppearance ? MenuBarLayoutTokens.Theme.Dark.separator : MenuBarLayoutTokens.Theme.Light
-                .separator)
+    var positive: Color {
+        Color(nsColor: .systemGreen).opacity(T.Opacity.solid)
     }
 
-    private var cardFill: Color {
-        if self.isDarkAppearance {
-            return Color.white.opacity(0.05)
+    var warning: Color {
+        Color(nsColor: .systemOrange).opacity(T.Opacity.solid)
+    }
+
+    var critical: Color {
+        Color(nsColor: .systemRed).opacity(T.Opacity.solid)
+    }
+
+    var controlFill: Color {
+        Color(nsColor: self.isDarkAppearance ? .controlBackgroundColor : .windowBackgroundColor)
+            .opacity(self.isDarkAppearance ? T.Theme.Dark.controlFill : T.Theme.Light.controlFill)
+    }
+
+    var hoverFill: Color {
+        Color(nsColor: .selectedContentBackgroundColor)
+            .opacity(self.isDarkAppearance ? T.Theme.Dark.hoverFill : T.Theme.Light.hoverFill)
+    }
+
+    func rowFill(active: Bool, hovered: Bool) -> Color {
+        if active {
+            return Color(nsColor: .controlAccentColor).opacity(RemoteMachineManagerTokens.selectionFillOpacity)
         }
-        return Color.white.opacity(0.42)
-    }
-
-    private var cardHoverFill: Color {
-        if self.isDarkAppearance {
-            return Color.white.opacity(0.10)
+        if hovered {
+            return self.hoverFill
         }
-        return Color.white.opacity(0.62)
+        return self.controlFill
     }
 
-    private var cardSelectedFill: Color {
-        self.accentTint.opacity(self.isDarkAppearance ? 0.14 : 0.10)
+    func actionBackground(hovered: Bool, destructive: Bool = false) -> Color {
+        guard hovered else { return .clear }
+        return destructive ? self.critical.opacity(T.Opacity.tint) : self.hoverFill
     }
 
-    private var accentTint: Color {
-        Color(nsColor: .controlAccentColor)
+    func actionForeground(hovered: Bool, destructive: Bool = false) -> Color {
+        if destructive {
+            return hovered ? self.critical : self.secondaryLabel
+        }
+        return hovered ? self.primaryLabel : self.secondaryLabel
+    }
+}
+
+struct RemoteMachineManagerView: View {
+    @ObservedObject var store: RemoteMachineStore
+    let localControllerDisplay: String
+    let onSwitchTarget: (MachineTarget) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+
+    @State private var editorMode: EditorMode?
+    @State private var isHoveringLocalRow = false
+
+    private var palette: RemoteMachineManagerPalette {
+        .init(colorScheme: self.colorScheme)
+    }
+
+    private var language: AppLanguage {
+        AppLanguage(rawValue: UserDefaults.standard.string(forKey: "clashbar.ui.language") ?? "") ?? .zhHans
+    }
+
+    private var headerTitle: String {
+        if let editorMode {
+            return editorMode.machine == nil ? self.tr("ui.machine.add") : self.tr("ui.machine.edit")
+        }
+        return self.tr("ui.machine.manage")
     }
 
     private func tr(_ key: String) -> String {
         L10n.t(key, language: self.language)
     }
 
-    private var isEditing: Bool {
-        self.editorMode != nil
-    }
-
-    private var headerTitle: String {
-        if let editorMode {
-            switch editorMode {
-            case .add:
-                self.tr("ui.machine.add")
-            case .edit:
-                self.tr("ui.machine.edit")
-            }
-        } else {
-            self.tr("ui.machine.manage")
-        }
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            self.headerBar
-            Group {
-                if let editorMode {
-                    self.editorContent(for: editorMode)
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
+        VStack(spacing: 0) {
+            HStack(spacing: T.space6) {
+                Label(self.headerTitle, systemImage: "network")
+                    .font(.app(size: T.FontSize.title, weight: .semibold))
+                    .foregroundStyle(self.palette.primaryLabel)
+
+                Spacer()
+
+                Button {
+                    if self.editorMode != nil {
+                        self.editorMode = nil
+                    } else {
+                        self.dismiss()
+                    }
+                } label: {
+                    Image(systemName: self.editorMode != nil ? "chevron.left.circle.fill" : "xmark.circle.fill")
+                        .font(.app(size: T.FontSize.title, weight: .semibold))
+                        .foregroundStyle(self.palette.tertiaryLabel)
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .help(self.editorMode != nil ? self.tr("ui.action.cancel") : self.tr("ui.action.close"))
+            }
+            .padding([.horizontal, .top], RemoteMachineManagerTokens.contentPadding)
+            .padding(.bottom, RemoteMachineManagerTokens.headerBottomPadding)
+
+            ZStack(alignment: .topLeading) {
+                if let mode = self.editorMode {
+                    RemoteMachineEditorView(store: self.store, mode: mode, language: self.language) {
+                        self.editorMode = nil
+                    }
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .trailing).combined(with: .opacity)))
                 } else {
-                    self.listContent
-                        .transition(.move(edge: .leading).combined(with: .opacity))
+                    self.machineList
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .leading).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)))
                 }
             }
-            .padding(self.outerPadding)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(width: self.panelWidth, height: self.panelHeight, alignment: .topLeading)
-        .background(self.panelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: MenuBarLayoutTokens.panelCornerRadius, style: .continuous))
-        .animation(.snappy(duration: 0.18), value: self.isEditing)
-        .onAppear {
-            self.store.startPeriodicConnectivityChecks()
-        }
-        .onDisappear {
-            self.store.stopPeriodicConnectivityChecks()
-        }
+        .background(self.palette.panelBackground)
+        .frame(width: T.panelWidth, height: RemoteMachineManagerTokens.panelHeight)
+        .animation(
+            .spring(response: RemoteMachineManagerTokens.editorAnimationResponse, dampingFraction: 1),
+            value: self.editorMode)
+        .onAppear { self.store.startPeriodicConnectivityChecks() }
+        .onDisappear { self.store.stopPeriodicConnectivityChecks() }
     }
 
-    private var headerBar: some View {
-        HStack(spacing: 10) {
-            HStack(spacing: 10) {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(self.accentTint.opacity(self.isDarkAppearance ? 0.22 : 0.14))
-                    .frame(width: 28, height: 28)
-                    .overlay {
-                        Image(systemName: "network")
-                            .font(.app(size: MenuBarLayoutTokens.FontSize.body, weight: .semibold))
-                            .foregroundStyle(self.accentTint)
+    private var machineList: some View {
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: RemoteMachineManagerTokens.rowSpacing) {
+                    self.localMachineRow
+
+                    ForEach(self.store.machines) { machine in
+                        RemoteMachineRowView(
+                            machine: machine,
+                            store: self.store,
+                            onEdit: { self.editorMode = .edit(machine) },
+                            editAccessibilityLabel: self.tr("ui.machine.edit"),
+                            deleteAccessibilityLabel: self.tr("ui.action.delete"),
+                            onSwitchTarget: self.onSwitchTarget,
+                            dismiss: self.dismiss)
                     }
-
-                Text(self.headerTitle)
-                    .font(.app(size: 13, weight: .semibold))
-                    .foregroundStyle(self.primaryTextColor)
+                }
+                .padding(.horizontal, RemoteMachineManagerTokens.contentPadding)
+                .padding(.bottom, RemoteMachineManagerTokens.contentPadding)
             }
-
-            Spacer(minLength: 0)
+            .scrollIndicators(.hidden)
 
             Button {
-                if self.isEditing {
-                    self.editorMode = nil
-                } else {
-                    self.dismiss()
-                }
-            } label: {
-                Image(systemName: self.isEditing ? "chevron.left" : "xmark")
-                    .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .bold))
-                    .foregroundStyle(self.tertiaryTextColor)
-                    .frame(width: 24, height: 24)
-                    .background(
-                        Color.black.opacity(self.isDarkAppearance ? 0.18 : 0.04),
-                        in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, self.outerPadding)
-        .padding(.vertical, 12)
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(self.separatorColor)
-                .frame(height: MenuBarLayoutTokens.stroke)
-        }
-    }
-
-    private var listContent: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            self.machineCards
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            self.primaryActionButton(title: self.tr("ui.machine.add"), systemImage: "plus") {
                 self.editorMode = .add
+            } label: {
+                Label(self.tr("ui.machine.add"), systemImage: "plus")
+                    .font(.app(size: T.FontSize.subhead, weight: .medium))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, T.space8)
             }
+            .appBorderedButtonStyle(prominent: true)
+            .controlSize(.large)
+            .padding(.horizontal, RemoteMachineManagerTokens.contentPadding)
+            .padding(.bottom, RemoteMachineManagerTokens.contentPadding)
         }
     }
 
-    private var machineCards: some View {
-        ScrollView {
-            VStack(spacing: 10) {
-                self.localCard
-                ForEach(self.store.machines) { machine in
-                    self.remoteCard(machine)
-                }
-            }
-        }
-        .scrollIndicators(.hidden)
-    }
-
-    private var localCard: some View {
+    private var localMachineRow: some View {
         let isActive = self.store.activeTarget.isLocal
-        let hovered = self.hoveringLocalCard
 
         return Button {
             guard !isActive else { return }
             self.onSwitchTarget(.local)
             self.dismiss()
         } label: {
-            HStack(spacing: 14) {
-                self.iconTile(symbol: "desktopcomputer", tint: .blue)
+            HStack(spacing: RemoteMachineManagerTokens.rowContentSpacing) {
+                Image(systemName: "desktopcomputer")
+                    .font(.app(size: T.FontSize.subhead, weight: .semibold))
+                    .foregroundStyle(self.palette.accent)
+                    .frame(width: RemoteMachineManagerTokens.rowIconSize)
 
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: T.space4) {
                     Text(self.tr("ui.machine.local"))
-                        .font(.app(size: 14, weight: .semibold))
-                        .foregroundStyle(self.primaryTextColor)
+                        .font(.app(size: T.FontSize.subhead, weight: .semibold))
+                        .foregroundStyle(self.palette.primaryLabel)
+
                     Text(self.localControllerDisplay)
-                        .font(.system(size: 12, weight: .medium, design: .monospaced))
-                        .foregroundStyle(self.secondaryTextColor)
-                        .lineLimit(1)
+                        .font(.app(size: T.FontSize.caption, weight: .regular))
+                        .foregroundStyle(self.palette.secondaryLabel)
                 }
 
-                Spacer(minLength: 0)
+                Spacer()
 
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(isActive ? Color.green : self.tertiaryTextColor)
-                    .opacity(isActive ? 1 : 0)
-            }
-            .padding(self.cardPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(self.cardBackground(selected: isActive, hovered: hovered))
-            .contentShape(RoundedRectangle(cornerRadius: self.cardCornerRadius, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .disabled(isActive)
-        .onHover { self.hoveringLocalCard = $0 }
-    }
-
-    private func remoteCard(_ machine: RemoteMachine) -> some View {
-        let status = self.store.statusFor(machine.id)
-        let isActive = self.store.activeTargetID == machine.id
-        let hovered = self.hoveredMachineID == machine.id
-
-        return HStack(spacing: 10) {
-            Button {
-                guard !isActive else { return }
-                self.onSwitchTarget(.remote(machine))
-                self.dismiss()
-            } label: {
-                HStack(spacing: 14) {
-                    self.iconTile(symbol: "network", tint: self.statusTint(status, active: isActive))
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(machine.name)
-                            .font(.app(size: 14, weight: .semibold))
-                            .foregroundStyle(self.primaryTextColor)
-                            .lineLimit(1)
-
-                        HStack(spacing: 6) {
-                            self.statusDot(status)
-                            Text(machine.displayAddress)
-                                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                                .foregroundStyle(self.secondaryTextColor)
-                                .lineLimit(1)
-                        }
-                    }
-
-                    Spacer(minLength: 0)
+                if isActive {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(self.palette.positive)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(RoundedRectangle(cornerRadius: self.cardCornerRadius, style: .continuous))
             }
-            .buttonStyle(.plain)
-            .disabled(isActive)
-
-            if isActive {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .bold))
-                    .foregroundStyle(.green)
-                    .frame(width: self.trailingActionAreaWidth, alignment: .trailing)
-            } else {
-                self.inlineActionGroup(
-                    machineID: machine.id,
-                    emphasized: hovered,
-                    editAction: { self.editorMode = .edit(machine) },
-                    deleteAction: { self.store.removeMachine(id: machine.id) })
-                    .frame(width: self.trailingActionAreaWidth, alignment: .trailing)
-            }
-        }
-        .padding(self.cardPadding)
-        .background(self.cardBackground(selected: isActive, hovered: hovered))
-        .onHover { isHovering in
-            self.hoveredMachineID = isHovering ? machine.id : nil
-            if !isHovering, self.hoveredRowAction?.machineID == machine.id {
-                self.hoveredRowAction = nil
-            }
-        }
-        .contextMenu {
-            Button(self.tr("ui.machine.edit")) {
-                self.editorMode = .edit(machine)
-            }
-            Divider()
-            Button(self.tr("ui.action.delete"), role: .destructive) {
-                self.store.removeMachine(id: machine.id)
-            }
-        }
-    }
-
-    private func editorContent(for mode: EditorMode) -> some View {
-        RemoteMachineEditorCard(
-            store: self.store,
-            machine: mode.machine,
-            surfaceFill: self.cardFill,
-            borderColor: self.borderColor,
-            separatorColor: self.separatorColor,
-            secondaryTextColor: self.secondaryTextColor,
-            tertiaryTextColor: self.tertiaryTextColor,
-            onCancel: {
-                self.editorMode = nil
-            },
-            onSave: {
-                self.editorMode = nil
-            })
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private func primaryActionButton(title: String, systemImage: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Label(title, systemImage: systemImage)
-                .font(.app(size: 14, weight: .medium))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .contentShape(RoundedRectangle(cornerRadius: self.cardCornerRadius, style: .continuous))
+            .padding(RemoteMachineManagerTokens.rowPadding)
+            .background(
+                self.palette.rowFill(active: isActive, hovered: self.isHoveringLocalRow && !isActive),
+                in: .rect(cornerRadius: RemoteMachineManagerTokens.rowCornerRadius))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .foregroundStyle(Color.white)
-        .background(
-            RoundedRectangle(cornerRadius: self.cardCornerRadius, style: .continuous)
-                .fill(self.accentTint))
-        .overlay {
-            RoundedRectangle(cornerRadius: self.cardCornerRadius, style: .continuous)
-                .stroke(self.accentTint.opacity(0.65), lineWidth: MenuBarLayoutTokens.stroke)
-        }
-        .shadow(color: Color.black.opacity(self.isDarkAppearance ? 0.20 : 0.10), radius: 10, x: 0, y: 4)
-    }
-
-    private func iconTile(symbol: String, tint: Color) -> some View {
-        RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(tint.opacity(self.isDarkAppearance ? 0.16 : 0.10))
-            .frame(width: 44, height: 44)
-            .overlay {
-                Image(systemName: symbol)
-                    .font(.system(size: 22, weight: .medium))
-                    .foregroundStyle(tint)
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: RemoteMachineManagerTokens.switchAnimationDuration)) {
+                self.isHoveringLocalRow = hovering
             }
-    }
-
-    private func inlineActionButton(
-        machineID: UUID,
-        rowAction: RowAction,
-        emphasized: Bool,
-        action: @escaping () -> Void) -> some View
-    {
-        let hoveredAction = HoveredRowAction(machineID: machineID, action: rowAction)
-        let isHovered = self.hoveredRowAction == hoveredAction
-        let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
-        let tint = self.actionButtonTint(for: rowAction, hovered: isHovered, emphasized: emphasized)
-        let fill = self.actionButtonFill(for: rowAction, hovered: isHovered, emphasized: emphasized)
-        let border = self.actionButtonBorder(for: rowAction, hovered: isHovered, emphasized: emphasized)
-        let opacity = (emphasized || isHovered) ? 1.0 : 0.84
-
-        return Button(action: action) {
-            Image(systemName: rowAction.symbol)
-                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .semibold))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(tint)
-                .frame(width: 28, height: 28)
-                .background(shape.fill(fill))
-                .overlay {
-                    shape.stroke(border, lineWidth: MenuBarLayoutTokens.stroke)
-                }
-                .contentShape(shape)
-        }
-        .buttonStyle(.plain)
-        .opacity(opacity)
-        .accessibilityLabel(self.tr(rowAction.accessibilityKey))
-        .onHover { isHovering in
-            self
-                .hoveredRowAction = isHovering ? hoveredAction :
-                (self.hoveredRowAction == hoveredAction ? nil : self.hoveredRowAction)
-        }
-        .animation(.easeOut(duration: 0.12), value: isHovered)
-        .animation(.easeOut(duration: 0.12), value: emphasized)
-    }
-
-    private func inlineActionGroup(
-        machineID: UUID,
-        emphasized: Bool,
-        editAction: @escaping () -> Void,
-        deleteAction: @escaping () -> Void) -> some View
-    {
-        HStack(spacing: 6) {
-            self.inlineActionButton(machineID: machineID, rowAction: .edit, emphasized: emphasized, action: editAction)
-            self.inlineActionButton(
-                machineID: machineID,
-                rowAction: .delete,
-                emphasized: emphasized,
-                action: deleteAction)
-        }
-    }
-
-    private func actionButtonTint(for rowAction: RowAction, hovered: Bool, emphasized: Bool) -> Color {
-        if rowAction.isDestructive {
-            return hovered ? .red : .red.opacity(emphasized ? 0.92 : 0.70)
-        }
-
-        return hovered ? self.accentTint : self.tertiaryTextColor.opacity(emphasized ? 1 : 0.88)
-    }
-
-    private func actionButtonFill(for rowAction: RowAction, hovered: Bool, emphasized: Bool) -> Color {
-        if hovered {
-            if rowAction.isDestructive {
-                return Color.red.opacity(self.isDarkAppearance ? 0.18 : 0.10)
-            }
-            return self.accentTint.opacity(self.isDarkAppearance ? 0.18 : 0.09)
-        }
-
-        if emphasized {
-            return Color.black.opacity(self.isDarkAppearance ? 0.18 : 0.06)
-        }
-
-        return Color.black.opacity(self.isDarkAppearance ? 0.12 : 0.035)
-    }
-
-    private func actionButtonBorder(for rowAction: RowAction, hovered: Bool, emphasized: Bool) -> Color {
-        if hovered {
-            return rowAction.isDestructive
-                ? Color.red.opacity(self.isDarkAppearance ? 0.48 : 0.28)
-                : self.accentTint.opacity(self.isDarkAppearance ? 0.48 : 0.28)
-        }
-
-        return self.borderColor.opacity(emphasized ? 1 : (self.isDarkAppearance ? 0.94 : 0.78))
-    }
-
-    private func cardBackground(selected: Bool, hovered: Bool) -> some View {
-        RoundedRectangle(cornerRadius: self.cardCornerRadius, style: .continuous)
-            .fill(selected ? self.cardSelectedFill : (hovered ? self.cardHoverFill : self.cardFill))
-            .overlay {
-                RoundedRectangle(cornerRadius: self.cardCornerRadius, style: .continuous)
-                    .stroke(self.borderColor, lineWidth: MenuBarLayoutTokens.stroke)
-            }
-            .shadow(color: Color.black.opacity(self.isDarkAppearance ? 0.12 : 0.06), radius: 14, x: 0, y: 3)
-    }
-
-    private func statusDot(_ status: MachineConnectionStatus) -> some View {
-        Group {
-            if case .checking = status {
-                ProgressView()
-                    .controlSize(.mini)
-            } else {
-                Circle()
-                    .fill(self.statusTint(status, active: false))
-                    .frame(width: 6, height: 6)
-            }
-        }
-    }
-
-    private func statusTint(_ status: MachineConnectionStatus, active: Bool) -> Color {
-        switch status {
-        case .unknown:
-            self.tertiaryTextColor
-        case .checking:
-            .orange
-        case .connected:
-            active ? Color.green : Color(red: 0.10, green: 0.73, blue: 0.34)
-        case .failed:
-            .red
         }
     }
 }
 
-private struct RemoteMachineEditorCard: View {
-    private enum Field {
-        case name
-        case host
-        case port
-        case secret
+private struct RemoteMachineRowView: View {
+    let machine: RemoteMachine
+    @ObservedObject var store: RemoteMachineStore
+    let onEdit: () -> Void
+    let editAccessibilityLabel: String
+    let deleteAccessibilityLabel: String
+    let onSwitchTarget: (MachineTarget) -> Void
+    let dismiss: DismissAction
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    @State private var isHoveringRow = false
+    @State private var isHoveringEdit = false
+    @State private var isHoveringDelete = false
+
+    private var palette: RemoteMachineManagerPalette {
+        .init(colorScheme: self.colorScheme)
     }
 
+    var body: some View {
+        let status = self.store.statusFor(self.machine.id)
+        let isActive = self.store.activeTargetID == self.machine.id
+        let isSwitchEnabled = status.isConnected && !isActive
+
+        return HStack(spacing: T.space6) {
+            Button {
+                guard isSwitchEnabled else { return }
+                self.onSwitchTarget(.remote(self.machine))
+                self.dismiss()
+            } label: {
+                HStack(spacing: RemoteMachineManagerTokens.rowContentSpacing) {
+                    Image(systemName: "network")
+                        .font(.app(size: T.FontSize.subhead, weight: .semibold))
+                        .foregroundStyle(self.statusTint(status))
+                        .frame(width: RemoteMachineManagerTokens.rowIconSize)
+
+                    VStack(alignment: .leading, spacing: T.space4) {
+                        Text(self.machine.name)
+                            .font(.app(size: T.FontSize.subhead, weight: .semibold))
+                            .foregroundStyle(self.palette.primaryLabel)
+
+                        HStack(spacing: T.space4) {
+                            self.statusDot(status)
+
+                            Text(self.machine.displayAddress)
+                                .font(.app(size: T.FontSize.caption, weight: .regular))
+                                .foregroundStyle(self.palette.secondaryLabel)
+                        }
+                    }
+
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(!isSwitchEnabled)
+
+            HStack(spacing: T.space6) {
+                if isActive {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(self.palette.positive)
+                }
+
+                self.rowActionButton(
+                    symbol: "pencil",
+                    accessibilityLabel: self.editAccessibilityLabel,
+                    hovered: self.isHoveringEdit,
+                    destructive: false)
+                {
+                    self.onEdit()
+                }
+                .onHover { self.isHoveringEdit = $0 }
+
+                self.rowActionButton(
+                    symbol: "trash",
+                    accessibilityLabel: self.deleteAccessibilityLabel,
+                    hovered: self.isHoveringDelete,
+                    destructive: true)
+                {
+                    self.store.removeMachine(id: self.machine.id)
+                }
+                .onHover { self.isHoveringDelete = $0 }
+            }
+        }
+        .padding(RemoteMachineManagerTokens.rowPadding)
+        .background(
+            self.palette.rowFill(active: isActive, hovered: self.isHoveringRow && !isActive),
+            in: .rect(cornerRadius: RemoteMachineManagerTokens.rowCornerRadius))
+        .contentShape(Rectangle())
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: RemoteMachineManagerTokens.switchAnimationDuration)) {
+                self.isHoveringRow = hovering
+            }
+        }
+    }
+
+    private func rowActionButton(
+        symbol: String,
+        accessibilityLabel: String,
+        hovered: Bool,
+        destructive: Bool,
+        action: @escaping () -> Void) -> some View
+    {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .frame(
+                    width: RemoteMachineManagerTokens.rowActionSize,
+                    height: RemoteMachineManagerTokens.rowActionSize)
+                .background(
+                    self.palette.actionBackground(hovered: hovered, destructive: destructive),
+                    in: .rect(cornerRadius: T.cornerRadius))
+        }
+        .buttonStyle(.borderless)
+        .foregroundStyle(self.palette.actionForeground(hovered: hovered, destructive: destructive))
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    @ViewBuilder
+    private func statusDot(_ status: MachineConnectionStatus) -> some View {
+        if case .checking = status {
+            ProgressView()
+                .controlSize(.mini)
+        } else {
+            Circle()
+                .fill(self.statusTint(status))
+                .frame(width: T.space6, height: T.space6)
+        }
+    }
+
+    private func statusTint(_ status: MachineConnectionStatus) -> Color {
+        switch status {
+        case .unknown:
+            self.palette.secondaryLabel
+        case .checking:
+            self.palette.warning
+        case .connected:
+            self.palette.positive
+        case .failed:
+            self.palette.critical
+        }
+    }
+}
+
+private struct RemoteMachineEditorView: View {
     @ObservedObject var store: RemoteMachineStore
-    let machine: RemoteMachine?
-    let surfaceFill: Color
-    let borderColor: Color
-    let separatorColor: Color
-    let secondaryTextColor: Color
-    let tertiaryTextColor: Color
-    let onCancel: () -> Void
-    let onSave: () -> Void
+    let mode: EditorMode
+    let language: AppLanguage
+    let onComplete: () -> Void
+
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var name: String = ""
     @State private var host: String = ""
     @State private var port: String = "9090"
     @State private var secret: String = ""
     @State private var useHTTPS = false
-    @FocusState private var focusedField: Field?
 
-    private var language: AppLanguage {
-        AppLanguage(rawValue: UserDefaults.standard.string(forKey: "clashbar.ui.language") ?? "") ?? .zhHans
+    @FocusState private var isNameFocused: Bool
+
+    private var palette: RemoteMachineManagerPalette {
+        .init(colorScheme: self.colorScheme)
     }
 
     private func tr(_ key: String) -> String {
         L10n.t(key, language: self.language)
     }
 
-    private var isValid: Bool {
+    private var isFormValid: Bool {
         !self.name.trimmingCharacters(in: .whitespaces).isEmpty &&
             !self.host.trimmingCharacters(in: .whitespaces).isEmpty &&
-            (Int(self.port) ?? 0) > 0 &&
-            (Int(self.port) ?? 0) <= 65535
-    }
-
-    private var connectionPreview: String {
-        let resolvedHost = self.host.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            ? "controller.example.com"
-            : self.host.trimmingCharacters(in: .whitespacesAndNewlines)
-        let resolvedPort = self.port.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            ? "9090"
-            : self.port.trimmingCharacters(in: .whitespacesAndNewlines)
-        let scheme = self.useHTTPS ? "https" : "http"
-        return "\(scheme)://\(resolvedHost):\(resolvedPort)"
+            (Int(self.port) ?? 0) > 0 && (Int(self.port) ?? 0) <= 65535
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: RemoteMachineManagerTokens.editorSpacing) {
+            VStack(alignment: .leading, spacing: T.space4) {
                 Text(self.name.trimmingCharacters(in: .whitespaces).isEmpty ? self.tr("ui.machine.field.name") : self
                     .name)
-                    .font(.app(size: 14, weight: .semibold))
-                    .foregroundStyle(.primary)
+                    .font(.app(size: T.FontSize.subhead, weight: .semibold))
+                    .foregroundStyle(self.palette.primaryLabel)
 
                 Text(self.connectionPreview)
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
-                    .foregroundStyle(self.secondaryTextColor)
-                    .lineLimit(1)
+                    .font(.app(size: T.FontSize.caption, weight: .regular))
+                    .foregroundStyle(self.palette.secondaryLabel)
+            }
+            .padding(.bottom, T.space8)
+
+            VStack(alignment: .leading, spacing: RemoteMachineManagerTokens.formSpacing) {
+                self.nameField
+
+                HStack(spacing: RemoteMachineManagerTokens.formSpacing) {
+                    self.inputField(title: self.tr("ui.machine.field.host"), text: self.$host, isSecure: false)
+
+                    self.inputField(title: self.tr("ui.machine.field.port"), text: self.$port, isSecure: false)
+                        .frame(maxWidth: RemoteMachineManagerTokens.portFieldWidth)
+                }
+
+                self.inputField(title: self.tr("ui.machine.field.secret"), text: self.$secret, isSecure: true)
+
+                HStack {
+                    Text("HTTPS")
+                        .font(.app(size: T.FontSize.body, weight: .medium))
+                        .foregroundStyle(self.palette.secondaryLabel)
+
+                    Spacer()
+
+                    Toggle("", isOn: self.$useHTTPS)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .controlSize(.regular)
+                }
             }
 
-            VStack(spacing: 0) {
-                self.formTextRow(
-                    title: self.tr("ui.machine.field.name"),
-                    placeholder: self.tr("ui.machine.field.name"),
-                    text: self.$name,
-                    field: .name)
-                self.separator
-                self.formTextRow(
-                    title: self.tr("ui.machine.field.host"),
-                    placeholder: self.tr("ui.machine.field.host"),
-                    text: self.$host,
-                    field: .host)
-                self.separator
-                self.portProtocolRow
-                self.separator
-                self.secretRow
-            }
-            .background(self.formSurface)
+            Spacer()
 
-            Spacer(minLength: 0)
-
-            HStack(spacing: 10) {
-                self.secondaryActionButton(title: self.tr("ui.action.cancel"), action: self.onCancel)
-                self.primaryActionButton(title: self.tr("ui.machine.save"), action: self.save)
-                    .disabled(!self.isValid)
+            Button(action: self.save) {
+                Text(self.tr("ui.machine.save"))
+                    .font(.app(size: T.FontSize.subhead, weight: .medium))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, T.space8)
             }
+            .appBorderedButtonStyle(prominent: true)
+            .controlSize(.large)
+            .disabled(!self.isFormValid)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, RemoteMachineManagerTokens.contentPadding)
+        .padding(.bottom, RemoteMachineManagerTokens.contentPadding)
         .onAppear {
-            if let machine {
+            if let machine = self.mode.machine {
                 self.name = machine.name
                 self.host = machine.host
                 self.port = "\(machine.port)"
                 self.secret = machine.secret ?? ""
                 self.useHTTPS = machine.useHTTPS
             } else {
-                self.focusedField = .name
+                self.isNameFocused = true
             }
         }
     }
 
-    private func formTextRow(
-        title: String,
-        placeholder: String,
-        text: Binding<String>,
-        field: Field) -> some View
-    {
-        HStack(spacing: 10) {
+    private var nameField: some View {
+        VStack(alignment: .leading, spacing: RemoteMachineManagerTokens.fieldSpacing) {
+            Text(self.tr("ui.machine.field.name"))
+                .font(.app(size: T.FontSize.body, weight: .medium))
+                .foregroundStyle(self.palette.secondaryLabel)
+
+            TextField("", text: self.$name)
+                .textFieldStyle(.roundedBorder)
+                .controlSize(.large)
+                .font(.app(size: T.FontSize.subhead, weight: .regular))
+                .focused(self.$isNameFocused)
+        }
+    }
+
+    private func inputField(title: String, text: Binding<String>, isSecure: Bool) -> some View {
+        VStack(alignment: .leading, spacing: RemoteMachineManagerTokens.fieldSpacing) {
             Text(title)
-                .font(.app(size: 12, weight: .semibold))
-                .foregroundStyle(self.secondaryTextColor)
-                .frame(width: 56, alignment: .leading)
+                .font(.app(size: T.FontSize.body, weight: .medium))
+                .foregroundStyle(self.palette.secondaryLabel)
 
-            TextField(placeholder, text: text)
-                .textFieldStyle(.roundedBorder)
-                .font(.app(size: 13, weight: .regular))
-                .focused(self.$focusedField, equals: field)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-    }
-
-    private var portProtocolRow: some View {
-        HStack(spacing: 10) {
-            Text(self.tr("ui.machine.field.port"))
-                .font(.app(size: 12, weight: .semibold))
-                .foregroundStyle(self.secondaryTextColor)
-                .frame(width: 56, alignment: .leading)
-
-            TextField(self.tr("ui.machine.field.port"), text: self.$port)
-                .textFieldStyle(.roundedBorder)
-                .font(.app(size: 13, weight: .regular))
-                .frame(width: 92)
-                .focused(self.$focusedField, equals: .port)
-
-            Spacer(minLength: 0)
-
-            Toggle("HTTPS", isOn: self.$useHTTPS)
-                .toggleStyle(.switch)
-                .controlSize(.small)
-                .font(.app(size: 12, weight: .medium))
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-    }
-
-    private var secretRow: some View {
-        HStack(spacing: 10) {
-            Text(self.tr("ui.machine.field.secret"))
-                .font(.app(size: 12, weight: .semibold))
-                .foregroundStyle(self.secondaryTextColor)
-                .frame(width: 56, alignment: .leading)
-
-            SecureField(self.tr("ui.machine.field.secret"), text: self.$secret)
-                .textFieldStyle(.roundedBorder)
-                .font(.app(size: 13, weight: .regular))
-                .focused(self.$focusedField, equals: .secret)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-    }
-
-    private var separator: some View {
-        Rectangle()
-            .fill(self.separatorColor)
-            .frame(height: MenuBarLayoutTokens.stroke)
-    }
-
-    private var formSurface: some View {
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(self.surfaceFill)
-            .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(self.borderColor, lineWidth: MenuBarLayoutTokens.stroke)
+            Group {
+                if isSecure {
+                    SecureField("", text: text)
+                } else {
+                    TextField("", text: text)
+                }
             }
-            .shadow(color: Color.black.opacity(0.05), radius: 14, x: 0, y: 3)
-    }
-
-    private func secondaryActionButton(title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.app(size: 14, weight: .medium))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(.primary)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(self.surfaceFill))
-        .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(self.borderColor, lineWidth: MenuBarLayoutTokens.stroke)
+            .textFieldStyle(.roundedBorder)
+            .controlSize(.large)
+            .font(.app(size: T.FontSize.subhead, weight: .regular))
         }
     }
 
-    private func primaryActionButton(title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.app(size: 14, weight: .medium))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(Color.white)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(nsColor: .controlAccentColor)))
-        .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color(nsColor: .controlAccentColor).opacity(0.65), lineWidth: MenuBarLayoutTokens.stroke)
-        }
+    private var connectionPreview: String {
+        let resolvedHost = self.host.trimmingCharacters(in: .whitespaces).isEmpty ? "controller.example.com" : self.host
+        let resolvedPort = self.port.trimmingCharacters(in: .whitespaces).isEmpty ? "9090" : self.port
+        let scheme = self.useHTTPS ? "https" : "http"
+        return L10n.t("ui.machine.preview", language: self.language, scheme, resolvedHost, resolvedPort)
     }
 
     private func save() {
@@ -772,24 +561,20 @@ private struct RemoteMachineEditorCard: View {
         let portValue = Int(self.port) ?? 9090
         let trimmedSecret = self.secret.trimmingCharacters(in: .whitespaces)
 
-        if let existing = self.machine {
-            var updated = existing
-            updated.name = trimmedName
-            updated.host = trimmedHost
-            updated.port = portValue
-            updated.secret = trimmedSecret.isEmpty ? nil : trimmedSecret
-            updated.useHTTPS = self.useHTTPS
-            self.store.updateMachine(updated)
+        let machine = RemoteMachine(
+            id: self.mode.machine?.id ?? UUID(),
+            name: trimmedName,
+            host: trimmedHost,
+            port: portValue,
+            secret: trimmedSecret.isEmpty ? nil : trimmedSecret,
+            useHTTPS: self.useHTTPS)
+
+        if self.mode.machine != nil {
+            self.store.updateMachine(machine)
         } else {
-            self.store.addMachine(
-                RemoteMachine(
-                    name: trimmedName,
-                    host: trimmedHost,
-                    port: portValue,
-                    secret: trimmedSecret.isEmpty ? nil : trimmedSecret,
-                    useHTTPS: self.useHTTPS))
+            self.store.addMachine(machine)
         }
 
-        self.onSave()
+        self.onComplete()
     }
 }

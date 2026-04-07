@@ -3,6 +3,11 @@ import Foundation
 @MainActor
 extension AppSession {
     func switchToMachineTarget(_ target: MachineTarget) async {
+        if case let .remote(machine) = target {
+            let status = await self.remoteMachineStore.refreshConnectivity(for: machine)
+            guard status.isConnected else { return }
+        }
+
         self.remoteMachineStore.selectTarget(target)
 
         self.cancelPolling()
@@ -46,7 +51,6 @@ extension AppSession {
             self.ensureAPIClient()
             self.lastSyncedEditableSettings = nil
             self.preserveLocalSettingsOnNextSync = false
-            self.remoteMachineStore.checkConnectivity(for: machine)
         }
 
         await self.refreshFromAPI(includeSlowCalls: true)
@@ -57,6 +61,19 @@ extension AppSession {
 
         if case .local = target {
             await self.applyPendingAppLaunchSettingsOverlayIfNeeded(syncSystemProxyPort: false)
+        }
+
+        // Sync statusText so isRuntimeRunning reflects the active target.
+        // Remote targets have no local process, so coreRepository.isRunning is
+        // always false; statusText is the only signal menuBarSpeedLines uses.
+        switch target {
+        case .remote:
+            self.statusText = (self.apiStatus == .healthy || self.apiStatus == .degraded)
+                ? "Running" : "Stopped"
+        case .local:
+            if !self.coreRepository.isRunning {
+                self.statusText = "Stopped"
+            }
         }
 
         if self.apiStatus == .healthy || self.apiStatus == .degraded {

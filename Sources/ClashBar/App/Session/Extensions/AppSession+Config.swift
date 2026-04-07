@@ -148,7 +148,7 @@ extension AppSession {
             let data = try Data(contentsOf: sourceURL)
             try writeConfigData(data, to: targetURL)
 
-            self.updateRemoteConfigSource(for: fileName, urlString: nil)
+            self.removeRemoteConfigSubscription(for: fileName)
             appendLog(level: "info", message: tr("log.config.import_local.success", fileName))
 
             if isOverwrite, self.shouldAutoReloadCurrentConfig(updatedFileNames: [fileName]) {
@@ -182,10 +182,16 @@ extension AppSession {
         }
 
         let targetURL = configDirectory.appendingPathComponent(fileName, isDirectory: false)
-        let isOverwrite = FileManager.default.fileExists(atPath: targetURL.path)
-        guard !isOverwrite || self.confirmOverwriteConfig(named: fileName) else {
-            appendLog(level: "info", message: tr("log.config.import.cancelled", fileName))
-            return
+        let existsAlready = FileManager.default.fileExists(atPath: targetURL.path)
+        let existingIsRemote = self.remoteConfigSubscriptions[fileName] != nil
+
+        // Skip overwrite confirmation if the file is already a remote subscription;
+        // show it only when overwriting a local config file.
+        if existsAlready, !existingIsRemote {
+            guard self.confirmOverwriteConfig(named: fileName) else {
+                appendLog(level: "info", message: tr("log.config.import.cancelled", fileName))
+                return
+            }
         }
 
         do {
@@ -193,11 +199,16 @@ extension AppSession {
             let data = try await downloadRemoteConfigData(from: remoteURL, userAgent: userAgent)
             try writeConfigData(data, to: targetURL)
 
-            self.updateRemoteConfigSource(for: fileName, urlString: remoteURL.absoluteString)
+            let subscription = RemoteConfigSubscription(
+                urlString: remoteURL.absoluteString,
+                autoUpdateEnabled: input.autoUpdateEnabled,
+                autoUpdateIntervalHours: input.autoUpdateIntervalHours,
+                lastUpdateCheckAt: Date())
+            self.upsertRemoteConfigSubscription(for: fileName, subscription: subscription)
             let message = tr("log.config.import_remote.success", fileName)
             appendLog(level: "info", message: message)
 
-            if isOverwrite, self.shouldAutoReloadCurrentConfig(updatedFileNames: [fileName]) {
+            if existsAlready, self.shouldAutoReloadCurrentConfig(updatedFileNames: [fileName]) {
                 await self.reloadConfig()
             }
 
@@ -211,10 +222,10 @@ extension AppSession {
 
     func updateAllRemoteConfigFiles() async {
         guard let configDirectory = ensureConfigDirectoryAvailable() else { return }
-        pruneRemoteConfigSourcesIfNeeded()
+        pruneRemoteConfigSubscriptionsIfNeeded()
 
-        let sources = remoteConfigSources
-        guard !sources.isEmpty else {
+        let subscriptions = remoteConfigSubscriptions
+        guard !subscriptions.isEmpty else {
             appendLog(level: "info", message: tr("log.config.remote.no_sources"))
             return
         }
@@ -223,9 +234,9 @@ extension AppSession {
         var updatedFileNames: Set<String> = []
         var failedCount = 0
 
-        for fileName in sources.keys.sorted() {
-            guard let urlString = sources[fileName],
-                  let remoteURL = URL(string: urlString),
+        for fileName in subscriptions.keys.sorted() {
+            guard let sub = subscriptions[fileName],
+                  let remoteURL = URL(string: sub.urlString),
                   isSupportedRemoteConfigURL(remoteURL)
             else {
                 failedCount += 1
@@ -234,16 +245,33 @@ extension AppSession {
                     message: tr(
                         "log.config.remote.update_item_failed",
                         fileName,
-                        tr("log.config.remote.invalid_url", sources[fileName] ?? fileName)))
+                        tr("log.config.remote.invalid_url", subscriptions[fileName]?.urlString ?? fileName)))
                 continue
             }
 
             let targetURL = configDirectory.appendingPathComponent(fileName, isDirectory: false)
+            let checkAt = Date()
             do {
                 let data = try await downloadRemoteConfigData(from: remoteURL, userAgent: userAgent)
-                try writeConfigData(data, to: targetURL)
+                guard let refreshedSubscription = self.checkedRemoteConfigSubscription(
+                    for: fileName,
+                    baseline: sub,
+                    at: checkAt)
+                else {
+                    continue
+                }
+                try self.writeConfigData(data, to: targetURL)
+                self.remoteConfigSubscriptions[fileName] = refreshedSubscription
                 updatedFileNames.insert(fileName)
             } catch {
+                guard let refreshedSubscription = self.checkedRemoteConfigSubscription(
+                    for: fileName,
+                    baseline: sub,
+                    at: checkAt)
+                else {
+                    continue
+                }
+                self.remoteConfigSubscriptions[fileName] = refreshedSubscription
                 failedCount += 1
                 appendLog(
                     level: "error",
@@ -251,12 +279,68 @@ extension AppSession {
             }
         }
 
+        self.persistRemoteConfigSubscriptions()
         self.refreshConfigStateAfterMutation()
         appendLog(level: "info", message: tr("log.config.remote.update_summary", updatedFileNames.count, failedCount))
 
         if self.shouldAutoReloadCurrentConfig(updatedFileNames: updatedFileNames) {
             await self.reloadConfig()
         }
+    }
+
+    func deleteConfigFile(named fileName: String) async {
+        guard self.confirmDeleteConfig(named: fileName) else { return }
+        guard let configDirectory = ensureConfigDirectoryAvailable() else { return }
+
+        let targetURL = configDirectory.appendingPathComponent(fileName, isDirectory: false)
+        let isDeletingSelected = fileName == selectedConfigName
+        let isCurrentlyRunning = isRuntimeRunning
+
+        do {
+            try FileManager.default.removeItem(at: targetURL)
+        } catch {
+            appendLog(level: "error", message: tr("log.config.delete.failed", fileName, error.localizedDescription))
+            return
+        }
+
+        self.removeRemoteConfigSubscription(for: fileName)
+        _ = configRepository.reloadConfigs()
+        syncConfigDisplayState()
+
+        appendLog(level: "info", message: tr("log.config.delete.success", fileName))
+
+        guard isDeletingSelected else { return }
+
+        if let nextConfig = configRepository.availableConfigs.first {
+            configRepository.selectConfig(nextConfig)
+            let nextName = nextConfig.lastPathComponent
+            selectedConfigName = nextName
+            defaults.set(nextName, forKey: selectedConfigKey)
+            appendLog(level: "info", message: tr("log.config.selected", nextName))
+            if isCurrentlyRunning {
+                await restartCoreIfNeededForConfigSwitch(
+                    previousPath: targetURL.path,
+                    nextPath: nextConfig.path)
+            }
+        } else {
+            selectedConfigName = "-"
+            defaults.removeObject(forKey: selectedConfigKey)
+            if isCurrentlyRunning {
+                await stopCore(trigger: .manual)
+            }
+        }
+    }
+
+    private func confirmDeleteConfig(named fileName: String) -> Bool {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = tr("app.config.delete.title", fileName)
+        alert.informativeText = tr("app.config.delete.message")
+        alert.addButton(withTitle: tr("ui.action.delete"))
+        alert.addButton(withTitle: tr("ui.action.cancel"))
+        self.prepareModalWindowPresentation()
+        self.configureModalWindow(alert.window)
+        return alert.runModal() == .alertFirstButtonReturn
     }
 
     func showSelectedConfigInFinder() {
@@ -291,6 +375,92 @@ extension AppSession {
         guard self.ensureConfigDirectoryAvailable() != nil else { return }
         self.refreshConfigStateAfterMutation()
         appendLog(level: "info", message: tr("log.config.loaded_count", configRepository.availableConfigs.count))
+    }
+
+    func refreshRemoteConfigMenuStates() {
+        let subscriptions = self.remoteConfigSubscriptions
+        guard !subscriptions.isEmpty else {
+            self.remoteConfigMenuStates = [:]
+            return
+        }
+
+        var nextStates: [String: RemoteConfigMenuState] = [:]
+        nextStates.reserveCapacity(subscriptions.count)
+
+        for (fileName, sub) in subscriptions {
+            let updatedAt = self.remoteConfigUpdatedAt(for: fileName)
+            nextStates[fileName] = self.mergedRemoteConfigMenuState(
+                for: fileName,
+                updatedAt: updatedAt,
+                subscription: sub)
+        }
+
+        self.remoteConfigMenuStates = nextStates
+    }
+
+    func remoteConfigMenuState(for fileName: String) -> RemoteConfigMenuState {
+        self.remoteConfigMenuStates[fileName] ?? .idle
+    }
+
+    func refreshRemoteConfigFile(named fileName: String) async {
+        guard self.remoteConfigMenuState(for: fileName).phase != .refreshing else { return }
+        guard let configDirectory = self.ensureConfigDirectoryAvailable() else { return }
+
+        self.pruneRemoteConfigSubscriptionsIfNeeded()
+        self.setRemoteConfigMenuState(for: fileName, phase: .refreshing)
+
+        guard let sub = self.remoteConfigSubscriptions[fileName],
+              let remoteURL = URL(string: sub.urlString),
+              isSupportedRemoteConfigURL(remoteURL)
+        else {
+            let stored = self.remoteConfigSubscriptions[fileName]?.urlString ?? fileName
+            let reason = tr("log.config.remote.invalid_url", stored)
+            self.appendLog(level: "error", message: tr("log.config.remote.update_item_failed", fileName, reason))
+            self.setRemoteConfigMenuState(for: fileName, phase: .failed)
+            return
+        }
+
+        let checkAt = Date()
+        do {
+            let userAgent = await self.remoteSubscriptionUserAgent()
+            let data = try await self.downloadRemoteConfigData(from: remoteURL, userAgent: userAgent)
+            guard let refreshedSubscription = self.checkedRemoteConfigSubscription(
+                for: fileName,
+                baseline: sub,
+                at: checkAt)
+            else {
+                return
+            }
+            let targetURL = configDirectory.appendingPathComponent(fileName, isDirectory: false)
+            try self.writeConfigData(data, to: targetURL)
+
+            self.remoteConfigSubscriptions[fileName] = refreshedSubscription
+            self.persistRemoteConfigSubscriptions()
+            self.refreshConfigStateAfterMutation()
+
+            if self.shouldAutoReloadCurrentConfig(updatedFileNames: [fileName]) {
+                await self.reloadConfig()
+            }
+
+            self.setRemoteConfigMenuState(
+                for: fileName,
+                phase: .idle,
+                updatedAt: self.remoteConfigUpdatedAt(for: fileName) ?? Date())
+        } catch {
+            guard let refreshedSubscription = self.checkedRemoteConfigSubscription(
+                for: fileName,
+                baseline: sub,
+                at: checkAt)
+            else {
+                return
+            }
+            self.remoteConfigSubscriptions[fileName] = refreshedSubscription
+            self.persistRemoteConfigSubscriptions()
+            self.appendLog(
+                level: "error",
+                message: tr("log.config.remote.update_item_failed", fileName, error.localizedDescription))
+            self.setRemoteConfigMenuState(for: fileName, phase: .failed)
+        }
     }
 
     func reloadConfig() async {
@@ -346,6 +516,7 @@ extension AppSession {
     private func shouldAutoReloadCurrentConfig(updatedFileNames: Set<String>) -> Bool {
         guard !updatedFileNames.isEmpty else { return false }
         guard isRuntimeRunning else { return false }
+        guard !isRemoteTarget else { return false }
         return updatedFileNames.contains(selectedConfigName)
     }
 
@@ -381,6 +552,8 @@ extension AppSession {
     private struct RemoteConfigImportInput {
         let urlString: String
         let fileName: String
+        let autoUpdateEnabled: Bool
+        let autoUpdateIntervalHours: Int
     }
 
     private func promptRemoteConfigImportInput() -> RemoteConfigImportInput? {
@@ -392,34 +565,73 @@ extension AppSession {
         alert.addButton(withTitle: tr("ui.action.cancel"))
 
         // Use fixed frames in accessory view to avoid NSAlert auto-layout overlap in compact windows.
-        let container = NSView(frame: NSRect(x: 0, y: 0, width: 340, height: 96))
+        let container = NSView(frame: NSRect(x: 0, y: 0, width: 340, height: 142))
 
         let urlLabel = NSTextField(labelWithString: tr("ui.quick.remote.url_label"))
         urlLabel.font = .systemFont(ofSize: 12, weight: .medium)
-        urlLabel.frame = NSRect(x: 0, y: 76, width: 340, height: 16)
+        urlLabel.frame = NSRect(x: 0, y: 124, width: 340, height: 16)
 
-        let urlField = NSTextField(frame: NSRect(x: 0, y: 50, width: 340, height: 24))
+        let urlField = NSTextField(frame: NSRect(x: 0, y: 98, width: 340, height: 24))
         urlField.placeholderString = tr("ui.quick.remote.url_placeholder")
 
         let fileLabel = NSTextField(labelWithString: tr("ui.quick.remote.filename_label"))
         fileLabel.font = .systemFont(ofSize: 12, weight: .medium)
-        fileLabel.frame = NSRect(x: 0, y: 30, width: 340, height: 16)
+        fileLabel.frame = NSRect(x: 0, y: 76, width: 340, height: 16)
 
-        let fileField = NSTextField(frame: NSRect(x: 0, y: 4, width: 340, height: 24))
+        let fileField = NSTextField(frame: NSRect(x: 0, y: 50, width: 340, height: 24))
         fileField.placeholderString = tr("ui.quick.remote.filename_placeholder")
+
+        // Visual separator between file info and auto-update settings
+        let separator = NSBox(frame: NSRect(x: 0, y: 38, width: 340, height: 1))
+        separator.boxType = .separator
+
+        // Auto-update row: checkbox on the left, interval controls on the right
+        let autoUpdateCheckbox = NSButton(
+            checkboxWithTitle: tr("ui.quick.remote.auto_update_label"),
+            target: nil,
+            action: nil)
+        autoUpdateCheckbox.frame = NSRect(x: 0, y: 8, width: 140, height: 22)
+        autoUpdateCheckbox.state = .on
+
+        let intervalUnit = NSTextField(labelWithString: tr("ui.quick.remote.interval_unit"))
+        intervalUnit.font = .systemFont(ofSize: 12, weight: .regular)
+        intervalUnit.textColor = .secondaryLabelColor
+        intervalUnit.frame = NSRect(x: 306, y: 12, width: 34, height: 16)
+
+        let intervalField = NSTextField(frame: NSRect(x: 252, y: 8, width: 50, height: 22))
+        intervalField.stringValue = "\(RemoteConfigSubscription.defaultAutoUpdateIntervalHours)"
+        intervalField.alignment = .center
+
+        let eachLabel = NSTextField(labelWithString: tr("ui.quick.remote.interval_each"))
+        eachLabel.font = .systemFont(ofSize: 12, weight: .regular)
+        eachLabel.textColor = .secondaryLabelColor
+        eachLabel.frame = NSRect(x: 220, y: 12, width: 28, height: 16)
 
         container.addSubview(urlLabel)
         container.addSubview(urlField)
         container.addSubview(fileLabel)
         container.addSubview(fileField)
+        container.addSubview(separator)
+        container.addSubview(autoUpdateCheckbox)
+        container.addSubview(eachLabel)
+        container.addSubview(intervalField)
+        container.addSubview(intervalUnit)
         alert.accessoryView = container
 
         self.prepareModalWindowPresentation()
         self.configureModalWindow(alert.window)
         guard alert.runModal() == .alertFirstButtonReturn else { return nil }
+
+        let autoUpdate = autoUpdateCheckbox.state == .on
+        let intervalHours = max(
+            RemoteConfigSubscription.minimumAutoUpdateIntervalHours,
+            Int(intervalField.stringValue) ?? RemoteConfigSubscription.defaultAutoUpdateIntervalHours)
+
         return RemoteConfigImportInput(
             urlString: urlField.stringValue,
-            fileName: fileField.stringValue)
+            fileName: fileField.stringValue,
+            autoUpdateEnabled: autoUpdate,
+            autoUpdateIntervalHours: intervalHours)
     }
 
     func prepareModalWindowPresentation() {
@@ -488,13 +700,71 @@ extension AppSession {
         }
     }
 
-    private func updateRemoteConfigSource(for fileName: String, urlString: String?) {
-        if let urlString {
-            remoteConfigSources[fileName] = urlString
-        } else {
-            remoteConfigSources.removeValue(forKey: fileName)
-        }
-        persistRemoteConfigSources()
+    private func upsertRemoteConfigSubscription(for fileName: String, subscription: RemoteConfigSubscription) {
+        remoteConfigSubscriptions[fileName] = subscription
+        persistRemoteConfigSubscriptions()
+        restartRemoteConfigBackgroundTasksIfNeeded()
         self.refreshConfigStateAfterMutation()
+    }
+
+    private func removeRemoteConfigSubscription(for fileName: String) {
+        guard remoteConfigSubscriptions[fileName] != nil else { return }
+        remoteConfigSubscriptions.removeValue(forKey: fileName)
+        persistRemoteConfigSubscriptions()
+        restartRemoteConfigBackgroundTasksIfNeeded()
+        self.refreshConfigStateAfterMutation()
+    }
+
+    private func checkedRemoteConfigSubscription(
+        for fileName: String,
+        baseline: RemoteConfigSubscription,
+        at checkAt: Date) -> RemoteConfigSubscription?
+    {
+        guard self.remoteConfigSubscriptions[fileName] == baseline else { return nil }
+        return baseline.markChecked(at: checkAt)
+    }
+
+    private func remoteConfigUpdatedAt(for fileName: String) -> Date? {
+        guard let configURL = self.configRepository.availableConfigs.first(where: { $0.lastPathComponent == fileName })
+        else {
+            return nil
+        }
+        return try? configURL.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
+    }
+
+    private func mergedRemoteConfigMenuState(
+        for fileName: String,
+        updatedAt: Date?,
+        subscription: RemoteConfigSubscription) -> RemoteConfigMenuState
+    {
+        let current = self.remoteConfigMenuStates[fileName] ?? .idle
+        let phase: RemoteConfigRefreshPhase = switch current.phase {
+        case .refreshing:
+            .refreshing
+        case .failed:
+            current.updatedAt == updatedAt ? .failed : .idle
+        case .idle:
+            .idle
+        }
+        return RemoteConfigMenuState(
+            updatedAt: updatedAt,
+            phase: phase,
+            autoUpdateEnabled: subscription.autoUpdateEnabled,
+            nextUpdateAt: subscription.nextUpdateAt())
+    }
+
+    private func setRemoteConfigMenuState(
+        for fileName: String,
+        phase: RemoteConfigRefreshPhase,
+        updatedAt: Date? = nil)
+    {
+        let existing = self.remoteConfigMenuStates[fileName]
+        let sub = self.remoteConfigSubscriptions[fileName]
+        let resolvedUpdatedAt = updatedAt ?? existing?.updatedAt
+        self.remoteConfigMenuStates[fileName] = RemoteConfigMenuState(
+            updatedAt: resolvedUpdatedAt,
+            phase: phase,
+            autoUpdateEnabled: sub?.autoUpdateEnabled ?? false,
+            nextUpdateAt: sub?.nextUpdateAt())
     }
 }

@@ -148,12 +148,18 @@ struct AttachedPopoverMenu<Label: View, Content: View>: View {
 }
 
 struct AttachedPopoverMenuItem: View {
+    enum SelectionIndicatorPlacement {
+        case leading
+        case trailing
+    }
+
     let title: String
     var subtitle: String?
     var leadingSymbol: String?
     var leadingTint: Color = .secondary
     var showLeadingDot: Bool = false
     var selected: Bool = false
+    var selectionIndicatorPlacement: SelectionIndicatorPlacement = .leading
     var destructive: Bool = false
     let action: () -> Void
     @State private var isHovered = false
@@ -173,11 +179,14 @@ struct AttachedPopoverMenuItem: View {
                         .font(.app(size: T.FontSize.caption, weight: .semibold))
                         .foregroundStyle(self.leadingTint)
                         .frame(width: 12, alignment: .center)
-                } else {
+                } else if self.selectionIndicatorPlacement == .leading {
                     Image(systemName: "checkmark")
                         .font(.app(size: T.FontSize.caption, weight: .semibold))
                         .opacity(self.selected ? 1 : 0)
                         .frame(width: 12, alignment: .center)
+                } else {
+                    Color.clear
+                        .frame(width: 12, height: 12)
                 }
                 VStack(alignment: .leading, spacing: 1) {
                     Text(self.title)
@@ -194,6 +203,12 @@ struct AttachedPopoverMenuItem: View {
                     }
                 }
                 Spacer(minLength: 0)
+                if self.selected, self.selectionIndicatorPlacement == .trailing {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.app(size: T.FontSize.caption, weight: .semibold))
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(self.trailingSelectionForeground)
+                }
             }
             .foregroundStyle(self.itemForeground)
             .padding(.horizontal, T.space6)
@@ -216,6 +231,13 @@ struct AttachedPopoverMenuItem: View {
 
     private var itemBackground: Color {
         self.isHovered ? Color(nsColor: .selectedContentBackgroundColor) : .clear
+    }
+
+    private var trailingSelectionForeground: Color {
+        if self.isHovered {
+            return Color(nsColor: .selectedMenuItemTextColor)
+        }
+        return Color(nsColor: .controlAccentColor)
     }
 }
 

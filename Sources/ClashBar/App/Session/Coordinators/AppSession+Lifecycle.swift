@@ -234,6 +234,8 @@ extension AppSession {
         self.cancelDeferredEditableSettingsOverlaySync()
         cancelProviderRefresh(reason: "quit requested")
         cancelPolling()
+        stopRemoteConfigAutoUpdateTask()
+        stopRemoteConfigMenuRefreshTimer()
     }
 
     func applyAppAppearance() {
@@ -328,6 +330,7 @@ extension AppSession {
         groupLatencies = [:]
         proxyNodeTypes = [:]
         groupLatencyLoading = []
+        proxyLatencyTesting = []
         appendLog(level: "info", message: tr("log.config.changed_restart"))
         cancelProviderRefresh(reason: "config switch requested")
         await self.restartCore(trigger: .configSwitch)

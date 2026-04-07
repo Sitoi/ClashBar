@@ -14,4 +14,8 @@ struct DefaultProxyRepository: ProxyRepository, Sendable {
     func measureGroupLatency(group: String, url: String, timeout: Int) async throws -> GroupDelayMeasurement {
         try await self.transport.request(.groupDelay(name: group, url: url, timeout: timeout))
     }
+
+    func measureProxyLatency(name: String, url: String, timeout: Int) async throws -> DelayMeasurement {
+        try await self.transport.request(.proxyDelay(name: name, url: url, timeout: timeout))
+    }
 }

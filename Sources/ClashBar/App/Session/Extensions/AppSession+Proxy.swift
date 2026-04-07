@@ -24,6 +24,10 @@ extension AppSession {
         try MeasureGroupLatencyUseCase(repository: self.proxyRepository(using: self.clientOrThrow()))
     }
 
+    private func measureProxyLatencyUseCase() throws -> MeasureProxyLatencyUseCase {
+        try MeasureProxyLatencyUseCase(repository: self.proxyRepository(using: self.clientOrThrow()))
+    }
+
     func switchMode(to target: CoreMode) async {
         if !isModeSwitchEnabled || modeSwitchInFlight || target == currentMode { return }
         modeSwitchInFlight = true
@@ -31,6 +35,7 @@ extension AppSession {
 
         // Optimistic UI update: keep interaction snappy, polling will reconcile if server differs.
         currentMode = target
+        persistEditableSettingsSnapshot()
 
         do {
             try await self.switchCoreModeUseCase().execute(mode: target)
@@ -93,7 +98,7 @@ extension AppSession {
     }
 
     func copyManagedEndpointProxyCommand() {
-        self.copyProxyCommand(host: self.controllerHost())
+        self.copyProxyCommand(host: self.managedEndpointProxyCommandHost())
     }
 
     func localProxyCommandTargetDisplay() -> String {
@@ -101,9 +106,18 @@ extension AppSession {
         return self.buildSystemProxyDisplayString(host: "127.0.0.1", ports: ports) ?? "127.0.0.1"
     }
 
+    func localProxyCommandHostDisplay() -> String {
+        "127.0.0.1"
+    }
+
     func managedEndpointProxyCommandTargetDisplay() -> String {
         let ports = currentSystemProxyPortsFromState()
-        return self.buildSystemProxyDisplayString(host: self.controllerHost(), ports: ports) ?? self.controllerHost()
+        let host = self.managedEndpointProxyCommandHost()
+        return self.buildSystemProxyDisplayString(host: host, ports: ports) ?? host
+    }
+
+    func managedEndpointProxyCommandHostDisplay() -> String {
+        self.managedEndpointProxyCommandHost()
     }
 
     private func copyProxyCommand(host: String) {
@@ -152,6 +166,34 @@ extension AppSession {
         }
     }
 
+    func isProxyLatencyTesting(group: String, node: String) -> Bool {
+        self.proxyLatencyTesting.contains(ProxyLatencyTestKey(group: group, node: node))
+    }
+
+    func refreshProxyLatency(group: String, node: String) async {
+        let key = ProxyLatencyTestKey(group: group, node: node)
+        guard !self.proxyLatencyTesting.contains(key) else { return }
+
+        self.proxyLatencyTesting.insert(key)
+        defer { self.proxyLatencyTesting.remove(key) }
+
+        let proxyGroup = self.proxyGroups.first { $0.name == group }
+        let testURL = normalizedHealthcheckURL(proxyGroup?.testUrl) ?? defaultHealthcheckURL
+        let timeout = normalizedHealthcheckTimeout(proxyGroup?.timeout) ?? defaultHealthcheckTimeoutMilliseconds
+
+        await runRefresh {
+            let response = try await self.measureProxyLatencyUseCase().execute(
+                name: node,
+                url: testURL,
+                timeout: timeout)
+            guard let value = response.value else { return }
+
+            var groupDelays = self.groupLatencies[group] ?? [:]
+            groupDelays[node] = value
+            self.groupLatencies[group] = groupDelays
+        }
+    }
+
     func delayText(group: String, node: String, fallbackToGroupHistory: Bool = false) -> String {
         guard let value = delayValue(
             group: group,
@@ -180,6 +222,31 @@ extension AppSession {
             return "127.0.0.1"
         }
         return host
+    }
+
+    private func managedEndpointProxyCommandHost() -> String {
+        guard !self.isRemoteTarget else {
+            return self.controllerHost()
+        }
+
+        let configuredHost = self.controllerHost(from: self.localExternalControllerDisplay) ?? self.controllerHost()
+        guard self.settingsAllowLan else {
+            return configuredHost
+        }
+        guard self.shouldUseCurrentDeviceIPv4ForProxyCommand(host: configuredHost) else {
+            return configuredHost
+        }
+
+        return DeviceIPv4AddressResolver.currentAddress() ?? self.controllerHost()
+    }
+
+    private func shouldUseCurrentDeviceIPv4ForProxyCommand(host: String) -> Bool {
+        switch host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "", "localhost", "127.0.0.1", "::1", "0.0.0.0", "::", "0:0:0:0:0:0:0:0":
+            true
+        default:
+            false
+        }
     }
 
     func buildSystemProxyDisplayString(host: String, ports: SystemProxyPorts) -> String? {

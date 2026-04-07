@@ -37,6 +37,7 @@
 "ui.action.overwrite" = "覆盖";
 "ui.action.delete" = "删除";
 "ui.action.cancel" = "取消";
+"ui.action.close" = "关闭";
 "ui.action.ok" = "确定";
 "ui.action.flush_fakeip_cache" = "清理 FakeIP 缓存";
 "ui.action.flush_dns_cache" = "清理 DNS 缓存";
@@ -64,10 +65,12 @@
 "ui.machine.field.host" = "主机地址";
 "ui.machine.field.port" = "端口";
 "ui.machine.field.secret" = "密钥";
+"ui.machine.preview" = "预览：%@://%@:%@";
 "ui.machine.remote_readonly" = "(远程连接不可变更)";
 "ui.machine.return_local" = "返回本地内核";
 "ui.machine.active" = "当前";
 "ui.machine.local_label" = "本地";
+"ui.machine.remote_label" = "远程";
 "ui.machine.status_unreachable" = "无法连接";
 
 "ui.section.local_app_settings" = "应用设置 (本地)";
@@ -88,6 +91,9 @@
 "ui.quick.remote.url_placeholder" = "https://example.com/config.yaml";
 "ui.quick.remote.filename_label" = "文件名";
 "ui.quick.remote.filename_placeholder" = "留空则自动推断";
+"ui.quick.remote.refreshing" = "刷新中";
+"ui.quick.remote.refresh_failed" = "刷新失败";
+"ui.system_proxy.remote_target_warning" = "系统代理当前指向远程内核，请确认远程地址可达。";
 
 "ui.section.proxy_providers" = "代理提供者";
 "ui.section.proxy_groups" = "代理组";
@@ -356,3 +362,18 @@
 "fmt.expiry_short.today" = "今天过期";
 "fmt.expiry_short.days" = "剩 %d 天";
 "fmt.expiry_short.long_term" = "长期有效";
+
+// 远程配置订阅
+"ui.quick.remote.auto_update_label" = "自动更新";
+"ui.quick.remote.interval_label" = "自动更新间隔";
+"ui.quick.remote.interval_each" = "每隔";
+"ui.quick.remote.interval_unit" = "小时";
+"fmt.remote_config.next_update_hours_minutes" = "自动 %d 小时 %d 分后";
+"fmt.remote_config.next_update_minutes" = "自动 %d 分后";
+"fmt.remote_config.last_update" = "上次 %@";
+"ui.action.copy_subscription_url" = "复制订阅链接";
+"ui.action.delete" = "删除";
+"app.config.delete.title" = "删除 %@";
+"app.config.delete.message" = "此操作将永久删除配置文件。如果这是远程订阅，订阅元数据也会被一并删除。";
+"log.config.delete.success" = "已删除配置：%@";
+"log.config.delete.failed" = "删除配置失败（%@）：%@";
