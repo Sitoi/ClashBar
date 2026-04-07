@@ -1,3 +1,28 @@
+## v0.2.2
+
+![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.2.2-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
+
+> 本次更新主要围绕 **远程配置订阅、Proxy 节点延迟探测与远程目标状态一致性** 展开：现在可以把远程配置当作订阅来管理，支持自动更新、手动刷新、复制订阅链接与删除清理；Proxy 页面补上节点级延迟测试和更明确的终端代理命令目标；同时重做远程机器管理面板，并修复远程切换后的速率显示、离线切换保护和核心模式持久化等问题。
+
+### 📝 更新日志 (Changelog)
+
+**✨ 新增功能 (New Features)**
+
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **远程订阅配置管理**：新增远程配置订阅元数据管理，导入 URL 时可设置自动更新与更新间隔，并支持按项刷新、批量刷新、复制订阅链接和删除时同步清理订阅信息。
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **节点级延迟测试**：在 Proxy Group 的节点列表中新增单节点延迟测试，切换前可以直接比较具体节点的实时延迟表现。
+
+**🚀 优化改进 (Improvements)**
+
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **远程机器管理器重做**：重构远程机器管理面板与编辑器，补上本地/远程分区、连接预览和更直接的切换反馈，管理多控制端时更清晰。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **远程目标状态可视化**：Header、配置切换菜单和 System Proxy 行会更明确地展示当前本地/远程目标、订阅刷新状态以及下次自动更新时间，减少跨目标操作时的混淆。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **终端代理命令导出**：复制终端代理命令时可分别选择本地 `127.0.0.1` 或当前控制端地址；在 `allow-lan` 打开且控制器绑定到 `0.0.0.0` / `localhost` 时，也会尽量解析当前设备 IPv4，导出的命令更可用。
+
+**🐞 修复问题 (Bug Fixes)**
+
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **远程切换速率显示**：修复本地/远程目标切换后状态栏速率文本可能不更新的问题，避免远程目标实际可用但界面仍显示已停止。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **离线远程切换保护**：修复远程机器离线时仍可能被切换或导出错误代理地址的问题，降低误操作风险。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **核心模式持久化**：修复 Settings 快照未保存当前 Core Mode 的问题，减少重启、切换配置或同步后模式状态不一致的情况。
+
 ## v0.2.1
 
 ![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.2.1-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
