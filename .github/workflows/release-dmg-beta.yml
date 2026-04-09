@@ -29,13 +29,13 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ "${GITHUB_REF_TYPE}" != "branch" || "${GITHUB_REF_NAME}" != "beta" ]]; then
-            echo "This workflow only supports manual runs from the beta branch. Current ref: ${GITHUB_REF_TYPE}/${GITHUB_REF_NAME}" >&2
+          if [[ "${GITHUB_REF_TYPE}" != "branch" || "${GITHUB_REF_NAME}" != "alpha" ]]; then
+            echo "This workflow only supports manual runs from the alpha branch. Current ref: ${GITHUB_REF_TYPE}/${GITHUB_REF_NAME}" >&2
             exit 1
           fi
 
           source_ref="${GITHUB_SHA}"
-          build_label="beta"
+          build_label="alpha"
           tag="pre-release"
 
           git config user.name "github-actions[bot]"
