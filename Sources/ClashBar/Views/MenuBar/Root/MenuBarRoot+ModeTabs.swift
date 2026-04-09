@@ -1,0 +1,519 @@
+import SwiftUI
+
+extension MenuBarRootView {
+    private enum SegmentedControlStyle {
+        case mode
+        case tab
+
+        var selectionBackgroundID: String {
+            switch self {
+            case .mode:
+                "mode-segmented-selection-background"
+            case .tab:
+                "tab-segmented-selection-background"
+            }
+        }
+
+        var selectionIndicatorID: String {
+            switch self {
+            case .mode:
+                "mode-segmented-selection-indicator"
+            case .tab:
+                "tab-segmented-selection-indicator"
+            }
+        }
+
+        var indicatorWidth: CGFloat {
+            switch self {
+            case .mode:
+                0
+            case .tab:
+                16
+            }
+        }
+
+        var indicatorBottomPadding: CGFloat {
+            switch self {
+            case .mode:
+                0
+            case .tab:
+                2
+            }
+        }
+
+        var contentVerticalOffset: CGFloat {
+            switch self {
+            case .mode:
+                0
+            case .tab:
+                0
+            }
+        }
+
+        var cornerRadius: CGFloat {
+            switch self {
+            case .mode:
+                10
+            case .tab:
+                0
+            }
+        }
+
+        var rowHeight: CGFloat {
+            switch self {
+            case .mode:
+                38
+            case .tab:
+                26
+            }
+        }
+
+        var stackSpacing: CGFloat {
+            switch self {
+            case .mode:
+                MenuBarLayoutTokens.space1
+            case .tab:
+                0
+            }
+        }
+
+        var contentVerticalPadding: CGFloat {
+            switch self {
+            case .mode:
+                3
+            case .tab:
+                2
+            }
+        }
+
+        func selectedFillOpacity(isDark: Bool) -> CGFloat {
+            switch self {
+            case .mode:
+                isDark ? 0.10 : 0.045
+            case .tab:
+                isDark ? 0.22 : 0.12
+            }
+        }
+
+        func selectedBorderOpacity(isDark: Bool) -> CGFloat {
+            switch self {
+            case .mode:
+                isDark ? 0.14 : 0.08
+            case .tab:
+                isDark ? 0.20 : 0.14
+            }
+        }
+
+        func hoverFillOpacity(isDark: Bool) -> CGFloat {
+            switch self {
+            case .mode:
+                isDark ? 0.06 : 0.035
+            case .tab:
+                0
+            }
+        }
+
+        func selectedForegroundOpacity(isDark: Bool) -> CGFloat {
+            switch self {
+            case .mode:
+                isDark ? 0.96 : 0.88
+            case .tab:
+                isDark ? 0.96 : 0.92
+            }
+        }
+
+        func selectedIconOpacity(isDark: Bool) -> CGFloat {
+            switch self {
+            case .mode:
+                isDark ? 0.88 : 0.80
+            case .tab:
+                isDark ? 0.98 : 0.94
+            }
+        }
+
+        func shadowOpacity(isDark: Bool) -> CGFloat {
+            switch self {
+            case .mode:
+                0
+            case .tab:
+                isDark ? 0.0 : 0.0
+            }
+        }
+
+        func shadowRadius(isDark _: Bool) -> CGFloat {
+            switch self {
+            case .mode:
+                0
+            case .tab:
+                0
+            }
+        }
+
+        func shadowYOffset(isDark _: Bool) -> CGFloat {
+            switch self {
+            case .mode:
+                0
+            case .tab:
+                0
+            }
+        }
+    }
+
+    var modeAndTabSection: some View {
+        VStack(spacing: MenuBarLayoutTokens.space2) {
+            self.modeSwitcher
+            self.topTabs
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    var machineSwitcherLabel: String {
+        switch remoteMachineStore.activeTarget {
+        case .local:
+            tr("ui.machine.local")
+        case let .remote(machine):
+            machine.name
+        }
+    }
+
+    var machineSwitcherSubtitle: String {
+        switch remoteMachineStore.activeTarget {
+        case .local:
+            appViewModel.externalControllerDisplay
+        case let .remote(machine):
+            machine.displayAddress
+        }
+    }
+
+    var machineSwitcherTint: Color {
+        switch self.machineSwitcherStatus {
+        case .unknown, nil:
+            remoteMachineStore.activeTarget.isLocal
+                ? nativeInfo.opacity(MenuBarLayoutTokens.Opacity.solid)
+                : nativeSecondaryLabel
+        case .checking:
+            nativeWarning.opacity(MenuBarLayoutTokens.Opacity.solid)
+        case .connected:
+            nativePositive.opacity(MenuBarLayoutTokens.Opacity.solid)
+        case .failed:
+            nativeCritical.opacity(MenuBarLayoutTokens.Opacity.solid)
+        }
+    }
+
+    var machineSwitcherStatus: MachineConnectionStatus? {
+        guard case let .remote(machine) = remoteMachineStore.activeTarget else { return nil }
+        return remoteMachineStore.statusFor(machine.id)
+    }
+
+    func machineSwitcherStatusBadge(_ status: MachineConnectionStatus) -> some View {
+        HStack(spacing: 6) {
+            switch status {
+            case .checking:
+                ProgressView()
+                    .controlSize(.mini)
+            default:
+                Circle()
+                    .fill(self.machineStatusTint(status))
+                    .frame(width: 6, height: 6)
+            }
+
+            Text(self.machineStatusText(status))
+                .font(.app(size: 10, weight: .semibold))
+                .foregroundStyle(self.machineStatusTint(status))
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(self.machineStatusTint(status).opacity(0.12), in: Capsule())
+    }
+
+    func machineStatusText(_ status: MachineConnectionStatus) -> String {
+        switch status {
+        case .unknown:
+            "?"
+        case .checking:
+            "…"
+        case let .connected(version):
+            version
+        case let .failed(reason):
+            reason
+        }
+    }
+
+    func machineStatusTint(_ status: MachineConnectionStatus) -> Color {
+        switch status {
+        case .unknown:
+            nativeSecondaryLabel
+        case .checking:
+            nativeWarning.opacity(MenuBarLayoutTokens.Opacity.solid)
+        case .connected:
+            nativePositive.opacity(MenuBarLayoutTokens.Opacity.solid)
+        case .failed:
+            nativeCritical.opacity(MenuBarLayoutTokens.Opacity.solid)
+        }
+    }
+
+    var modeSwitcher: some View {
+        HStack(spacing: MenuBarLayoutTokens.space2) {
+            self.modeSegmentButton(
+                title: tr("ui.mode.rule"),
+                mode: .rule,
+                symbol: "shield.lefthalf.filled")
+            self.modeSegmentButton(
+                title: tr("ui.mode.global"),
+                mode: .global,
+                symbol: "globe")
+            self.modeSegmentButton(
+                title: tr("ui.mode.direct"),
+                mode: .direct,
+                symbol: "bolt.fill")
+        }
+        .padding(MenuBarLayoutTokens.space1)
+        .frame(width: contentWidth)
+        .background(
+            AppMaterialSurface(
+                cornerRadius: SegmentedControlStyle.mode.cornerRadius,
+                fallbackStyle: .color(self.modeSwitcherBackgroundFill),
+                stroke: self.modeSwitcherBorderColor))
+    }
+
+    func modeSegmentButton(title: String, mode: CoreMode, symbol: String) -> some View {
+        let style = SegmentedControlStyle.mode
+        let selected = appViewModel.currentMode == mode
+        let switchingThisMode = switchingMode == mode
+        let hovered = hoveredMode == mode
+
+        return Button {
+            guard appViewModel.isModeSwitchEnabled, switchingMode == nil,
+                  mode != appViewModel.currentMode else { return }
+
+            switchingMode = mode
+            Task { @MainActor in
+                await appViewModel.switchMode(to: mode)
+                switchingMode = nil
+            }
+        } label: {
+            ZStack(alignment: .bottom) {
+                VStack(spacing: style.stackSpacing) {
+                    if switchingThisMode {
+                        ProgressView()
+                            .controlSize(.small)
+                            .tint(self.segmentedAccentColor(style: style))
+                    } else {
+                        Image(systemName: symbol)
+                            .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .bold))
+                            .foregroundStyle(self.segmentedIconColor(
+                                style: style,
+                                selected: selected,
+                                hovered: hovered))
+                    }
+
+                    Text(title)
+                        .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .semibold))
+                        .lineLimit(1)
+                        .foregroundStyle(self.segmentedLabelColor(style: style, selected: selected, hovered: hovered))
+                }
+                .padding(.vertical, style.contentVerticalPadding)
+                .frame(maxWidth: .infinity)
+                .frame(height: style.rowHeight)
+                .offset(y: style.contentVerticalOffset)
+                .background(self.segmentedButtonBackground(style: style, selected: selected, hovered: hovered))
+                .contentShape(RoundedRectangle(cornerRadius: style.cornerRadius, style: .continuous))
+
+                if selected, style == .mode, style.indicatorWidth > 0 {
+                    Capsule(style: .continuous)
+                        .fill(self.segmentedAccentColor(style: style))
+                        .frame(width: style.indicatorWidth, height: 2.5)
+                        .padding(.bottom, style.indicatorBottomPadding)
+                        .matchedGeometryEffect(id: style.selectionIndicatorID, in: self.segmentedSelectionNamespace)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .onHover { hoveredMode = self.nextHovered(current: hoveredMode, target: mode, isHovering: $0) }
+        .animation(.snappy(duration: 0.18), value: appViewModel.currentMode)
+        .animation(.easeOut(duration: 0.12), value: hoveredMode)
+    }
+
+    var topTabs: some View {
+        HStack(spacing: MenuBarLayoutTokens.space2) {
+            ForEach(RootTab.allCases, id: \.self) { tab in
+                self.tabSegmentButton(tab)
+            }
+        }
+        .frame(width: contentWidth)
+    }
+
+    func tabSegmentButton(_ tab: RootTab) -> some View {
+        let style = SegmentedControlStyle.tab
+        let selected = self.rootViewModel.currentTab == tab
+        let hovered = hoveredTab == tab
+
+        return Button {
+            guard self.rootViewModel.currentTab != tab else { return }
+            withAnimation(.snappy(duration: 0.18)) {
+                self.rootViewModel.syncCurrentTab(tab)
+            }
+        } label: {
+            ZStack(alignment: .bottom) {
+                Text(self.tr(tab.titleKey))
+                    .font(.app(size: MenuBarLayoutTokens.FontSize.body, weight: selected ? .semibold : .medium))
+                    .lineLimit(1)
+                    .minimumScaleFactor(MenuBarLayoutTokens.minimumScale)
+                    .foregroundStyle(self.segmentedLabelColor(style: style, selected: selected, hovered: hovered))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: style.rowHeight)
+
+                if selected {
+                    Capsule(style: .continuous)
+                        .fill(self.segmentedAccentColor(style: style))
+                        .frame(width: style.indicatorWidth, height: 2)
+                        .padding(.bottom, style.indicatorBottomPadding)
+                        .matchedGeometryEffect(id: style.selectionIndicatorID, in: self.segmentedSelectionNamespace)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hoveredTab = self.nextHovered(current: hoveredTab, target: tab, isHovering: $0) }
+        .animation(.snappy(duration: 0.18), value: self.rootViewModel.currentTab)
+        .animation(.easeOut(duration: 0.12), value: hoveredTab)
+    }
+
+    @ViewBuilder
+    private func segmentedButtonBackground(
+        style: SegmentedControlStyle,
+        selected: Bool,
+        hovered: Bool) -> some View
+    {
+        let shape = RoundedRectangle(cornerRadius: style.cornerRadius, style: .continuous)
+
+        if selected {
+            if style == .tab {
+                Color.clear
+            } else {
+                shape
+                    .fill(self.segmentedSelectionFill(style: style))
+                    .overlay {
+                        shape.stroke(
+                            self.segmentedSelectionBorder(style: style),
+                            lineWidth: MenuBarLayoutTokens.stroke)
+                    }
+                    .shadow(
+                        color: self.segmentedSelectionShadow(style: style),
+                        radius: style.shadowRadius(isDark: self.isDarkAppearance),
+                        x: 0,
+                        y: style.shadowYOffset(isDark: self.isDarkAppearance))
+                    .matchedGeometryEffect(id: style.selectionBackgroundID, in: self.segmentedSelectionNamespace)
+            }
+        } else if hovered {
+            shape
+                .fill(self.segmentedHoverFill(style: style))
+        } else {
+            Color.clear
+        }
+    }
+
+    private func segmentedLabelColor(style: SegmentedControlStyle, selected: Bool, hovered: Bool) -> Color {
+        if selected {
+            switch style {
+            case .mode:
+                return self.nativePrimaryLabel.opacity(style.selectedForegroundOpacity(isDark: self.isDarkAppearance))
+            case .tab:
+                return self.nativePrimaryLabel
+            }
+        }
+        if hovered {
+            switch style {
+            case .mode:
+                return self.nativePrimaryLabel.opacity(self.isDarkAppearance ? 0.82 : 0.72)
+            case .tab:
+                return self.nativePrimaryLabel.opacity(self.isDarkAppearance ? 0.82 : 0.74)
+            }
+        }
+        return self.nativeSecondaryLabel
+    }
+
+    private func segmentedIconColor(style: SegmentedControlStyle, selected: Bool, hovered: Bool) -> Color {
+        if selected {
+            switch style {
+            case .mode:
+                return self.segmentedAccentColor(style: style)
+                    .opacity(style.selectedIconOpacity(isDark: self.isDarkAppearance))
+            case .tab:
+                return self.segmentedSelectedForeground(style: style)
+            }
+        }
+        if hovered {
+            return self.nativeSecondaryLabel.opacity(self.isDarkAppearance ? 0.96 : 0.84)
+        }
+        return self.nativeTertiaryLabel
+    }
+
+    private func segmentedAccentColor(style: SegmentedControlStyle) -> Color {
+        if self.isDarkAppearance {
+            switch style {
+            case .mode:
+                Color(red: 0.56, green: 0.77, blue: 0.98)
+            case .tab:
+                Color(red: 0.50, green: 0.72, blue: 0.95)
+            }
+        } else {
+            switch style {
+            case .mode:
+                Color(red: 0.16, green: 0.36, blue: 0.67)
+            case .tab:
+                Color(red: 0.20, green: 0.40, blue: 0.71)
+            }
+        }
+    }
+
+    private var modeSwitcherBackgroundFill: Color {
+        Color(nsColor: self.isDarkAppearance ? .controlBackgroundColor : .windowBackgroundColor)
+            .opacity(self.isDarkAppearance ? 0.54 : 0.38)
+    }
+
+    private var modeSwitcherBorderColor: Color {
+        self.nativeControlBorder.opacity(self.isDarkAppearance ? 0.40 : 0.12)
+    }
+
+    private func segmentedSelectionFill(style: SegmentedControlStyle) -> Color {
+        switch style {
+        case .mode:
+            self.segmentedAccentColor(style: style)
+                .opacity(style.selectedFillOpacity(isDark: self.isDarkAppearance))
+        case .tab:
+            self.segmentedAccentColor(style: style)
+                .opacity(style.selectedFillOpacity(isDark: self.isDarkAppearance))
+        }
+    }
+
+    private func segmentedSelectionBorder(style: SegmentedControlStyle) -> Color {
+        switch style {
+        case .mode:
+            self.segmentedAccentColor(style: style)
+                .opacity(style.selectedBorderOpacity(isDark: self.isDarkAppearance))
+        case .tab:
+            self.segmentedAccentColor(style: style)
+                .opacity(style.selectedBorderOpacity(isDark: self.isDarkAppearance))
+        }
+    }
+
+    private func segmentedSelectionShadow(style: SegmentedControlStyle) -> Color {
+        Color.black.opacity(style.shadowOpacity(isDark: self.isDarkAppearance))
+    }
+
+    private func segmentedHoverFill(style: SegmentedControlStyle) -> Color {
+        switch style {
+        case .mode:
+            self.nativeHoverFill.opacity(style.hoverFillOpacity(isDark: self.isDarkAppearance))
+        case .tab:
+            self.nativeHoverFill.opacity(style.hoverFillOpacity(isDark: self.isDarkAppearance))
+        }
+    }
+
+    private func segmentedSelectedForeground(style: SegmentedControlStyle) -> Color {
+        self.segmentedAccentColor(style: style)
+            .opacity(style.selectedForegroundOpacity(isDark: self.isDarkAppearance))
+    }
+}

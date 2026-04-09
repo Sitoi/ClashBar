@@ -6,7 +6,7 @@ struct ClashBarApp: App {
     @NSApplicationDelegateAdaptor(ClashBarAppDelegate.self) private var appDelegate
 
     private var commandsViewModel: AppCommandsViewModel {
-        AppCommandsViewModel(session: self.appDelegate.appSession)
+        AppCommandsViewModel(session: self.appDelegate.appViewModel)
     }
 
     var body: some Scene {
@@ -97,34 +97,5 @@ struct ClashBarApp: App {
 
     private func tr(_ key: String) -> String {
         L10n.t(key, language: self.commandsViewModel.uiLanguage)
-    }
-}
-
-@MainActor
-final class ClashBarAppDelegate: NSObject, NSApplicationDelegate {
-    let container = DependencyContainer()
-    private var statusItemController: StatusItemController?
-
-    var appSession: AppSession {
-        self.container.appSession
-    }
-
-    func applicationDidFinishLaunching(_ notification: Notification) {
-        if let image = BrandIcon.image {
-            NSApp.applicationIconImage = image
-        }
-        NSApp.setActivationPolicy(.accessory)
-        self.statusItemController = StatusItemController(appSession: self.appSession)
-        self.appSession.presentInitialNoCoreSetupGuideIfNeeded()
-    }
-
-    func applicationDidBecomeActive(_ notification: Notification) {
-        self.appSession.handleApplicationDidBecomeActive()
-    }
-
-    func applicationWillTerminate(_ notification: Notification) {
-        self.appSession.shutdownForTermination()
-        self.statusItemController?.shutdown()
-        self.statusItemController = nil
     }
 }
