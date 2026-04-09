@@ -1,161 +1,62 @@
 import SwiftUI
 
 extension MenuBarRootView {
-    private enum SegmentedControlStyle {
-        case mode
-        case tab
+    private struct SegmentedControlStyle {
+        let isMode: Bool
+
+        static let mode = SegmentedControlStyle(isMode: true)
+        static let tab = SegmentedControlStyle(isMode: false)
 
         var selectionBackgroundID: String {
-            switch self {
-            case .mode:
-                "mode-segmented-selection-background"
-            case .tab:
-                "tab-segmented-selection-background"
-            }
+            self.isMode ? "mode-segmented-selection-background" : "tab-segmented-selection-background"
         }
 
         var selectionIndicatorID: String {
-            switch self {
-            case .mode:
-                "mode-segmented-selection-indicator"
-            case .tab:
-                "tab-segmented-selection-indicator"
-            }
+            self.isMode ? "mode-segmented-selection-indicator" : "tab-segmented-selection-indicator"
         }
 
         var indicatorWidth: CGFloat {
-            switch self {
-            case .mode:
-                0
-            case .tab:
-                16
-            }
+            self.isMode ? 0 : 16
         }
 
         var indicatorBottomPadding: CGFloat {
-            switch self {
-            case .mode:
-                0
-            case .tab:
-                2
-            }
-        }
-
-        var contentVerticalOffset: CGFloat {
-            switch self {
-            case .mode:
-                0
-            case .tab:
-                0
-            }
+            self.isMode ? 0 : 2
         }
 
         var cornerRadius: CGFloat {
-            switch self {
-            case .mode:
-                10
-            case .tab:
-                0
-            }
+            self.isMode ? 10 : 0
         }
 
         var rowHeight: CGFloat {
-            switch self {
-            case .mode:
-                38
-            case .tab:
-                26
-            }
+            self.isMode ? 38 : 26
         }
 
         var stackSpacing: CGFloat {
-            switch self {
-            case .mode:
-                MenuBarLayoutTokens.space1
-            case .tab:
-                0
-            }
+            self.isMode ? MenuBarLayoutTokens.space1 : 0
         }
 
         var contentVerticalPadding: CGFloat {
-            switch self {
-            case .mode:
-                3
-            case .tab:
-                2
-            }
+            self.isMode ? 3 : 2
         }
 
         func selectedFillOpacity(isDark: Bool) -> CGFloat {
-            switch self {
-            case .mode:
-                isDark ? 0.10 : 0.045
-            case .tab:
-                isDark ? 0.22 : 0.12
-            }
+            self.isMode ? (isDark ? 0.10 : 0.045) : (isDark ? 0.22 : 0.12)
         }
 
         func selectedBorderOpacity(isDark: Bool) -> CGFloat {
-            switch self {
-            case .mode:
-                isDark ? 0.14 : 0.08
-            case .tab:
-                isDark ? 0.20 : 0.14
-            }
+            self.isMode ? (isDark ? 0.14 : 0.08) : (isDark ? 0.20 : 0.14)
         }
 
         func hoverFillOpacity(isDark: Bool) -> CGFloat {
-            switch self {
-            case .mode:
-                isDark ? 0.06 : 0.035
-            case .tab:
-                0
-            }
+            self.isMode ? (isDark ? 0.06 : 0.035) : 0
         }
 
         func selectedForegroundOpacity(isDark: Bool) -> CGFloat {
-            switch self {
-            case .mode:
-                isDark ? 0.96 : 0.88
-            case .tab:
-                isDark ? 0.96 : 0.92
-            }
+            self.isMode ? (isDark ? 0.96 : 0.88) : (isDark ? 0.96 : 0.92)
         }
 
         func selectedIconOpacity(isDark: Bool) -> CGFloat {
-            switch self {
-            case .mode:
-                isDark ? 0.88 : 0.80
-            case .tab:
-                isDark ? 0.98 : 0.94
-            }
-        }
-
-        func shadowOpacity(isDark: Bool) -> CGFloat {
-            switch self {
-            case .mode:
-                0
-            case .tab:
-                isDark ? 0.0 : 0.0
-            }
-        }
-
-        func shadowRadius(isDark _: Bool) -> CGFloat {
-            switch self {
-            case .mode:
-                0
-            case .tab:
-                0
-            }
-        }
-
-        func shadowYOffset(isDark _: Bool) -> CGFloat {
-            switch self {
-            case .mode:
-                0
-            case .tab:
-                0
-            }
+            self.isMode ? (isDark ? 0.88 : 0.80) : (isDark ? 0.98 : 0.94)
         }
     }
 
@@ -316,17 +217,8 @@ extension MenuBarRootView {
                 .padding(.vertical, style.contentVerticalPadding)
                 .frame(maxWidth: .infinity)
                 .frame(height: style.rowHeight)
-                .offset(y: style.contentVerticalOffset)
                 .background(self.segmentedButtonBackground(style: style, selected: selected, hovered: hovered))
                 .contentShape(RoundedRectangle(cornerRadius: style.cornerRadius, style: .continuous))
-
-                if selected, style == .mode, style.indicatorWidth > 0 {
-                    Capsule(style: .continuous)
-                        .fill(self.segmentedAccentColor(style: style))
-                        .frame(width: style.indicatorWidth, height: 2.5)
-                        .padding(.bottom, style.indicatorBottomPadding)
-                        .matchedGeometryEffect(id: style.selectionIndicatorID, in: self.segmentedSelectionNamespace)
-                }
             }
         }
         .buttonStyle(.plain)
@@ -387,28 +279,17 @@ extension MenuBarRootView {
         hovered: Bool) -> some View
     {
         let shape = RoundedRectangle(cornerRadius: style.cornerRadius, style: .continuous)
-
-        if selected {
-            if style == .tab {
-                Color.clear
-            } else {
-                shape
-                    .fill(self.segmentedSelectionFill(style: style))
-                    .overlay {
-                        shape.stroke(
-                            self.segmentedSelectionBorder(style: style),
-                            lineWidth: MenuBarLayoutTokens.stroke)
-                    }
-                    .shadow(
-                        color: self.segmentedSelectionShadow(style: style),
-                        radius: style.shadowRadius(isDark: self.isDarkAppearance),
-                        x: 0,
-                        y: style.shadowYOffset(isDark: self.isDarkAppearance))
-                    .matchedGeometryEffect(id: style.selectionBackgroundID, in: self.segmentedSelectionNamespace)
-            }
-        } else if hovered {
+        if selected, style.isMode {
             shape
-                .fill(self.segmentedHoverFill(style: style))
+                .fill(self.segmentedSelectionFill(style: style))
+                .overlay {
+                    shape.stroke(
+                        self.segmentedSelectionBorder(style: style),
+                        lineWidth: MenuBarLayoutTokens.stroke)
+                }
+                .matchedGeometryEffect(id: style.selectionBackgroundID, in: self.segmentedSelectionNamespace)
+        } else if hovered {
+            shape.fill(self.segmentedHoverFill(style: style))
         } else {
             Color.clear
         }
@@ -416,56 +297,30 @@ extension MenuBarRootView {
 
     private func segmentedLabelColor(style: SegmentedControlStyle, selected: Bool, hovered: Bool) -> Color {
         if selected {
-            switch style {
-            case .mode:
-                return self.nativePrimaryLabel.opacity(style.selectedForegroundOpacity(isDark: self.isDarkAppearance))
-            case .tab:
-                return self.nativePrimaryLabel
-            }
+            return style.isMode
+                ? nativePrimaryLabel.opacity(style.selectedForegroundOpacity(isDark: isDarkAppearance))
+                : nativePrimaryLabel
         }
         if hovered {
-            switch style {
-            case .mode:
-                return self.nativePrimaryLabel.opacity(self.isDarkAppearance ? 0.82 : 0.72)
-            case .tab:
-                return self.nativePrimaryLabel.opacity(self.isDarkAppearance ? 0.82 : 0.74)
-            }
+            return nativePrimaryLabel.opacity(isDarkAppearance ? 0.82 : (style.isMode ? 0.72 : 0.74))
         }
-        return self.nativeSecondaryLabel
+        return nativeSecondaryLabel
     }
 
     private func segmentedIconColor(style: SegmentedControlStyle, selected: Bool, hovered: Bool) -> Color {
         if selected {
-            switch style {
-            case .mode:
-                return self.segmentedAccentColor(style: style)
-                    .opacity(style.selectedIconOpacity(isDark: self.isDarkAppearance))
-            case .tab:
-                return self.segmentedSelectedForeground(style: style)
-            }
+            return style.isMode
+                ? self.segmentedAccentColor(style: style).opacity(style.selectedIconOpacity(isDark: isDarkAppearance))
+                : self.segmentedSelectedForeground(style: style)
         }
-        if hovered {
-            return self.nativeSecondaryLabel.opacity(self.isDarkAppearance ? 0.96 : 0.84)
-        }
-        return self.nativeTertiaryLabel
+        if hovered { return nativeSecondaryLabel.opacity(isDarkAppearance ? 0.96 : 0.84) }
+        return nativeTertiaryLabel
     }
 
     private func segmentedAccentColor(style: SegmentedControlStyle) -> Color {
-        if self.isDarkAppearance {
-            switch style {
-            case .mode:
-                Color(red: 0.56, green: 0.77, blue: 0.98)
-            case .tab:
-                Color(red: 0.50, green: 0.72, blue: 0.95)
-            }
-        } else {
-            switch style {
-            case .mode:
-                Color(red: 0.16, green: 0.36, blue: 0.67)
-            case .tab:
-                Color(red: 0.20, green: 0.40, blue: 0.71)
-            }
-        }
+        isDarkAppearance
+            ? (style.isMode ? Color(red: 0.56, green: 0.77, blue: 0.98) : Color(red: 0.50, green: 0.72, blue: 0.95))
+            : (style.isMode ? Color(red: 0.16, green: 0.36, blue: 0.67) : Color(red: 0.20, green: 0.40, blue: 0.71))
     }
 
     private var modeSwitcherBackgroundFill: Color {
@@ -478,38 +333,15 @@ extension MenuBarRootView {
     }
 
     private func segmentedSelectionFill(style: SegmentedControlStyle) -> Color {
-        switch style {
-        case .mode:
-            self.segmentedAccentColor(style: style)
-                .opacity(style.selectedFillOpacity(isDark: self.isDarkAppearance))
-        case .tab:
-            self.segmentedAccentColor(style: style)
-                .opacity(style.selectedFillOpacity(isDark: self.isDarkAppearance))
-        }
+        self.segmentedAccentColor(style: style).opacity(style.selectedFillOpacity(isDark: isDarkAppearance))
     }
 
     private func segmentedSelectionBorder(style: SegmentedControlStyle) -> Color {
-        switch style {
-        case .mode:
-            self.segmentedAccentColor(style: style)
-                .opacity(style.selectedBorderOpacity(isDark: self.isDarkAppearance))
-        case .tab:
-            self.segmentedAccentColor(style: style)
-                .opacity(style.selectedBorderOpacity(isDark: self.isDarkAppearance))
-        }
-    }
-
-    private func segmentedSelectionShadow(style: SegmentedControlStyle) -> Color {
-        Color.black.opacity(style.shadowOpacity(isDark: self.isDarkAppearance))
+        self.segmentedAccentColor(style: style).opacity(style.selectedBorderOpacity(isDark: isDarkAppearance))
     }
 
     private func segmentedHoverFill(style: SegmentedControlStyle) -> Color {
-        switch style {
-        case .mode:
-            self.nativeHoverFill.opacity(style.hoverFillOpacity(isDark: self.isDarkAppearance))
-        case .tab:
-            self.nativeHoverFill.opacity(style.hoverFillOpacity(isDark: self.isDarkAppearance))
-        }
+        nativeHoverFill.opacity(style.hoverFillOpacity(isDark: isDarkAppearance))
     }
 
     private func segmentedSelectedForeground(style: SegmentedControlStyle) -> Color {

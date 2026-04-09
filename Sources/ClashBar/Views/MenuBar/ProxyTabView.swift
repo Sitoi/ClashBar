@@ -3,7 +3,7 @@ import SwiftUI
 // swiftlint:disable:next type_name
 private typealias T = MenuBarLayoutTokens
 
-struct ProxyTabView: View {
+struct ProxyTabView: TranslatingView {
     enum ProxyCommandCopyTarget: Equatable {
         case local
         case currentEndpoint
@@ -19,18 +19,6 @@ struct ProxyTabView: View {
     @State var copiedProxyCommandTarget: ProxyCommandCopyTarget?
     @State var proxyCommandCopyResetTask: Task<Void, Never>?
     @State var hoveredProviderName: String?
-
-    var language: AppLanguage {
-        self.appViewModel.uiLanguage
-    }
-
-    func tr(_ key: String) -> String {
-        L10n.t(key, language: self.language)
-    }
-
-    func tr(_ key: String, _ args: CVarArg...) -> String {
-        L10n.t(key, language: self.language, args: args)
-    }
 
     var body: some View {
         self.proxyTabBody

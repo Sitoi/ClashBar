@@ -1,21 +1,9 @@
 import SwiftUI
 
-struct RulesTabView: View {
+struct RulesTabView: TranslatingView {
     @EnvironmentObject var appViewModel: AppViewModel
     @StateObject private var viewModel = RulesViewModel()
     @State private var hoveredRuleIndex: Int?
-
-    private var language: AppLanguage {
-        self.appViewModel.uiLanguage
-    }
-
-    private func tr(_ key: String) -> String {
-        L10n.t(key, language: self.language)
-    }
-
-    private func tr(_ key: String, _ args: CVarArg...) -> String {
-        L10n.t(key, language: self.language, args: args)
-    }
 
     var body: some View {
         let visibleRules = self.viewModel.visibleRules

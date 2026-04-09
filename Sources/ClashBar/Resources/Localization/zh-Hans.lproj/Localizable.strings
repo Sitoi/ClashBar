@@ -99,7 +99,7 @@
 "ui.section.proxy_groups" = "代理组";
 "ui.section.basic_settings" = "基础设置";
 "ui.section.proxy_ports" = "代理端口";
-"ui.section.system_proxy_exceptions" = "系统代理例外";
+"ui.section.system_proxy_exceptions" = "代理绕过";
 "ui.section.maintenance" = "系统维护";
 
 "ui.rules.column.target_type" = "目标 / 类型";
@@ -156,12 +156,12 @@
 "ui.settings.ports_auto_save_hint" = "端口修改后将自动保存到内核配置";
 "ui.settings.ports_auto_saving" = "保存中...";
 "ui.settings.system_proxy_exceptions_hint" = "这些条目会写入 macOS 的代理绕过域名列表，并在系统代理重新应用时继续保留。";
-"ui.settings.system_proxy_exceptions_empty" = "当前还没有例外条目。";
+"ui.settings.system_proxy_exceptions_empty" = "暂无绕过规则。";
 
 "ui.action.add_exception" = "新增";
-"ui.action.remove_exception" = "删除例外";
+"ui.action.remove_exception" = "删除";
 "ui.action.restore_defaults" = "恢复默认";
-"ui.action.save_exceptions" = "保存例外";
+"ui.action.save_exceptions" = "保存";
 
 "ui.settings.display_mode.icon_and_speed" = "图标 + 速度";
 "ui.settings.display_mode.icon_only" = "仅图标";
@@ -210,7 +210,7 @@
 "app.settings.saved.ports" = "代理端口已保存";
 "app.settings.saved.ports_auto" = "代理端口已自动保存";
 "app.settings.saved.single_key" = "%@ 已保存";
-"app.settings.saved.system_proxy_exceptions" = "系统代理例外已保存";
+"app.settings.saved.system_proxy_exceptions" = "代理绕过已保存";
 "app.settings.error.invalid_log_level" = "log-level 非法值: %@";
 "app.settings.error.overlay_invalid_log_level" = "设置覆盖失败: log-level 非法值 %@";
 "app.settings.error.overlay_port_range" = "设置覆盖失败: %@ 端口必须在 0~65535";

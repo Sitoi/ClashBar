@@ -99,7 +99,7 @@
 "ui.section.proxy_groups" = "Proxy Groups";
 "ui.section.basic_settings" = "Basic Settings";
 "ui.section.proxy_ports" = "Proxy Ports";
-"ui.section.system_proxy_exceptions" = "System Proxy Exceptions";
+"ui.section.system_proxy_exceptions" = "Proxy Bypass";
 "ui.section.maintenance" = "Maintenance";
 
 "ui.rules.column.target_type" = "Target / Type";
@@ -155,13 +155,13 @@
 "ui.settings.ports_hint" = "Click Save Ports after editing to apply changes to core config";
 "ui.settings.ports_auto_save_hint" = "Port changes are saved to core config automatically";
 "ui.settings.ports_auto_saving" = "Saving...";
-"ui.settings.system_proxy_exceptions_hint" = "These entries are written to macOS proxy bypass domains and will be preserved when system proxy is re-applied.";
-"ui.settings.system_proxy_exceptions_empty" = "No exception entries yet.";
+"ui.settings.system_proxy_exceptions_hint" = "These entries are written to macOS proxy bypass domains and preserved when system proxy is re-applied.";
+"ui.settings.system_proxy_exceptions_empty" = "No bypass rules yet.";
 
 "ui.action.add_exception" = "Add";
-"ui.action.remove_exception" = "Remove exception";
+"ui.action.remove_exception" = "Remove";
 "ui.action.restore_defaults" = "Restore Defaults";
-"ui.action.save_exceptions" = "Save Exceptions";
+"ui.action.save_exceptions" = "Save";
 
 "ui.settings.display_mode.icon_and_speed" = "Icon + Speed";
 "ui.settings.display_mode.icon_only" = "Icon Only";
@@ -210,7 +210,7 @@
 "app.settings.saved.ports" = "Proxy ports saved";
 "app.settings.saved.ports_auto" = "Proxy ports auto-saved";
 "app.settings.saved.single_key" = "%@ saved";
-"app.settings.saved.system_proxy_exceptions" = "System proxy exceptions saved";
+"app.settings.saved.system_proxy_exceptions" = "Proxy bypass rules saved";
 "app.settings.error.invalid_log_level" = "Invalid log-level value: %@";
 "app.settings.error.overlay_invalid_log_level" = "Settings overlay failed: invalid log-level %@";
 "app.settings.error.overlay_port_range" = "Settings overlay failed: %@ port must be in 0~65535";

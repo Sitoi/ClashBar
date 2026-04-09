@@ -1,22 +1,10 @@
 import SwiftUI
 
-struct MenuBarHeaderView: View {
+struct MenuBarHeaderView: TranslatingView {
     @EnvironmentObject var appViewModel: AppViewModel
     @EnvironmentObject var remoteMachineStore: RemoteMachineStore
     @Binding var showRemoteMachineManager: Bool
     @Binding var isSwitchingMachine: Bool
-
-    private var language: AppLanguage {
-        self.appViewModel.uiLanguage
-    }
-
-    private func tr(_ key: String) -> String {
-        L10n.t(key, language: self.language)
-    }
-
-    private func tr(_ key: String, _ args: CVarArg...) -> String {
-        L10n.t(key, language: self.language, args: args)
-    }
 
     var headerLogoSize: CGFloat {
         40

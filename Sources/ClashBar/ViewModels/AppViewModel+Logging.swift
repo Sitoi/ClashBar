@@ -26,10 +26,9 @@ extension AppViewModel {
     }
 
     func appendLog(source: AppLogSource, level: String, message: String) {
-        let safeMessage = LogSanitizer.redact(message)
-        guard !safeMessage.isEmpty else { return }
+        guard !message.isEmpty else { return }
 
-        let entry = AppErrorLogEntry(source: source, level: level, message: safeMessage)
+        let entry = AppErrorLogEntry(source: source, level: level, message: message)
         if source == .mihomo {
             self.enqueueBufferedMihomoLog(entry)
             return

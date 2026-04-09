@@ -42,7 +42,7 @@ enum LogLevelFilter: Hashable, CaseIterable {
     }
 }
 
-struct MenuBarRootView: View {
+struct MenuBarRootView: TranslatingView {
     @EnvironmentObject var appViewModel: AppViewModel
     @EnvironmentObject var connectionsStore: ConnectionsStore
     @EnvironmentObject var remoteMachineStore: RemoteMachineStore
@@ -66,18 +66,6 @@ struct MenuBarRootView: View {
 
     var contentWidth: CGFloat {
         MenuBarLayoutTokens.panelWidth - (MenuBarLayoutTokens.space8 * 2)
-    }
-
-    var language: AppLanguage {
-        self.appViewModel.uiLanguage
-    }
-
-    func tr(_ key: String) -> String {
-        L10n.t(key, language: self.language)
-    }
-
-    func tr(_ key: String, _ args: CVarArg...) -> String {
-        L10n.t(key, language: self.language, args: args)
     }
 
     func setCurrentTabWithoutAnimation(_ tab: RootTab) {

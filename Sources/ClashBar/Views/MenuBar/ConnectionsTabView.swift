@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-struct ConnectionsTabView: View {
+struct ConnectionsTabView: TranslatingView {
     @EnvironmentObject var appViewModel: AppViewModel
     @EnvironmentObject var connectionsStore: ConnectionsStore
     @StateObject private var viewModel = ConnectionsViewModel()
@@ -23,18 +23,6 @@ struct ConnectionsTabView: View {
     }
 
     private static var textWidthCache: [String: CGFloat] = [:]
-
-    private var language: AppLanguage {
-        self.appViewModel.uiLanguage
-    }
-
-    private func tr(_ key: String) -> String {
-        L10n.t(key, language: self.language)
-    }
-
-    private func tr(_ key: String, _ args: CVarArg...) -> String {
-        L10n.t(key, language: self.language, args: args)
-    }
 
     var body: some View {
         let connections = self.viewModel.visibleConnections

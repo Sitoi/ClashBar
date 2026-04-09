@@ -53,3 +53,23 @@ extension View {
         }
     }
 }
+
+/// Provides `language`, `tr(_:)`, and `tr(_:_:)` to any SwiftUI view owning an `appViewModel`.
+/// Eliminates the per-file boilerplate duplicated across all menu bar tab views.
+protocol TranslatingView: View {
+    var appViewModel: AppViewModel { get }
+}
+
+extension TranslatingView {
+    var language: AppLanguage {
+        appViewModel.uiLanguage
+    }
+
+    func tr(_ key: String) -> String {
+        L10n.t(key, language: self.language)
+    }
+
+    func tr(_ key: String, _ args: CVarArg...) -> String {
+        L10n.t(key, language: self.language, args: args)
+    }
+}
