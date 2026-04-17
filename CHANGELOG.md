@@ -1,3 +1,38 @@
+## v0.2.3
+
+![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.2.3-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
+
+> 本次更新主要围绕 **Wi-Fi 场景下的配置自动切换、控制器 WebUI 直达、系统代理绕过规则与状态一致性** 展开：现在可以在 Proxy 菜单开启基于当前 Wi-Fi（SSID）的配置自动切换，并把当前网络直接绑定到指定配置；Header 也新增了一键打开控制器 WebUI 的入口，若配置中声明了 `external-ui-url` / `external-ui-name` 会优先打开对应界面，否则也会自动回退到可直接使用的 MetaCubeXD 初始化链接；同时，System 页面新增本地系统代理绕过规则管理，支持编辑、恢复默认并在系统代理重应用时持续保留。除此之外，本次还补上了 `GLOBAL` 代理组在不同模式下的显示一致性、系统代理 Helper 的预热/校验/恢复链路，以及 WebUI 链接跟随控制端变化同步更新等一批细节修复。
+
+### 📝 更新日志 (Changelog)
+
+**✨ 新增功能 (New Features)**
+
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **SSID 配置自动切换**：在 Proxy 快捷菜单中新增 Wi-Fi 自动切换开关；开启后可以通过配置文件右键菜单直接绑定当前 Wi-Fi（SSID）到指定配置，绑定规则会持久保存，切换网络后会自动命中并切换到对应配置。
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **SSID 绑定可视化与结果反馈**：配置列表项会展示已绑定 Wi-Fi 的 badge，并在右键菜单中提供绑定当前 Wi-Fi、解绑当前 Wi-Fi 与按条目解绑已绑定 Wi-Fi 等操作；当策略真正命中并完成配置切换后，状态栏会显示短暂横幅反馈，确认本次切换来自哪个 Wi-Fi、切到了哪个配置。
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **控制器 WebUI 直达入口**：Header 新增一键打开 WebUI 的快捷按钮；如果当前配置声明了 `external-ui-url` / `external-ui-name`，会优先打开控制器实际配置的 WebUI 路径，不再要求用户自己手动拼 URL。
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **控制器模式下的 WebUI 回退能力**：对于只有 `external-controller` / `secret`、但没有内置 UI 路径的控制器场景，现在也会自动生成可直接使用的 MetaCubeXD 初始化链接，本地或远程控制端场景下都更容易直接进入管理界面。
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **系统代理绕过规则管理**：在 System 页面新增 macOS 系统代理绕过列表，支持新增、编辑、删除、保存与恢复默认例外项；这些规则会写入系统代理绕过域名/网段列表，适合保留 `localhost`、局域网网段或自定义直连域名。
+
+**🚀 优化改进 (Improvements)**
+
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **SSID 权限与状态提示**：开启 Wi-Fi 自动切换后，菜单会更明确地展示当前 Wi-Fi 名称或授权状态；首次使用时会主动走权限申请链路，未授权、未连接 Wi-Fi 或命中缺失配置时也会给出更直接的提示与日志反馈，减少“开了但不知道为什么没生效”的困惑。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **设置页交互收敛**：将“代理绕过”收纳进可展开区域，并加入规则数量提示、展开/收起动画和更精简的文案；在远程控制端场景下，也会明确标注该区域属于“本地”系统设置，减少误以为会同步到远端机器的情况。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **日志保真度提升**：应用内日志改为保留更完整的原始消息内容，并统一时间格式化逻辑；复制整条日志或复制原始消息时会更接近真实输出，对于排查 Mihomo 与 ClashBar 自身问题都更直接。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **控制器地址与 WebUI 同步**：当 `external-controller`、`secret`、`external-ui-url` 或 `external-ui-name` 发生变化时，WebUI 入口会跟着刷新；本地配置切换、远程目标切换和轮询刷新后的控制端地址都会尽量保持一致。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **系统代理 Helper 健康检查**：围绕系统代理 Helper 增补后台项目授权、进程运行状态、签名/安装位置校验与失败原因透传，在遇到 Helper 未注册、未启动、未获批准或打包环境不正确时，界面与日志会给出更具体的诊断信息。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **工程与状态流整理**：围绕 `AppViewModel` 重整应用生命周期、配置、轮询、流式更新、日志、系统代理和持久化链路，并补上更清晰的 stores / services / use cases 划分，为后续继续叠加远程控制、自动化和状态同步功能打下更稳基础。
+
+**🐞 修复问题 (Bug Fixes)**
+
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **首次启用 SSID 自动切换**：修复首次开启 Wi-Fi 自动切换时权限请求链路可能漏掉、导致功能看起来已经打开但实际上拿不到当前 SSID 的问题。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **失效 SSID 绑定清理**：修复 Wi-Fi 绑定规则在配置文件被删除、移动或不再可用后仍继续保留的情况，现应用会在初始化时清理无效绑定，避免策略反复命中不存在的配置。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **WebUI 链接陈旧**：修复切换配置、切换本地/远程控制端或刷新运行时配置后，WebUI 入口仍可能指向旧控制器地址或旧 UI 路径的问题。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **`GLOBAL` 代理组显示错误**：修复在 Rule / Direct 等非 Global 模式下，Proxy 列表中仍可能显示 `GLOBAL` 分组的问题；现在只有在真正处于 Global 模式时才会展示，并且模式切换后会立即刷新列表与延迟探测范围。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **系统代理绕过项丢失**：修复系统代理重新应用、启动校验或一致性修复过程中，自定义代理绕过规则容易被覆盖或遗漏的问题，确保本地例外项会一并写回 macOS。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **系统代理启动一致性**：增强应用启动、回到前台和系统代理已开启场景下的 Helper 预热、注册与配置校验流程，减少“开关仍是开的，但系统代理实际上没生效”或目标地址已变更却未及时修正的情况。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **Helper 恢复链路与错误提示**：修复系统代理 Helper 在未放入“应用程序”目录、后台项目未允许、签名不匹配、连接失败或启动超时等场景下反馈不够直观的问题，让恢复路径和失败原因都更清楚。
+
 ## v0.2.2
 
 ![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.2.2-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)

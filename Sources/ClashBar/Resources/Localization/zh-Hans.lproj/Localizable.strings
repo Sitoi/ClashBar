@@ -42,14 +42,9 @@
 "ui.action.flush_fakeip_cache" = "清理 FakeIP 缓存";
 "ui.action.flush_dns_cache" = "清理 DNS 缓存";
 "ui.action.open_core_directory" = "打开内核目录";
-"ui.action.open_web_ui" = "打开 Web UI";
 "ui.action.enable_tun" = "开启 TUN 模式";
 "ui.action.disable_tun" = "关闭 TUN 模式";
-"ui.action.update_geo" = "更新 GEO 数据";
 "ui.action.upgrade_core" = "升级 Core";
-"ui.action.upgrade_ui" = "升级 UI";
-"ui.action.upgrade_geo" = "升级 GEO 资源";
-"ui.action.restart_core_api" = "API 重启 Core";
 
 "ui.mode.rule" = "规则";
 "ui.mode.global" = "全局";
@@ -60,18 +55,14 @@
 "ui.machine.add" = "添加机器";
 "ui.machine.edit" = "编辑机器";
 "ui.machine.save" = "保存";
-"ui.machine.empty" = "暂无远程机器";
 "ui.machine.field.name" = "名称";
 "ui.machine.field.host" = "主机地址";
 "ui.machine.field.port" = "端口";
 "ui.machine.field.secret" = "密钥";
 "ui.machine.preview" = "预览：%@://%@:%@";
 "ui.machine.remote_readonly" = "(远程连接不可变更)";
-"ui.machine.return_local" = "返回本地内核";
-"ui.machine.active" = "当前";
 "ui.machine.local_label" = "本地";
 "ui.machine.remote_label" = "远程";
-"ui.machine.status_unreachable" = "无法连接";
 
 "ui.section.local_app_settings" = "应用设置 (本地)";
 "ui.section.core_settings" = "内核设置";
@@ -87,19 +78,30 @@
 "ui.quick.import_remote_config" = "导入订阅链接";
 "ui.quick.update_remote_configs" = "更新订阅链接";
 "ui.quick.show_in_finder" = "在访达中显示";
+"ui.quick.configs.local_section" = "本地配置";
+"ui.quick.configs.remote_section" = "远程配置";
 "ui.quick.remote.url_label" = "订阅链接";
 "ui.quick.remote.url_placeholder" = "https://example.com/config.yaml";
 "ui.quick.remote.filename_label" = "文件名";
 "ui.quick.remote.filename_placeholder" = "留空则自动推断";
 "ui.quick.remote.refreshing" = "刷新中";
 "ui.quick.remote.refresh_failed" = "刷新失败";
+"ui.quick.ssid.bound_label" = "绑定 Wi-Fi: %@";
+"ui.quick.ssid.bind_current_named" = "绑定当前 Wi-Fi：%@";
+"ui.quick.ssid.unbind_current_named" = "解绑当前 Wi-Fi：%@";
+"ui.quick.ssid.unbind_named" = "解绑 Wi-Fi：%@";
+"ui.quick.ssid.request_permission" = "请求 Wi-Fi 权限";
+"ui.quick.ssid.enable_auto_switch" = "开启 Wi-Fi 自动切换";
+"ui.quick.ssid.disable_auto_switch" = "关闭 Wi-Fi 自动切换";
+"ui.quick.ssid.usage_hint" = "开启后右键配置文件绑定";
+"ui.banner.ssid_strategy.title" = "ClashBar 配置自动切换";
 "ui.system_proxy.remote_target_warning" = "系统代理当前指向远程内核，请确认远程地址可达。";
 
 "ui.section.proxy_providers" = "代理提供者";
 "ui.section.proxy_groups" = "代理组";
 "ui.section.basic_settings" = "基础设置";
 "ui.section.proxy_ports" = "代理端口";
-"ui.section.system_proxy_exceptions" = "系统代理例外";
+"ui.section.system_proxy_exceptions" = "代理绕过";
 "ui.section.maintenance" = "系统维护";
 
 "ui.rules.column.target_type" = "目标 / 类型";
@@ -144,24 +146,25 @@
 "ui.settings.allow_lan" = "允许局域网";
 "ui.settings.ipv6" = "IPv6";
 "ui.settings.tcp_concurrent" = "TCP 并发";
-"ui.settings.tun_mode" = "TUN 模式";
 "ui.settings.log_level" = "日志级别";
 "ui.settings.port.port" = "HTTP 端口";
 "ui.settings.port.socks" = "SOCKS 端口";
 "ui.settings.port.mixed" = "混合端口";
 "ui.settings.port.redir" = "重定向端口";
 "ui.settings.port.tproxy" = "TProxy 端口";
-"ui.settings.save_ports" = "保存端口";
-"ui.settings.ports_hint" = "端口修改后点击“保存端口”应用到内核配置";
-"ui.settings.ports_auto_save_hint" = "端口修改后将自动保存到内核配置";
-"ui.settings.ports_auto_saving" = "保存中...";
 "ui.settings.system_proxy_exceptions_hint" = "这些条目会写入 macOS 的代理绕过域名列表，并在系统代理重新应用时继续保留。";
-"ui.settings.system_proxy_exceptions_empty" = "当前还没有例外条目。";
+"ui.settings.system_proxy_exceptions_empty" = "暂无绕过规则。";
+"ui.settings.ssid_strategy.current_ssid.none" = "未连接 Wi-Fi";
+"ui.settings.ssid_strategy.status.authorized" = "已授权";
+"ui.settings.ssid_strategy.status.not_determined" = "未请求";
+"ui.settings.ssid_strategy.status.denied" = "已拒绝";
+"ui.settings.ssid_strategy.status.restricted" = "受限制";
+"ui.settings.ssid_strategy.status.services_disabled" = "定位服务未开启";
 
 "ui.action.add_exception" = "新增";
-"ui.action.remove_exception" = "删除例外";
+"ui.action.remove_exception" = "删除";
 "ui.action.restore_defaults" = "恢复默认";
-"ui.action.save_exceptions" = "保存例外";
+"ui.action.save_exceptions" = "保存";
 
 "ui.settings.display_mode.icon_and_speed" = "图标 + 速度";
 "ui.settings.display_mode.icon_only" = "仅图标";
@@ -189,7 +192,6 @@
 "ui.common.na" = "-";
 "ui.common.unknown" = "--";
 "ui.common.timeout" = "超时";
-"ui.common.testing" = "测试中...";
 "ui.common.latency_ms" = "%dms";
 "ui.system_proxy.background_activity" = "后台活动";
 "ui.system_proxy.background_activity.allowed" = "已允许";
@@ -210,7 +212,7 @@
 "app.settings.saved.ports" = "代理端口已保存";
 "app.settings.saved.ports_auto" = "代理端口已自动保存";
 "app.settings.saved.single_key" = "%@ 已保存";
-"app.settings.saved.system_proxy_exceptions" = "系统代理例外已保存";
+"app.settings.saved.system_proxy_exceptions" = "代理绕过已保存";
 "app.settings.error.invalid_log_level" = "log-level 非法值: %@";
 "app.settings.error.overlay_invalid_log_level" = "设置覆盖失败: log-level 非法值 %@";
 "app.settings.error.overlay_port_range" = "设置覆盖失败: %@ 端口必须在 0~65535";
@@ -231,7 +233,6 @@
 "app.system_proxy.error.helper_invalid_signature" = "系统代理 helper 签名无效: %@";
 "app.system_proxy.error.helper_connection_failed" = "连接系统代理 helper 失败: %@";
 "app.system_proxy.error.helper_operation_failed" = "系统代理 helper 执行失败: %@";
-"app.system_proxy.alert.title" = "系统代理失败";
 "app.system_proxy.alert.invalid_host" = "代理地址无效";
 "app.system_proxy.alert.invalid_port" = "代理端口无效";
 "app.system_proxy.alert.background_activity_disabled" = "后台项目未允许";
@@ -248,9 +249,6 @@
 "app.tun.error.authorization_cancelled" = "管理员授权已取消。";
 "app.tun.error.authorization_failed" = "授予 TUN 权限失败: %@";
 "app.tun.error.permission_verify_failed" = "TUN 权限写入后校验失败。";
-"app.tun.error.config_unavailable" = "当前配置文件不可用，请重新选择配置文件。";
-"app.tun.error.config_write_failed" = "写入配置文件以启用 TUN 失败: %@";
-"app.tun.error.config_not_selected" = "未选择配置文件。";
 "app.tun.error.runtime_state_mismatch" = "重启内核后 TUN 状态未生效。";
 "app.tun.error.patch_failed" = "应用 TUN 运行时配置失败: %@";
 "app.config.remote_import.prompt" = "请输入订阅链接与保存文件名";
@@ -267,7 +265,6 @@
 "app.provider_refresh.updating" = "Providers 更新中 (%d/%d)";
 "app.provider_refresh.updated" = "Providers 已更新";
 "app.provider_refresh.partial_failed" = "Providers 更新部分失败 (%d)";
-"app.provider_refresh.failed" = "Providers 更新失败";
 "app.provider_refresh.reason.stop_requested" = "停止请求";
 "app.provider_refresh.reason.restart_requested" = "重启请求";
 "app.provider_refresh.reason.quit_requested" = "退出请求";
@@ -292,6 +289,14 @@
 "log.restart.failed" = "重启内核失败: %@";
 "log.network.offline_auto_stop" = "检测到网络断开，已停止内核；网络恢复后将自动启动。";
 "log.network.online_auto_start" = "检测到网络恢复，正在自动启动内核。";
+"log.ssid_strategy.monitor_failed" = "SSID 监听失败: %@";
+"log.ssid_strategy.authorization_required" = "SSID 策略需要定位权限，当前无法根据 Wi-Fi 自动切换配置。";
+"log.ssid_strategy.enable_auto_switch_first" = "请先开启 Wi-Fi 自动切换，再进行当前 Wi-Fi 绑定。";
+"log.ssid_strategy.current_wifi_unavailable" = "当前没有可绑定的 Wi-Fi，已跳过 SSID 绑定。";
+"log.ssid_strategy.bound" = "已将 Wi-Fi %@ 绑定到配置 %@";
+"log.ssid_strategy.unbound" = "已解除 Wi-Fi 绑定：%@";
+"log.ssid_strategy.config_missing" = "SSID 策略命中的目标配置不存在，已跳过: %@";
+"log.ssid_strategy.switching" = "SSID 策略命中 Wi-Fi %@，正在切换到配置 %@";
 "log.config.loaded_count" = "已加载 %d 个配置文件";
 "log.config.not_found" = "配置文件不存在: %@";
 "log.config.selected" = "已选择配置: %@";
@@ -330,8 +335,6 @@
 "log.tun.permission_requesting" = "正在请求管理员权限以启用 TUN 模式...";
 "log.tun.permission_granted" = "TUN 权限授予成功。";
 "log.proxy_export.copied" = "已复制代理导出命令";
-"log.provider.node_test_failed" = "Provider 节点测试失败 (%@/%@): %@";
-"log.provider.healthcheck_failed" = "Provider 健康检查失败（%@）: %@";
 "log.logs.copied_all" = "已复制全部日志（%d 条）";
 "log.config.changed_restart" = "配置已变更，正在重启内核";
 "log.providers.fetch_proxy_failed" = "Providers 刷新: 获取代理提供者失败: %@";
@@ -341,7 +344,6 @@
 "log.providers.proxy_update_failed" = "Providers 刷新: 更新代理提供者失败（%@）: %@";
 "log.providers.rule_update_failed" = "Providers 刷新: 更新规则提供者失败（%@）: %@";
 "log.providers.api_unavailable" = "Providers 刷新跳过: API 不可用（%@）";
-"log.secret.migration_failed" = "Secret 迁移到钥匙串失败: %@";
 "log.stream.start_failed" = "%@ WS 启动失败: %@";
 "log.stream.disconnected" = "%@ WS 已断开: %@";
 "log.system_proxy.read_failed" = "读取系统代理状态失败: %@";
@@ -356,6 +358,7 @@
 "log.remote.switched_to_remote" = "已切换到远程机器: %@ (%@)";
 
 "log.action_name.reload_config" = "重载配置";
+"log.action_name.switch_mode" = "切换模式 -> %@";
 "log.action_name.switch_proxy" = "切换代理 %@ -> %@";
 "log.action_name.update_rule_provider" = "更新规则提供者 %@";
 "log.action_name.update_proxy_provider" = "更新代理提供者 %@";
@@ -375,14 +378,12 @@
 
 // 远程配置订阅
 "ui.quick.remote.auto_update_label" = "自动更新";
-"ui.quick.remote.interval_label" = "自动更新间隔";
 "ui.quick.remote.interval_each" = "每隔";
 "ui.quick.remote.interval_unit" = "小时";
 "fmt.remote_config.next_update_hours_minutes" = "自动 %d 小时 %d 分后";
 "fmt.remote_config.next_update_minutes" = "自动 %d 分后";
 "fmt.remote_config.last_update" = "上次 %@";
 "ui.action.copy_subscription_url" = "复制订阅链接";
-"ui.action.delete" = "删除";
 "app.config.delete.title" = "删除 %@";
 "app.config.delete.message" = "此操作将永久删除配置文件。如果这是远程订阅，订阅元数据也会被一并删除。";
 "log.config.delete.success" = "已删除配置：%@";

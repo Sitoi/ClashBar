@@ -1,0 +1,57 @@
+import Foundation
+
+struct AppLogStore {
+    let logFileURL: URL
+    /// Reference type: struct copies share the same lock, guaranteeing mutual
+    /// exclusion even if the store is passed across actor boundaries or captured
+    /// by background tasks. Each distinct `init(logFileURL:)` gets a fresh lock.
+    private let ioLock = NSLock()
+
+    func ensureLogFileExists() {
+        if !FileManager.default.fileExists(atPath: self.logFileURL.path) {
+            FileManager.default.createFile(atPath: self.logFileURL.path, contents: nil)
+        }
+    }
+
+    func append(entries: [AppErrorLogEntry]) {
+        self.append(records: entries.map {
+            (timestamp: $0.timestamp, level: $0.level, message: $0.message)
+        })
+    }
+
+    private func append(records: [(timestamp: Date, level: String, message: String)]) {
+        guard !records.isEmpty else { return }
+        let content = records.map {
+            "[\(Self.timestampString(from: $0.timestamp))] [\($0.level.uppercased())] \($0.message)\n"
+        }.joined()
+        guard let data = content.data(using: .utf8) else { return }
+
+        self.ioLock.withLock {
+            self.ensureLogFileExists()
+            guard let handle = FileHandle(forWritingAtPath: logFileURL.path) else { return }
+            defer { handle.closeFile() }
+            handle.seekToEndOfFile()
+            handle.write(data)
+        }
+    }
+
+    func clear() {
+        self.ioLock.withLock {
+            if FileManager.default.fileExists(atPath: self.logFileURL.path) {
+                try? Data().write(to: self.logFileURL, options: .atomic)
+            } else {
+                self.ensureLogFileExists()
+            }
+        }
+    }
+
+    private static let timestampFormatter: DateFormatter = {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return fmt
+    }()
+
+    private static func timestampString(from date: Date) -> String {
+        self.timestampFormatter.string(from: date)
+    }
+}
