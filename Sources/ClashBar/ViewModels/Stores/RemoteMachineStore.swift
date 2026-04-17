@@ -55,6 +55,12 @@ final class RemoteMachineStore: ObservableObject {
         self.activeTargetID = Self.loadActiveTargetID(from: defaults)
     }
 
+    deinit {
+        // Task.cancel() is nonisolated and the last reference is releasing the
+        // store, so we can safely stop the timer without hopping to MainActor.
+        connectivityTimer?.cancel()
+    }
+
     func addMachine(_ machine: RemoteMachine) {
         self.machines.append(machine)
         self.persist()
@@ -174,10 +180,9 @@ final class RemoteMachineStore: ObservableObject {
         }
 
         do {
-            let configuration = URLSessionConfiguration.ephemeral
-            configuration.timeoutIntervalForRequest = timeoutInterval
-            configuration.timeoutIntervalForResource = timeoutInterval
-            let session = URLSession(configuration: configuration)
+            let session = URLSessionFactory.makeEphemeralSession(options: .init(
+                timeoutIntervalForRequest: timeoutInterval,
+                timeoutIntervalForResource: timeoutInterval))
             let (data, response) = try await session.data(for: request)
 
             guard let httpResponse = response as? HTTPURLResponse else {

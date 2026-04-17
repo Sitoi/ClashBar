@@ -148,7 +148,7 @@ extension AppViewModel {
             appendLog(level: "info", message: tr("log.config.import_local.success", fileName))
 
             if isOverwrite, self.shouldAutoReloadCurrentConfig(updatedFileNames: [fileName]) {
-                Task { await self.reloadConfig() }
+                Task { [weak self] in await self?.reloadConfig() }
             }
         } catch {
             appendLog(

@@ -42,29 +42,23 @@ extension AppViewModel {
     }
 
     private func ensurePeriodicTasksForCurrentVisibility() {
-        if isPanelPresented {
-            if mediumFrequencyTask == nil {
-                mediumFrequencyTask = self.startPeriodicTask(intervalProvider: { state in
-                    state.mediumFrequencyIntervalNanoseconds
-                }, operation: { state in
-                    await state.refreshMediumFrequency()
-                })
-            }
-
-            if lowFrequencyTask == nil {
-                lowFrequencyTask = self.startPeriodicTask(intervalProvider: { state in
-                    state.lowFrequencyIntervalNanoseconds
-                }, operation: { state in
-                    await state.refreshLowFrequency()
-                })
-            }
+        guard isPanelPresented else {
+            mediumFrequencyTask?.cancel()
+            mediumFrequencyTask = nil
+            lowFrequencyTask?.cancel()
+            lowFrequencyTask = nil
             return
         }
-
-        mediumFrequencyTask?.cancel()
-        lowFrequencyTask?.cancel()
-        mediumFrequencyTask = nil
-        lowFrequencyTask = nil
+        if mediumFrequencyTask == nil {
+            mediumFrequencyTask = self.startPeriodicTask(
+                intervalProvider: { $0.mediumFrequencyIntervalNanoseconds },
+                operation: { await $0.refreshMediumFrequency() })
+        }
+        if lowFrequencyTask == nil {
+            lowFrequencyTask = self.startPeriodicTask(
+                intervalProvider: { $0.lowFrequencyIntervalNanoseconds },
+                operation: { await $0.refreshLowFrequency() })
+        }
     }
 
     func refreshFromAPI(includeSlowCalls: Bool) async {
@@ -195,6 +189,7 @@ extension AppViewModel {
             self.applyRuntimeConfigSnapshot(snapshot.configSnapshot)
 
             if let proxyGroupsPayload = snapshot.proxyGroupsPayload {
+                self.noteProxyProvidersAPIAvailability(error: proxyGroupsPayload.providersError)
                 self.applyProxyGroupsResponse(
                     proxyGroupsPayload.groups,
                     proxyProviders: proxyGroupsPayload.providers)
@@ -318,7 +313,24 @@ extension AppViewModel {
         await runRefresh {
             let client = try self.clientOrThrow()
             let payload = try await FetchProxyGroupsAndProvidersUseCase(transport: client).execute()
+            self.noteProxyProvidersAPIAvailability(error: payload.providersError)
             self.applyProxyGroupsResponse(payload.groups, proxyProviders: payload.providers)
+        }
+    }
+
+    /// Latched logger for `/providers/proxies` availability: emits exactly one
+    /// "API unavailable" entry on the failing → failing-again transition so we
+    /// don't flood the 200-entry log buffer while the Proxy tab polls, but
+    /// still surface both the first failure and the recovery event.
+    private func noteProxyProvidersAPIAvailability(error: Error?) {
+        if let error {
+            guard !self.proxyProvidersAPIUnavailableLogged else { return }
+            self.proxyProvidersAPIUnavailableLogged = true
+            self.appendLog(
+                level: "info",
+                message: tr("log.providers.api_unavailable", error.localizedDescription))
+        } else if self.proxyProvidersAPIUnavailableLogged {
+            self.proxyProvidersAPIUnavailableLogged = false
         }
     }
 

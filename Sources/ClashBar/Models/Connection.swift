@@ -64,22 +64,19 @@ struct ConnectionSummary: Codable, Equatable, Identifiable {
         case metadata
     }
 
-    private nonisolated(unsafe) static let iso8601WithFractional: ISO8601DateFormatter = {
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return f
-    }()
-
-    private nonisolated(unsafe) static let iso8601Basic: ISO8601DateFormatter = {
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime]
-        return f
-    }()
-
     static func parseTimestamp(_ start: String?) -> TimeInterval? {
         guard let value = start?.trimmingCharacters(in: .whitespaces), !value.isEmpty else { return nil }
-        if let date = iso8601WithFractional.date(from: value) { return date.timeIntervalSince1970 }
-        return self.iso8601Basic.date(from: value)?.timeIntervalSince1970
+        // Allocate per-call rather than share a static formatter: parsing only runs
+        // during connection decode (low frequency) and this avoids the data race
+        // hazard of `nonisolated(unsafe) ISO8601DateFormatter` being mutated across
+        // concurrent WS payload decoders.
+        let withFractional = ISO8601DateFormatter()
+        withFractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = withFractional.date(from: value) { return date.timeIntervalSince1970 }
+
+        let basic = ISO8601DateFormatter()
+        basic.formatOptions = [.withInternetDateTime]
+        return basic.date(from: value)?.timeIntervalSince1970
     }
 
     init(

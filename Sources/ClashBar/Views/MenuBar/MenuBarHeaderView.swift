@@ -229,23 +229,4 @@ struct MenuBarHeaderView: TranslatingView {
         }
         return self.statusColor
     }
-
-    var statusColor: Color {
-        switch self.appViewModel.runtimeVisualStatus {
-        case .runningHealthy: nativePositive.opacity(MenuBarLayoutTokens.Opacity.solid)
-        case .runningDegraded: nativeWarning.opacity(MenuBarLayoutTokens.Opacity.solid)
-        case .starting: nativeInfo.opacity(MenuBarLayoutTokens.Opacity.solid)
-        case .failed: nativeCritical.opacity(MenuBarLayoutTokens.Opacity.solid)
-        case .stopped: nativeSecondaryLabel
-        }
-    }
-
-    var runtimeBadgeText: String {
-        switch self.appViewModel.runtimeVisualStatus {
-        case .runningHealthy, .runningDegraded: self.tr("ui.header.status.running")
-        case .starting: self.tr("ui.header.status.starting")
-        case .failed: self.tr("ui.header.status.failed")
-        case .stopped: self.tr("ui.header.status.stopped")
-        }
-    }
 }

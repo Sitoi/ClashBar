@@ -31,16 +31,7 @@ extension AppViewModel {
         do {
             guard let configPath = await resolveSelectedConfigPath() else {
                 let message = tr("log.start.no_config")
-                appendLog(level: "error", message: message)
-                self.presentCoreFailureAlert(
-                    title: self.tr("app.core.alert.start_failed.title"),
-                    message: message,
-                    dedupeKey: "core-start-failed")
-                if trigger == .auto {
-                    startupErrorMessage = message
-                    statusText = "Stopped"
-                    apiStatus = .unknown
-                }
+                self.reportCoreStartFailure(message: message, trigger: trigger, markFailedOnManual: false)
                 return
             }
 
@@ -75,22 +66,25 @@ extension AppViewModel {
                     refreshSystemProxyAfterBootstrap: false,
                     autoTestGroupLatencies: true))
         } catch {
-            let errorMessage = self.coreErrorMessage(error)
             preserveLocalSettingsOnNextSync = false
-            let message = tr("log.start.failed", errorMessage)
-            appendLog(level: "error", message: message)
-            self.presentCoreFailureAlert(
-                title: self.tr("app.core.alert.start_failed.title"),
-                message: message,
-                dedupeKey: "core-start-failed")
-            if trigger == .auto {
-                statusText = "Stopped"
-                apiStatus = .unknown
-                startupErrorMessage = message
-            } else {
-                statusText = "Failed"
-                apiStatus = .failed
-            }
+            let message = tr("log.start.failed", self.coreErrorMessage(error))
+            self.reportCoreStartFailure(message: message, trigger: trigger, markFailedOnManual: true)
+        }
+    }
+
+    private func reportCoreStartFailure(message: String, trigger: StartTrigger, markFailedOnManual: Bool) {
+        self.appendLog(level: "error", message: message)
+        self.presentCoreFailureAlert(
+            title: self.tr("app.core.alert.start_failed.title"),
+            message: message,
+            dedupeKey: "core-start-failed")
+        if trigger == .auto {
+            self.startupErrorMessage = message
+            self.statusText = "Stopped"
+            self.apiStatus = .unknown
+        } else if markFailedOnManual {
+            self.statusText = "Failed"
+            self.apiStatus = .failed
         }
     }
 
@@ -124,12 +118,7 @@ extension AppViewModel {
         cancelProviderRefresh(reason: "restart requested")
         do {
             guard let configPath = await resolveSelectedConfigPath() else {
-                let message = tr("log.start.no_config")
-                appendLog(level: "error", message: message)
-                self.presentCoreFailureAlert(
-                    title: self.tr("app.core.alert.restart_failed.title"),
-                    message: message,
-                    dedupeKey: "core-restart-failed")
+                self.reportCoreRestartFailure(message: tr("log.start.no_config"))
                 return
             }
 
@@ -156,15 +145,17 @@ extension AppViewModel {
                     refreshSystemProxyAfterBootstrap: true,
                     autoTestGroupLatencies: false))
         } catch {
-            let errorMessage = self.coreErrorMessage(error)
             preserveLocalSettingsOnNextSync = false
-            let message = tr("log.restart.failed", errorMessage)
-            appendLog(level: "error", message: message)
-            self.presentCoreFailureAlert(
-                title: self.tr("app.core.alert.restart_failed.title"),
-                message: message,
-                dedupeKey: "core-restart-failed")
+            self.reportCoreRestartFailure(message: tr("log.restart.failed", self.coreErrorMessage(error)))
         }
+    }
+
+    private func reportCoreRestartFailure(message: String) {
+        self.appendLog(level: "error", message: message)
+        self.presentCoreFailureAlert(
+            title: self.tr("app.core.alert.restart_failed.title"),
+            message: message,
+            dedupeKey: "core-restart-failed")
     }
 
     func performPrimaryCoreAction() async {
@@ -216,6 +207,26 @@ extension AppViewModel {
         cancelPolling()
         stopRemoteConfigAutoUpdateTask()
         stopRemoteConfigMenuRefreshTimer()
+
+        // Tear down remaining background work and flush buffered log entries
+        // before the process exits. Without this, WebSocket streams may keep
+        // firing callbacks into a half-deallocated app, and buffered mihomo
+        // log lines are lost on quit.
+        streamCoordinator.cancelAll()
+        ssidStrategyApplyTask?.cancel()
+        ssidStrategyApplyTask = nil
+        ssidMonitorService.stop()
+        trafficDecodeTask?.cancel()
+        trafficDecodeTask = nil
+        mihomoLogFlushTask?.cancel()
+        mihomoLogFlushTask = nil
+        proxyPortsAutoSaveTask?.cancel()
+        proxyPortsAutoSaveTask = nil
+        settingsFeedbackClearTask?.cancel()
+        settingsFeedbackClearTask = nil
+        coreUpgradeFeedbackClearTask?.cancel()
+        coreUpgradeFeedbackClearTask = nil
+        flushPendingMihomoLogsIfNeeded()
     }
 
     func applyAppAppearance() {

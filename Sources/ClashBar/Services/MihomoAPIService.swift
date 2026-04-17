@@ -301,12 +301,33 @@ final class MihomoAPIService: MihomoAPITransporting, @unchecked Sendable {
                 return data
             } catch {
                 lastError = error
-                if attempt == maxAttempts - 1 { break }
+                // Only retry transient transport failures: HTTP status errors
+                // (4xx/5xx), decoding errors, and server-rejected payloads will
+                // not become valid by trying again, so surface them immediately.
+                guard Self.shouldRetry(error: error), attempt < maxAttempts - 1 else {
+                    throw error
+                }
                 try await Task.sleep(nanoseconds: 250_000_000)
             }
         }
 
         throw lastError ?? APIError.invalidResponse
+    }
+
+    private static func shouldRetry(error: Error) -> Bool {
+        guard let urlError = error as? URLError else { return false }
+        switch urlError.code {
+        case .timedOut,
+             .networkConnectionLost,
+             .cannotConnectToHost,
+             .notConnectedToInternet,
+             .dnsLookupFailed,
+             .cannotFindHost,
+             .resourceUnavailable:
+            return true
+        default:
+            return false
+        }
     }
 
     private func session(for endpoint: Endpoint) -> URLSession {
@@ -318,17 +339,10 @@ final class MihomoAPIService: MihomoAPITransporting, @unchecked Sendable {
         timeoutIntervalForResource: TimeInterval,
         httpMaximumConnectionsPerHost: Int) -> URLSession
     {
-        let config = URLSessionConfiguration.ephemeral
-        config.timeoutIntervalForRequest = timeoutIntervalForRequest
-        config.timeoutIntervalForResource = timeoutIntervalForResource
-        config.waitsForConnectivity = false
-        config.requestCachePolicy = .reloadIgnoringLocalCacheData
-        config.urlCache = nil
-        config.httpCookieStorage = nil
-        config.httpShouldSetCookies = false
-        config.urlCredentialStorage = nil
-        config.httpMaximumConnectionsPerHost = httpMaximumConnectionsPerHost
-        return URLSession(configuration: config)
+        URLSessionFactory.makeEphemeralSession(options: .init(
+            timeoutIntervalForRequest: timeoutIntervalForRequest,
+            timeoutIntervalForResource: timeoutIntervalForResource,
+            httpMaximumConnectionsPerHost: httpMaximumConnectionsPerHost))
     }
 
     private func buildRequest(for endpoint: Endpoint) throws -> URLRequest {

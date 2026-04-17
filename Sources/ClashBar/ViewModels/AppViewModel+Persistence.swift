@@ -3,19 +3,15 @@ import Foundation
 @MainActor
 extension AppViewModel {
     func resolveSelectedConfigPath() async -> String? {
-        if let selected = configRepository.selectedConfig {
-            let selectedPath = self.syncSelectedConfigSelection(selected)
-            self.syncConfigDisplayState()
-            return selectedPath
+        if let path = self.applySelectedConfig(configRepository.selectedConfig) {
+            return path
         }
 
         if let selectedName = defaults.string(forKey: selectedConfigKey),
            let selected = configRepository.availableConfigs.first(where: { $0.lastPathComponent == selectedName })
         {
             configRepository.selectConfig(selected)
-            let selectedPath = self.syncSelectedConfigSelection(selected)
-            self.syncConfigDisplayState()
-            return selectedPath
+            return self.applySelectedConfig(selected)
         }
 
         if let legacySelectedPath = defaults.string(forKey: legacySelectedConfigKey) {
@@ -24,20 +20,19 @@ extension AppViewModel {
             defaults.removeObject(forKey: legacySelectedConfigKey)
             if let selected = configRepository.availableConfigs.first(where: { $0.lastPathComponent == legacyName }) {
                 configRepository.selectConfig(selected)
-                let selectedPath = self.syncSelectedConfigSelection(selected)
-                self.syncConfigDisplayState()
-                return selectedPath
+                return self.applySelectedConfig(selected)
             }
         }
 
         _ = configRepository.reloadConfigs()
-        if let selected = configRepository.selectedConfig {
-            let selectedPath = self.syncSelectedConfigSelection(selected)
-            self.syncConfigDisplayState()
-            return selectedPath
-        }
+        return self.applySelectedConfig(configRepository.selectedConfig)
+    }
 
-        return nil
+    private func applySelectedConfig(_ selected: URL?) -> String? {
+        guard let selected else { return nil }
+        let selectedPath = self.syncSelectedConfigSelection(selected)
+        self.syncConfigDisplayState()
+        return selectedPath
     }
 
     func restoreSavedConfigDirectory() {
@@ -69,6 +64,7 @@ extension AppViewModel {
         if selectedConfigName == "-", let first = availableConfigFileNames.first {
             selectedConfigName = first
         }
+        self.pruneSSIDStrategyRulesIfNeeded()
         self.pruneRemoteConfigSubscriptionsIfNeeded()
         self.refreshRemoteConfigMenuStates()
     }
@@ -84,27 +80,29 @@ extension AppViewModel {
     func persistEditableSettingsSnapshot() {
         guard !suppressSettingsPersistence else { return }
         guard !self.isRemoteTarget else { return }
-        let snapshot = currentEditableSettingsSnapshot()
-        guard let data = try? JSONEncoder().encode(snapshot) else { return }
-        defaults.set(data, forKey: editableSettingsSnapshotKey)
+        self.encodeToDefaults(currentEditableSettingsSnapshot(), key: editableSettingsSnapshotKey)
     }
 
     func loadPersistedEditableSettingsSnapshot() -> EditableSettingsSnapshot? {
-        guard let data = defaults.data(forKey: editableSettingsSnapshotKey) else { return nil }
-        return try? JSONDecoder().decode(EditableSettingsSnapshot.self, from: data)
+        self.decodeFromDefaults(EditableSettingsSnapshot.self, key: editableSettingsSnapshotKey)
     }
 
     func persistSystemProxyExceptions() {
-        guard let data = try? JSONEncoder().encode(self.lastSavedSystemProxyExceptions) else { return }
-        defaults.set(data, forKey: systemProxyExceptionsKey)
+        self.encodeToDefaults(self.lastSavedSystemProxyExceptions, key: systemProxyExceptionsKey)
+    }
+
+    func decodeFromDefaults<Value: Decodable>(_ type: Value.Type, key: String) -> Value? {
+        guard let data = defaults.data(forKey: key) else { return nil }
+        return try? JSONDecoder().decode(Value.self, from: data)
+    }
+
+    func encodeToDefaults(_ value: some Encodable, key: String) {
+        guard let data = try? JSONEncoder().encode(value) else { return }
+        defaults.set(data, forKey: key)
     }
 
     func loadPersistedSystemProxyExceptions() -> [String]? {
-        guard let data = defaults.data(forKey: systemProxyExceptionsKey),
-              let values = try? JSONDecoder().decode([String].self, from: data)
-        else {
-            return nil
-        }
+        guard let values = self.decodeFromDefaults([String].self, key: systemProxyExceptionsKey) else { return nil }
         return self.normalizedSystemProxyExceptionValues(values)
     }
 
@@ -131,9 +129,9 @@ extension AppViewModel {
     // MARK: - v2 Remote Config Subscriptions
 
     func loadPersistedRemoteConfigSubscriptions() -> [String: RemoteConfigSubscription] {
-        // Try loading v2 format first
-        if let data = defaults.data(forKey: remoteConfigSubscriptionsKey),
-           let subscriptions = try? JSONDecoder().decode([String: RemoteConfigSubscription].self, from: data)
+        if let subscriptions = self.decodeFromDefaults(
+            [String: RemoteConfigSubscription].self,
+            key: remoteConfigSubscriptionsKey)
         {
             var result: [String: RemoteConfigSubscription] = [:]
             for (fileName, sub) in subscriptions {
@@ -158,18 +156,13 @@ extension AppViewModel {
                 autoUpdateIntervalHours: RemoteConfigSubscription.defaultAutoUpdateIntervalHours,
                 lastUpdateCheckAt: nil)
         }
-
-        // Persist v2 and clear v1
-        if let data = try? JSONEncoder().encode(migrated) {
-            defaults.set(data, forKey: remoteConfigSubscriptionsKey)
-        }
+        self.encodeToDefaults(migrated, key: remoteConfigSubscriptionsKey)
         defaults.removeObject(forKey: remoteConfigSourcesKey)
         return migrated
     }
 
     func persistRemoteConfigSubscriptions() {
-        guard let data = try? JSONEncoder().encode(remoteConfigSubscriptions) else { return }
-        defaults.set(data, forKey: remoteConfigSubscriptionsKey)
+        self.encodeToDefaults(remoteConfigSubscriptions, key: remoteConfigSubscriptionsKey)
     }
 
     func pruneRemoteConfigSubscriptionsIfNeeded() {
@@ -195,6 +188,28 @@ extension AppViewModel {
             result[normalizedName] = url.absoluteString
         }
         return result
+    }
+
+    func loadPersistedSSIDStrategyRules() -> [SSIDStrategyRule] {
+        let rules = self.decodeFromDefaults([SSIDStrategyRule].self, key: ssidStrategyRulesKey) ?? []
+        return SSIDStrategyRule.normalized(rules)
+    }
+
+    func persistSSIDStrategyRules(_ rules: [SSIDStrategyRule]) {
+        self.encodeToDefaults(SSIDStrategyRule.normalized(rules), key: ssidStrategyRulesKey)
+    }
+
+    func pruneSSIDStrategyRulesIfNeeded() {
+        guard self.configRepository.configDirectory != nil else { return }
+
+        let validConfigNames = Set(self.availableConfigFileNames.map(\.trimmed))
+        let nextRules = SSIDStrategyRule.normalized(self.ssidStrategyRules).filter {
+            validConfigNames.contains($0.configFileName)
+        }
+        guard nextRules != self.ssidStrategyRules else { return }
+
+        self.ssidStrategyRules = nextRules
+        self.persistSSIDStrategyRules(nextRules)
     }
 }
 

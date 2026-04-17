@@ -2,12 +2,8 @@ import AppKit
 
 @MainActor
 final class ClashBarAppDelegate: NSObject, NSApplicationDelegate {
-    let container = AppCoordinator()
+    let appViewModel = AppViewModel()
     private var statusItemController: StatusItemController?
-
-    var appViewModel: AppViewModel {
-        self.container.appViewModel
-    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if let image = BrandIcon.image {

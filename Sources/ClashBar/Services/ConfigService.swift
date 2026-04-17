@@ -225,12 +225,9 @@ struct ConfigImportService {
     }
 
     func downloadRemoteConfigData(from remoteURL: URL, userAgent: String? = nil) async throws -> Data {
-        let config = URLSessionConfiguration.ephemeral
-        config.timeoutIntervalForRequest = 15
-        config.timeoutIntervalForResource = 30
-        config.requestCachePolicy = .reloadIgnoringLocalCacheData
-        config.urlCache = nil
-        let session = URLSession(configuration: config)
+        let session = URLSessionFactory.makeEphemeralSession(options: .init(
+            timeoutIntervalForRequest: 15,
+            timeoutIntervalForResource: 30))
         defer { session.finishTasksAndInvalidate() }
 
         var request = URLRequest(url: remoteURL)

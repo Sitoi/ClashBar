@@ -286,6 +286,17 @@ extension MenuBarRootView {
         .padding(.vertical, MenuBarLayoutTokens.space2)
     }
 
+    var appVersionText: String {
+        self.appViewModel.currentAppVersionText
+    }
+}
+
+// MARK: - Shared Runtime Status
+
+/// `statusColor` / `runtimeBadgeText` are shared across any view that owns an
+/// `appViewModel`. Hoisting them onto `TranslatingView` removes the byte-for-byte
+/// duplicate that previously lived in `MenuBarHeaderView` and the root footer.
+extension TranslatingView {
     var statusColor: Color {
         switch appViewModel.runtimeVisualStatus {
         case .runningHealthy: self.nativePositive.opacity(MenuBarLayoutTokens.Opacity.solid)
@@ -298,19 +309,11 @@ extension MenuBarRootView {
 
     var runtimeBadgeText: String {
         switch appViewModel.runtimeVisualStatus {
-        case .runningHealthy, .runningDegraded:
-            tr("ui.header.status.running")
-        case .starting:
-            tr("ui.header.status.starting")
-        case .failed:
-            tr("ui.header.status.failed")
-        case .stopped:
-            tr("ui.header.status.stopped")
+        case .runningHealthy, .runningDegraded: tr("ui.header.status.running")
+        case .starting: tr("ui.header.status.starting")
+        case .failed: tr("ui.header.status.failed")
+        case .stopped: tr("ui.header.status.stopped")
         }
-    }
-
-    var appVersionText: String {
-        self.appViewModel.currentAppVersionText
     }
 }
 

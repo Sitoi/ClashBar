@@ -42,14 +42,9 @@
 "ui.action.flush_fakeip_cache" = "Flush FakeIP Cache";
 "ui.action.flush_dns_cache" = "Flush DNS Cache";
 "ui.action.open_core_directory" = "Open Core Directory";
-"ui.action.open_web_ui" = "Open Web UI";
 "ui.action.enable_tun" = "Enable TUN Mode";
 "ui.action.disable_tun" = "Disable TUN Mode";
-"ui.action.update_geo" = "Update GEO Data";
 "ui.action.upgrade_core" = "Upgrade Core";
-"ui.action.upgrade_ui" = "Upgrade UI";
-"ui.action.upgrade_geo" = "Upgrade GEO Assets";
-"ui.action.restart_core_api" = "Restart Core via API";
 
 "ui.mode.rule" = "Rule";
 "ui.mode.global" = "Global";
@@ -60,18 +55,14 @@
 "ui.machine.add" = "Add Machine";
 "ui.machine.edit" = "Edit Machine";
 "ui.machine.save" = "Save";
-"ui.machine.empty" = "No remote machines";
 "ui.machine.field.name" = "Name";
 "ui.machine.field.host" = "Host";
 "ui.machine.field.port" = "Port";
 "ui.machine.field.secret" = "Secret";
 "ui.machine.preview" = "Preview: %@://%@:%@";
 "ui.machine.remote_readonly" = "(Remote, read-only)";
-"ui.machine.return_local" = "Return to Local Core";
-"ui.machine.active" = "Active";
 "ui.machine.local_label" = "Local";
 "ui.machine.remote_label" = "Remote";
-"ui.machine.status_unreachable" = "Unreachable";
 
 "ui.section.local_app_settings" = "App Settings (Local)";
 "ui.section.core_settings" = "Core Settings";
@@ -87,12 +78,23 @@
 "ui.quick.import_remote_config" = "Import Subscription Link";
 "ui.quick.update_remote_configs" = "Update Subscription Links";
 "ui.quick.show_in_finder" = "Show in Finder";
+"ui.quick.configs.local_section" = "Local Configs";
+"ui.quick.configs.remote_section" = "Remote Configs";
 "ui.quick.remote.url_label" = "Subscription URL";
 "ui.quick.remote.url_placeholder" = "https://example.com/config.yaml";
 "ui.quick.remote.filename_label" = "File Name";
 "ui.quick.remote.filename_placeholder" = "Leave empty to infer automatically";
 "ui.quick.remote.refreshing" = "Refreshing";
 "ui.quick.remote.refresh_failed" = "Refresh Failed";
+"ui.quick.ssid.bound_label" = "Bound Wi-Fi: %@";
+"ui.quick.ssid.bind_current_named" = "Bind Current Wi-Fi: %@";
+"ui.quick.ssid.unbind_current_named" = "Unbind Current Wi-Fi: %@";
+"ui.quick.ssid.unbind_named" = "Unbind Wi-Fi: %@";
+"ui.quick.ssid.request_permission" = "Request Wi-Fi Permission";
+"ui.quick.ssid.enable_auto_switch" = "Enable Wi-Fi Auto Switch";
+"ui.quick.ssid.disable_auto_switch" = "Disable Wi-Fi Auto Switch";
+"ui.quick.ssid.usage_hint" = "After enabling, right-click a config file to bind.";
+"ui.banner.ssid_strategy.title" = "ClashBar Config Auto Switch";
 "ui.system_proxy.remote_target_warning" = "System proxy currently points to a remote core. Make sure the remote endpoint remains reachable.";
 
 "ui.section.proxy_providers" = "Proxy Providers";
@@ -144,19 +146,20 @@
 "ui.settings.allow_lan" = "Allow LAN";
 "ui.settings.ipv6" = "IPv6";
 "ui.settings.tcp_concurrent" = "TCP Concurrent";
-"ui.settings.tun_mode" = "TUN Mode";
 "ui.settings.log_level" = "Log Level";
 "ui.settings.port.port" = "HTTP Port";
 "ui.settings.port.socks" = "SOCKS Port";
 "ui.settings.port.mixed" = "Mixed Port";
 "ui.settings.port.redir" = "Redir Port";
 "ui.settings.port.tproxy" = "TProxy Port";
-"ui.settings.save_ports" = "Save Ports";
-"ui.settings.ports_hint" = "Click Save Ports after editing to apply changes to core config";
-"ui.settings.ports_auto_save_hint" = "Port changes are saved to core config automatically";
-"ui.settings.ports_auto_saving" = "Saving...";
 "ui.settings.system_proxy_exceptions_hint" = "These entries are written to macOS proxy bypass domains and preserved when system proxy is re-applied.";
 "ui.settings.system_proxy_exceptions_empty" = "No bypass rules yet.";
+"ui.settings.ssid_strategy.current_ssid.none" = "No Wi-Fi Connected";
+"ui.settings.ssid_strategy.status.authorized" = "Authorized";
+"ui.settings.ssid_strategy.status.not_determined" = "Not Requested";
+"ui.settings.ssid_strategy.status.denied" = "Denied";
+"ui.settings.ssid_strategy.status.restricted" = "Restricted";
+"ui.settings.ssid_strategy.status.services_disabled" = "Location Services Off";
 
 "ui.action.add_exception" = "Add";
 "ui.action.remove_exception" = "Remove";
@@ -189,7 +192,6 @@
 "ui.common.na" = "-";
 "ui.common.unknown" = "--";
 "ui.common.timeout" = "Timeout";
-"ui.common.testing" = "Testing...";
 "ui.common.latency_ms" = "%dms";
 "ui.system_proxy.background_activity" = "Background";
 "ui.system_proxy.background_activity.allowed" = "Allowed";
@@ -231,7 +233,6 @@
 "app.system_proxy.error.helper_invalid_signature" = "Privileged helper signature invalid: %@";
 "app.system_proxy.error.helper_connection_failed" = "Failed to connect privileged helper: %@";
 "app.system_proxy.error.helper_operation_failed" = "Privileged helper operation failed: %@";
-"app.system_proxy.alert.title" = "System Proxy Failed";
 "app.system_proxy.alert.invalid_host" = "Invalid proxy host";
 "app.system_proxy.alert.invalid_port" = "Invalid proxy port";
 "app.system_proxy.alert.background_activity_disabled" = "Background item not allowed";
@@ -248,9 +249,6 @@
 "app.tun.error.authorization_cancelled" = "Administrator authorization was cancelled.";
 "app.tun.error.authorization_failed" = "Failed to grant TUN permissions: %@";
 "app.tun.error.permission_verify_failed" = "TUN permissions were not applied successfully.";
-"app.tun.error.config_unavailable" = "Selected config file is unavailable. Please reselect a config file.";
-"app.tun.error.config_write_failed" = "Failed to update config file for TUN mode: %@";
-"app.tun.error.config_not_selected" = "No config file selected.";
 "app.tun.error.runtime_state_mismatch" = "TUN mode did not take effect after core restart.";
 "app.tun.error.patch_failed" = "Failed to patch TUN runtime config: %@";
 "app.config.remote_import.prompt" = "Enter the subscription URL and file name.";
@@ -267,7 +265,6 @@
 "app.provider_refresh.updating" = "Providers updating (%d/%d)";
 "app.provider_refresh.updated" = "Providers updated";
 "app.provider_refresh.partial_failed" = "Providers partially failed (%d)";
-"app.provider_refresh.failed" = "Providers update failed";
 "app.provider_refresh.reason.stop_requested" = "stop requested";
 "app.provider_refresh.reason.restart_requested" = "restart requested";
 "app.provider_refresh.reason.quit_requested" = "quit requested";
@@ -292,6 +289,14 @@
 "log.restart.failed" = "Failed to restart core: %@";
 "log.network.offline_auto_stop" = "Network offline detected. Core stopped and will auto-start after recovery.";
 "log.network.online_auto_start" = "Network recovered. Auto-starting core.";
+"log.ssid_strategy.monitor_failed" = "SSID monitoring failed: %@";
+"log.ssid_strategy.authorization_required" = "SSID Strategy needs location permission before it can switch configs by Wi-Fi.";
+"log.ssid_strategy.enable_auto_switch_first" = "Enable Wi-Fi Auto Switch before binding the current Wi-Fi.";
+"log.ssid_strategy.current_wifi_unavailable" = "No current Wi-Fi is available to bind.";
+"log.ssid_strategy.bound" = "Bound Wi-Fi %@ to config %@";
+"log.ssid_strategy.unbound" = "Removed Wi-Fi binding: %@";
+"log.ssid_strategy.config_missing" = "SSID Strategy matched a missing config and skipped it: %@";
+"log.ssid_strategy.switching" = "SSID Strategy matched Wi-Fi %@ and is switching to config %@";
 "log.config.loaded_count" = "Loaded %d config files";
 "log.config.not_found" = "Config file not found: %@";
 "log.config.selected" = "Selected config: %@";
@@ -330,8 +335,6 @@
 "log.tun.permission_requesting" = "Requesting administrator permissions for TUN mode...";
 "log.tun.permission_granted" = "TUN permissions granted.";
 "log.proxy_export.copied" = "Proxy export command copied";
-"log.provider.node_test_failed" = "Provider node test failed (%@/%@): %@";
-"log.provider.healthcheck_failed" = "Provider healthcheck failed (%@): %@";
 "log.logs.copied_all" = "Copied all logs (%d entries)";
 "log.config.changed_restart" = "Config changed, restarting core";
 "log.providers.fetch_proxy_failed" = "Providers refresh: fetch proxy providers failed: %@";
@@ -341,7 +344,6 @@
 "log.providers.proxy_update_failed" = "Providers refresh: proxy provider update failed (%@): %@";
 "log.providers.rule_update_failed" = "Providers refresh: rule provider update failed (%@): %@";
 "log.providers.api_unavailable" = "Providers refresh skipped: API unavailable (%@)";
-"log.secret.migration_failed" = "Secret migration to Keychain failed: %@";
 "log.stream.start_failed" = "%@ WS start failed: %@";
 "log.stream.disconnected" = "%@ WS disconnected: %@";
 "log.system_proxy.read_failed" = "Read system proxy status failed: %@";
@@ -356,6 +358,7 @@
 "log.remote.switched_to_remote" = "Switched to remote machine: %@ (%@)";
 
 "log.action_name.reload_config" = "Reload config";
+"log.action_name.switch_mode" = "Switch mode to %@";
 "log.action_name.switch_proxy" = "Switch proxy %@ -> %@";
 "log.action_name.update_rule_provider" = "Update rule provider %@";
 "log.action_name.update_proxy_provider" = "Update proxy provider %@";
@@ -375,14 +378,12 @@
 
 // Remote config subscription
 "ui.quick.remote.auto_update_label" = "Auto Update";
-"ui.quick.remote.interval_label" = "Update Interval (hours)";
 "ui.quick.remote.interval_each" = "Every";
 "ui.quick.remote.interval_unit" = "hours";
 "fmt.remote_config.next_update_hours_minutes" = "Auto in %dh %dm";
 "fmt.remote_config.next_update_minutes" = "Auto in %dm";
 "fmt.remote_config.last_update" = "Last %@";
 "ui.action.copy_subscription_url" = "Copy Subscription URL";
-"ui.action.delete" = "Delete";
 "app.config.delete.title" = "Delete %@";
 "app.config.delete.message" = "This will permanently delete the config file. If it is a remote subscription, the subscription metadata will also be removed.";
 "log.config.delete.success" = "Config deleted: %@";

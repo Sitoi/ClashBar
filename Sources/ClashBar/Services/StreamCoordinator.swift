@@ -148,7 +148,8 @@ final class StreamCoordinator {
         let result = ComputeNextStreamReconnectDelayUseCase().execute(
             currentAttempt: attempt,
             baseDelayNanoseconds: self.baseDelayNanoseconds,
-            maxDelayNanoseconds: self.maxDelayNanoseconds)
+            maxDelayNanoseconds: self.maxDelayNanoseconds,
+            jitter: Double.random(in: 0.85...1.15))
         self.streamReconnectAttempts[key] = result.nextAttempt
         return result.delayNanoseconds
     }

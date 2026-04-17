@@ -450,13 +450,18 @@ struct SystemProxyService {
     private func invokeHelperPing() async throws {
         try await self.invokeHelperOnce { helper, completion in
             helper.ping { success, message in
-                if success {
-                    completion(.success(()))
-                    return
-                }
-                completion(.failure(SystemProxyServiceError.helperOperationFailed(message ?? "Unknown helper error.")))
+                completion(Self.mapHelperResult(success: success, message: message, value: ()))
             }
         }
+    }
+
+    private static func mapHelperResult<Value>(
+        success: Bool,
+        message: String?,
+        value: @autoclosure () -> Value) -> Result<Value, Error>
+    {
+        if success { return .success(value()) }
+        return .failure(SystemProxyServiceError.helperOperationFailed(message ?? "Unknown helper error."))
     }
 
     private func helperService() -> SMAppService {
@@ -535,11 +540,7 @@ struct SystemProxyService {
     {
         try await self.invokeHelper { helper, completion in
             invoke(helper) { success, message in
-                if success {
-                    completion(.success(()))
-                    return
-                }
-                completion(.failure(SystemProxyServiceError.helperOperationFailed(message ?? "Unknown helper error.")))
+                completion(Self.mapHelperResult(success: success, message: message, value: ()))
             }
         }
     }
@@ -550,11 +551,7 @@ struct SystemProxyService {
     {
         try await self.invokeHelper { helper, completion in
             invoke(helper) { success, boolValue, message in
-                if success {
-                    completion(.success(boolValue))
-                    return
-                }
-                completion(.failure(SystemProxyServiceError.helperOperationFailed(message ?? "Unknown helper error.")))
+                completion(Self.mapHelperResult(success: success, message: message, value: boolValue))
             }
         }
     }
@@ -562,15 +559,15 @@ struct SystemProxyService {
     private func invokeActiveTargetQuery() async throws -> (host: String, port: Int)? {
         try await self.invokeHelper { helper, completion in
             helper.getSystemProxyActiveTarget { success, host, port, message in
-                if success {
-                    guard let host, !host.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, port > 0 else {
-                        completion(.success(nil))
-                        return
-                    }
-                    completion(.success((host: host, port: port)))
-                    return
+                let target: (host: String, port: Int)? = if let host,
+                                                            !host.trimmingCharacters(in: .whitespacesAndNewlines)
+                                                                .isEmpty, port > 0
+                {
+                    (host: host, port: port)
+                } else {
+                    nil
                 }
-                completion(.failure(SystemProxyServiceError.helperOperationFailed(message ?? "Unknown helper error.")))
+                completion(Self.mapHelperResult(success: success, message: message, value: target))
             }
         }
     }
@@ -578,11 +575,10 @@ struct SystemProxyService {
     private func invokeExceptionsQuery() async throws -> [String] {
         try await self.invokeHelper { helper, completion in
             helper.getSystemProxyExceptions { success, serialized, message in
-                if success {
-                    completion(.success(self.deserializeExceptions(serialized)))
-                    return
-                }
-                completion(.failure(SystemProxyServiceError.helperOperationFailed(message ?? "Unknown helper error.")))
+                completion(Self.mapHelperResult(
+                    success: success,
+                    message: message,
+                    value: self.deserializeExceptions(serialized)))
             }
         }
     }
@@ -723,12 +719,12 @@ struct SystemProxyService {
     func clearSystemProxyBlocking(timeout: TimeInterval = 2.0) {
         let semaphore = DispatchSemaphore(value: 0)
 
-        DispatchQueue.global(qos: .userInitiated).async {
-            let connection = NSXPCConnection(
-                machServiceName: ProxyHelperConstants.machServiceName,
-                options: .privileged)
-            connection.remoteObjectInterface = NSXPCInterface(with: ProxyHelperProtocol.self)
-            connection.activate()
+        DispatchQueue.global(qos: .userInitiated).async { [self] in
+            // Reuse the shared connection factory instead of re-inlining the
+            // NSXPCConnection dance so both async and blocking paths stay in
+            // sync on mach service name, protocol, and activation.
+            // Caller blocks on `semaphore` below, so strong `self` is safe.
+            let connection = self.makeConnection()
 
             guard let helper = connection.remoteObjectProxyWithErrorHandler({ _ in
                 semaphore.signal()

@@ -179,6 +179,7 @@ extension AppViewModel {
 
     func handleApplicationDidBecomeActive() {
         self.refreshLaunchAtLoginStatus()
+        self.handleSSIDStrategyAppDidBecomeActive()
         guard !self.isRemoteTarget, self.hasSystemProxyOpenIntent else { return }
 
         Task { [weak self] in
@@ -290,86 +291,52 @@ extension AppViewModel {
     }
 
     func systemProxyErrorMessage(_ error: Error) -> String {
-        guard let serviceError = error as? SystemProxyServiceError else {
-            return error.localizedDescription
-        }
-
+        guard let serviceError = error as? SystemProxyServiceError else { return error.localizedDescription }
         switch serviceError {
-        case .invalidHost:
-            return tr("app.system_proxy.error.invalid_host")
-        case .invalidPort:
-            return tr("app.system_proxy.error.invalid_port")
-        case .helperNotBundled:
-            return tr("app.system_proxy.error.helper_not_bundled")
-        case .helperRequiresInstallToApplications:
-            return tr("app.system_proxy.error.helper_install_location")
-        case .helperNeedsApproval:
-            return tr("app.system_proxy.error.helper_needs_approval")
+        case .invalidHost: return tr("app.system_proxy.error.invalid_host")
+        case .invalidPort: return tr("app.system_proxy.error.invalid_port")
+        case .helperNotBundled: return tr("app.system_proxy.error.helper_not_bundled")
+        case .helperRequiresInstallToApplications: return tr("app.system_proxy.error.helper_install_location")
+        case .helperNeedsApproval: return tr("app.system_proxy.error.helper_needs_approval")
+        case .helperStartTimedOut: return tr("app.system_proxy.error.helper_start_timed_out")
         case let .helperNotRegistered(message):
             if let message, !message.isEmpty {
                 return tr("app.system_proxy.error.helper_not_registered_with_detail", message)
             }
             return tr("app.system_proxy.error.helper_not_registered")
-        case .helperStartTimedOut:
-            return tr("app.system_proxy.error.helper_start_timed_out")
-        case let .helperInvalidSignature(message):
-            return tr("app.system_proxy.error.helper_invalid_signature", message)
-        case let .helperConnectionFailed(message):
-            return tr("app.system_proxy.error.helper_connection_failed", message)
-        case let .helperOperationFailed(message):
-            return tr("app.system_proxy.error.helper_operation_failed", message)
+        case let .helperInvalidSignature(message): return tr("app.system_proxy.error.helper_invalid_signature", message)
+        case let .helperConnectionFailed(message): return tr("app.system_proxy.error.helper_connection_failed", message)
+        case let .helperOperationFailed(message): return tr("app.system_proxy.error.helper_operation_failed", message)
         }
     }
 
     func systemProxyFailureHintMessage(for error: Error) -> String {
-        guard let serviceError = error as? SystemProxyServiceError else {
-            return tr("app.system_proxy.alert.unknown")
-        }
-
+        guard let serviceError = error as? SystemProxyServiceError else { return tr("app.system_proxy.alert.unknown") }
         switch serviceError {
-        case .invalidHost:
-            return tr("app.system_proxy.alert.invalid_host")
-        case .invalidPort:
-            return tr("app.system_proxy.alert.invalid_port")
-        case .helperNotBundled:
-            return tr("app.system_proxy.alert.helper_not_bundled")
-        case .helperRequiresInstallToApplications:
-            return tr("app.system_proxy.alert.helper_install_location")
-        case .helperNeedsApproval:
-            return tr("app.system_proxy.alert.background_activity_disabled")
-        case .helperNotRegistered:
-            return tr("app.system_proxy.alert.helper_not_registered")
-        case .helperStartTimedOut:
-            return tr("app.system_proxy.alert.helper_start_timed_out")
-        case .helperInvalidSignature:
-            return tr("app.system_proxy.alert.helper_invalid_signature")
-        case .helperConnectionFailed:
-            return tr("app.system_proxy.alert.helper_connection_failed")
-        case .helperOperationFailed:
-            return tr("app.system_proxy.alert.helper_operation_failed")
+        case .invalidHost: return tr("app.system_proxy.alert.invalid_host")
+        case .invalidPort: return tr("app.system_proxy.alert.invalid_port")
+        case .helperNotBundled: return tr("app.system_proxy.alert.helper_not_bundled")
+        case .helperRequiresInstallToApplications: return tr("app.system_proxy.alert.helper_install_location")
+        case .helperNeedsApproval: return tr("app.system_proxy.alert.background_activity_disabled")
+        case .helperNotRegistered: return tr("app.system_proxy.alert.helper_not_registered")
+        case .helperStartTimedOut: return tr("app.system_proxy.alert.helper_start_timed_out")
+        case .helperInvalidSignature: return tr("app.system_proxy.alert.helper_invalid_signature")
+        case .helperConnectionFailed: return tr("app.system_proxy.alert.helper_connection_failed")
+        case .helperOperationFailed: return tr("app.system_proxy.alert.helper_operation_failed")
         }
     }
 
     private func systemProxyFailureReasonMessage(for reason: SystemProxyHelperFailureReason) -> String {
         switch reason {
-        case .backgroundActivityDisabled:
-            tr("app.system_proxy.alert.background_activity_disabled")
-        case .helperNotRegistered:
-            tr("app.system_proxy.alert.helper_not_registered")
-        case .helperStartTimedOut:
-            tr("app.system_proxy.alert.helper_start_timed_out")
-        case .helperConnectionFailed:
-            tr("app.system_proxy.alert.helper_connection_failed")
-        case .helperOperationFailed:
-            tr("app.system_proxy.alert.helper_operation_failed")
-        case .appNotInApplications:
-            tr("app.system_proxy.alert.helper_install_location")
-        case .helperNotBundled:
-            tr("app.system_proxy.alert.helper_not_bundled")
-        case .signatureMismatch:
-            tr("app.system_proxy.alert.helper_invalid_signature")
-        case .unknown:
-            tr("app.system_proxy.alert.unknown")
+        case .backgroundActivityDisabled: tr("app.system_proxy.alert.background_activity_disabled")
+        case .helperNotRegistered: tr("app.system_proxy.alert.helper_not_registered")
+        case .helperStartTimedOut: tr("app.system_proxy.alert.helper_start_timed_out")
+        case .helperConnectionFailed: tr("app.system_proxy.alert.helper_connection_failed")
+        case .helperOperationFailed: tr("app.system_proxy.alert.helper_operation_failed")
+        case .appNotInApplications: tr("app.system_proxy.alert.helper_install_location")
+        case .helperNotBundled: tr("app.system_proxy.alert.helper_not_bundled")
+        case .signatureMismatch: tr("app.system_proxy.alert.helper_invalid_signature")
+        case .unknown: tr("app.system_proxy.alert.unknown")
         }
     }
 

@@ -108,7 +108,8 @@ private struct RemoteMachineManagerPalette {
     }
 }
 
-struct RemoteMachineManagerView: View {
+struct RemoteMachineManagerView: TranslatingView {
+    @EnvironmentObject var appViewModel: AppViewModel
     @ObservedObject var store: RemoteMachineStore
     let localControllerDisplay: String
     let onSwitchTarget: (MachineTarget) -> Void
@@ -123,19 +124,11 @@ struct RemoteMachineManagerView: View {
         .init(colorScheme: self.colorScheme)
     }
 
-    private var language: AppLanguage {
-        AppLanguage(rawValue: UserDefaults.standard.string(forKey: "clashbar.ui.language") ?? "") ?? .zhHans
-    }
-
     private var headerTitle: String {
         if let editorMode {
             return editorMode.machine == nil ? self.tr("ui.machine.add") : self.tr("ui.machine.edit")
         }
         return self.tr("ui.machine.manage")
-    }
-
-    private func tr(_ key: String) -> String {
-        L10n.t(key, language: self.language)
     }
 
     var body: some View {
@@ -167,7 +160,7 @@ struct RemoteMachineManagerView: View {
 
             ZStack(alignment: .topLeading) {
                 if let mode = self.editorMode {
-                    RemoteMachineEditorView(store: self.store, mode: mode, language: self.language) {
+                    RemoteMachineEditorView(store: self.store, mode: mode) {
                         self.editorMode = nil
                     }
                     .transition(.asymmetric(
@@ -418,10 +411,10 @@ private struct RemoteMachineRowView: View {
     }
 }
 
-private struct RemoteMachineEditorView: View {
+private struct RemoteMachineEditorView: TranslatingView {
+    @EnvironmentObject var appViewModel: AppViewModel
     @ObservedObject var store: RemoteMachineStore
     let mode: EditorMode
-    let language: AppLanguage
     let onComplete: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
@@ -436,10 +429,6 @@ private struct RemoteMachineEditorView: View {
 
     private var palette: RemoteMachineManagerPalette {
         .init(colorScheme: self.colorScheme)
-    }
-
-    private func tr(_ key: String) -> String {
-        L10n.t(key, language: self.language)
     }
 
     private var isFormValid: Bool {
@@ -552,7 +541,7 @@ private struct RemoteMachineEditorView: View {
         let resolvedHost = self.host.trimmingCharacters(in: .whitespaces).isEmpty ? "controller.example.com" : self.host
         let resolvedPort = self.port.trimmingCharacters(in: .whitespaces).isEmpty ? "9090" : self.port
         let scheme = self.useHTTPS ? "https" : "http"
-        return L10n.t("ui.machine.preview", language: self.language, scheme, resolvedHost, resolvedPort)
+        return self.tr("ui.machine.preview", scheme, resolvedHost, resolvedPort)
     }
 
     private func save() {

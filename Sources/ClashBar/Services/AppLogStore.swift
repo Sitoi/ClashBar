@@ -2,6 +2,10 @@ import Foundation
 
 struct AppLogStore {
     let logFileURL: URL
+    /// Reference type: struct copies share the same lock, guaranteeing mutual
+    /// exclusion even if the store is passed across actor boundaries or captured
+    /// by background tasks. Each distinct `init(logFileURL:)` gets a fresh lock.
+    private let ioLock = NSLock()
 
     func ensureLogFileExists() {
         if !FileManager.default.fileExists(atPath: self.logFileURL.path) {
@@ -17,26 +21,27 @@ struct AppLogStore {
 
     private func append(records: [(timestamp: Date, level: String, message: String)]) {
         guard !records.isEmpty else { return }
-        self.ensureLogFileExists()
         let content = records.map {
             "[\(Self.timestampString(from: $0.timestamp))] [\($0.level.uppercased())] \($0.message)\n"
         }.joined()
+        guard let data = content.data(using: .utf8) else { return }
 
-        guard let data = content.data(using: .utf8),
-              let handle = FileHandle(forWritingAtPath: logFileURL.path)
-        else {
-            return
+        self.ioLock.withLock {
+            self.ensureLogFileExists()
+            guard let handle = FileHandle(forWritingAtPath: logFileURL.path) else { return }
+            defer { handle.closeFile() }
+            handle.seekToEndOfFile()
+            handle.write(data)
         }
-        defer { handle.closeFile() }
-        handle.seekToEndOfFile()
-        handle.write(data)
     }
 
     func clear() {
-        if FileManager.default.fileExists(atPath: self.logFileURL.path) {
-            try? Data().write(to: self.logFileURL, options: .atomic)
-        } else {
-            self.ensureLogFileExists()
+        self.ioLock.withLock {
+            if FileManager.default.fileExists(atPath: self.logFileURL.path) {
+                try? Data().write(to: self.logFileURL, options: .atomic)
+            } else {
+                self.ensureLogFileExists()
+            }
         }
     }
 

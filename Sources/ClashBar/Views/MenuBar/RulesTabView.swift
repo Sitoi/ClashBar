@@ -63,7 +63,7 @@ struct RulesTabView: TranslatingView {
                     .frame(maxWidth: .infinity, minHeight: 52, alignment: .topLeading)
             } else {
                 VStack(spacing: 0) {
-                    ForEach(Array(visibleRules.enumerated()), id: \.element.rowID) { index, rule in
+                    ForEach(Array(visibleRules.enumerated()), id: \.offset) { index, rule in
                         self.rulesRow(rule: rule, index: index, providerLookup: providerLookup)
 
                         if index < visibleRules.count - 1 {

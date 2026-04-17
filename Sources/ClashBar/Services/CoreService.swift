@@ -12,33 +12,13 @@ protocol MihomoControlling: AnyObject, Sendable {
     var status: CoreLifecycleStatus { get }
     var isRunning: Bool { get }
     var detectedBinaryPath: String? { get }
-    func validateConfig(configPath: String) throws
     func validateConfigAsync(configPath: String) async throws
-    @discardableResult
-    func start(configPath: String, controller: String) throws -> CoreLifecycleStatus
     @discardableResult
     func startAsync(configPath: String, controller: String) async throws -> CoreLifecycleStatus
     func stop()
     func stopAsync() async
     @discardableResult
-    func restart(configPath: String, controller: String) throws -> CoreLifecycleStatus
-    @discardableResult
     func restartAsync(configPath: String, controller: String) async throws -> CoreLifecycleStatus
-}
-
-// MARK: -
-
-actor ProcessStateActor {
-    private(set) var status: CoreLifecycleStatus = .stopped
-    private(set) var intentionalStop: Bool = false
-
-    func setStatus(_ newStatus: CoreLifecycleStatus) {
-        self.status = newStatus
-    }
-
-    func setIntentionalStop(_ value: Bool) {
-        self.intentionalStop = value
-    }
 }
 
 // MARK: -
@@ -79,6 +59,42 @@ enum MihomoConfigValidationError: LocalizedError {
     }
 }
 
+/// Buffers bytes read from a `Process` pipe and yields whitespace-trimmed,
+/// `\n`-delimited lines, preserving any trailing partial line between chunks.
+///
+/// `@unchecked Sendable` is safe here: each instance is owned by exactly one
+/// `FileHandle.readabilityHandler`, and that handler is invoked serially per
+/// handle by Foundation. There is no cross-thread access to `carry`.
+private final class LineAccumulator: @unchecked Sendable {
+    private var carry = Data()
+
+    func append(_ data: Data) -> [String] {
+        self.carry.append(data)
+        var lines: [String] = []
+        while let newlineIndex = self.carry.firstIndex(of: 0x0A) {
+            let lineData = self.carry.subdata(in: self.carry.startIndex..<newlineIndex)
+            self.carry.removeSubrange(self.carry.startIndex...newlineIndex)
+            if let line = Self.normalize(lineData) {
+                lines.append(line)
+            }
+        }
+        return lines
+    }
+
+    func flushRemaining() -> String? {
+        guard !self.carry.isEmpty else { return nil }
+        let tail = self.carry
+        self.carry = Data()
+        return Self.normalize(tail)
+    }
+
+    private static func normalize(_ data: Data) -> String? {
+        guard let raw = String(data: data, encoding: .utf8) else { return nil }
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+}
+
 private final class ProcessOutputBox: @unchecked Sendable {
     private let lock = NSLock()
     private var data = Data()
@@ -104,7 +120,6 @@ final class MihomoProcessManager: MihomoControlling, @unchecked Sendable {
     private var stderrHandle: FileHandle?
     private var intentionalStop = false
     private let lock = NSLock()
-    private let stateActor = ProcessStateActor()
     private let fileManager: FileManager
     private let workingDirectoryManager: WorkingDirectoryManager
     private let lifecycleQueue: DispatchQueue
@@ -147,13 +162,7 @@ final class MihomoProcessManager: MihomoControlling, @unchecked Sendable {
     func validateConfig(configPath: String) throws {
         let binary = try resolveMihomoBinary()
 
-        let configFileURL = URL(fileURLWithPath: configPath).standardizedFileURL.resolvingSymlinksInPath()
-        let configDirectoryURL = configFileURL.deletingLastPathComponent()
-        let workingDirectoryURL: URL = if configDirectoryURL.lastPathComponent == "config" {
-            configDirectoryURL.deletingLastPathComponent()
-        } else {
-            configDirectoryURL
-        }
+        let workingDirectoryURL = Self.resolveWorkingDirectoryURL(configPath: configPath)
 
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: binary)
@@ -224,22 +233,12 @@ final class MihomoProcessManager: MihomoControlling, @unchecked Sendable {
             self.intentionalStop = false
             self.status = .starting
         }
-        Task {
-            await self.stateActor.setIntentionalStop(false)
-            await self.stateActor.setStatus(.starting)
-        }
 
         let binary = try resolveMihomoBinary()
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: binary)
 
-        let configFileURL = URL(fileURLWithPath: configPath).standardizedFileURL.resolvingSymlinksInPath()
-        let configDirectoryURL = configFileURL.deletingLastPathComponent()
-        let workingDirectoryURL: URL = if configDirectoryURL.lastPathComponent == "config" {
-            configDirectoryURL.deletingLastPathComponent()
-        } else {
-            configDirectoryURL
-        }
+        let workingDirectoryURL = Self.resolveWorkingDirectoryURL(configPath: configPath)
         proc.currentDirectoryURL = workingDirectoryURL
 
         // `-d` pins mihomo runtime home directory to ClashBar working root.
@@ -269,9 +268,6 @@ final class MihomoProcessManager: MihomoControlling, @unchecked Sendable {
                 self.process = proc
                 self.status = .running(pid: proc.processIdentifier)
             }
-            Task {
-                await self.stateActor.setStatus(.running(pid: proc.processIdentifier))
-            }
             let startMessage =
                 "[mihomo started] pid=\(proc.processIdentifier) " +
                 "controller=\(controller) " +
@@ -285,10 +281,6 @@ final class MihomoProcessManager: MihomoControlling, @unchecked Sendable {
                 self.status = .failed(reason: reason)
                 self.intentionalStop = false
                 self.releasePipeHandlesLocked()
-            }
-            Task {
-                await self.stateActor.setIntentionalStop(false)
-                await self.stateActor.setStatus(.failed(reason: reason))
             }
             self.onLog?("[mihomo error] \(reason)")
             throw error
@@ -307,19 +299,12 @@ final class MihomoProcessManager: MihomoControlling, @unchecked Sendable {
             self.intentionalStop = true
             return self.process
         }
-        Task {
-            await self.stateActor.setIntentionalStop(true)
-        }
 
         guard let running else {
             self.lock.withLock {
                 self.status = .stopped
                 self.intentionalStop = false
                 self.releasePipeHandlesLocked()
-            }
-            Task {
-                await self.stateActor.setIntentionalStop(false)
-                await self.stateActor.setStatus(.stopped)
             }
             return
         }
@@ -377,10 +362,6 @@ final class MihomoProcessManager: MihomoControlling, @unchecked Sendable {
         }
 
         guard outcome.handled else { return }
-        Task {
-            await self.stateActor.setIntentionalStop(false)
-            await self.stateActor.setStatus(.stopped)
-        }
 
         if outcome.intentional {
             self.onLog?("[mihomo stopped] exit=\(code)")
@@ -479,42 +460,29 @@ final class MihomoProcessManager: MihomoControlling, @unchecked Sendable {
     }
 
     private func bundledBinaryCandidates() -> [String] {
-        let resourceRoots = AppResourceBundleLocator.candidateResourceRoots()
-        var candidates: [String] = []
-
-        for root in resourceRoots {
-            candidates.append(root.appendingPathComponent("bin/mihomo").path)
-            candidates.append(root.appendingPathComponent("Resources/bin/mihomo").path)
-            candidates.append(root.appendingPathComponent("mihomo").path)
-        }
-
-        var deduplicated: [String] = []
-        var seen = Set<String>()
-        for path in candidates {
-            let normalized = URL(fileURLWithPath: path).standardizedFileURL.path
-            if seen.insert(normalized).inserted {
-                deduplicated.append(normalized)
-            }
-        }
-        return deduplicated
+        Self.bundledBinaryCandidates(binaryName: "mihomo")
     }
 
     private func bundledCompressedBinaryCandidates() -> [String] {
-        let resourceRoots = AppResourceBundleLocator.candidateResourceRoots()
-        var candidates: [String] = []
+        Self.bundledBinaryCandidates(binaryName: "mihomo.gz")
+    }
 
-        for root in resourceRoots {
-            candidates.append(root.appendingPathComponent("bin/mihomo.gz").path)
-            candidates.append(root.appendingPathComponent("Resources/bin/mihomo.gz").path)
-            candidates.append(root.appendingPathComponent("mihomo.gz").path)
-        }
+    /// Enumerates plausible on-disk locations of a bundled binary across the
+    /// known resource roots. `binaryName` is the last path component (e.g.
+    /// `mihomo` or `mihomo.gz`), searched under `bin/`, `Resources/bin/`, and
+    /// the root itself, then normalized and deduplicated.
+    private static func bundledBinaryCandidates(binaryName: String) -> [String] {
+        let resourceRoots = AppResourceBundleLocator.candidateResourceRoots()
+        let relativeLayouts = ["bin/\(binaryName)", "Resources/bin/\(binaryName)", binaryName]
 
         var deduplicated: [String] = []
         var seen = Set<String>()
-        for path in candidates {
-            let normalized = URL(fileURLWithPath: path).standardizedFileURL.path
-            if seen.insert(normalized).inserted {
-                deduplicated.append(normalized)
+        for root in resourceRoots {
+            for relative in relativeLayouts {
+                let normalized = root.appendingPathComponent(relative).standardizedFileURL.path
+                if seen.insert(normalized).inserted {
+                    deduplicated.append(normalized)
+                }
             }
         }
         return deduplicated
@@ -657,12 +625,37 @@ final class MihomoProcessManager: MihomoControlling, @unchecked Sendable {
         }
     }
 
+    /// Resolves the working directory to hand to mihomo. When the config lives
+    /// under a conventional `config/` subdirectory, we step one level up so the
+    /// core treats the parent as its working root. Otherwise the config's own
+    /// directory is used directly.
+    private static func resolveWorkingDirectoryURL(configPath: String) -> URL {
+        let configFileURL = URL(fileURLWithPath: configPath).standardizedFileURL.resolvingSymlinksInPath()
+        let configDirectoryURL = configFileURL.deletingLastPathComponent()
+        if configDirectoryURL.lastPathComponent == "config" {
+            return configDirectoryURL.deletingLastPathComponent()
+        }
+        return configDirectoryURL
+    }
+
     private func wireLogPipe(_ handle: FileHandle) {
+        // `readabilityHandler` delivers arbitrary-sized chunks; a single line may
+        // be split across chunks or multiple lines arrive in one chunk. Accumulate
+        // bytes and emit only when a full `\n`-terminated line is seen, flushing
+        // any tail on EOF. One accumulator per pipe, and readabilityHandler is
+        // invoked serially per handle.
+        let accumulator = LineAccumulator()
         handle.readabilityHandler = { [weak self] readable in
             let data = readable.availableData
-            if data.isEmpty { return }
-            guard let line = String(data: data, encoding: .utf8) else { return }
-            self?.onLog?(line.trimmingCharacters(in: .whitespacesAndNewlines))
+            if data.isEmpty {
+                if let tail = accumulator.flushRemaining() {
+                    self?.onLog?(tail)
+                }
+                return
+            }
+            for line in accumulator.append(data) {
+                self?.onLog?(line)
+            }
         }
     }
 

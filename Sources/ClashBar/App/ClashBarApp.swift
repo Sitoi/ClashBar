@@ -5,97 +5,73 @@ import SwiftUI
 struct ClashBarApp: App {
     @NSApplicationDelegateAdaptor(ClashBarAppDelegate.self) private var appDelegate
 
-    private var commandsViewModel: AppCommandsViewModel {
-        AppCommandsViewModel(session: self.appDelegate.appViewModel)
+    private var session: AppViewModel {
+        self.appDelegate.appViewModel
     }
 
     var body: some Scene {
-        Settings {
-            EmptyView()
-        }
-        .commands {
-            CommandMenu("Core") {
-                Button(self.commandsViewModel.primaryCoreActionLabel) {
-                    Task { await self.commandsViewModel.performPrimaryCoreAction() }
-                }
-                .keyboardShortcut("R", modifiers: [.command, .shift])
-                .disabled(!self.commandsViewModel.isPrimaryCoreActionEnabled)
+        Settings { EmptyView() }
+            .commands {
+                CommandMenu("Core") {
+                    Button(self.session.primaryCoreActionLabel) {
+                        Task { await self.session.performPrimaryCoreAction() }
+                    }
+                    .keyboardShortcut("R", modifiers: [.command, .shift])
+                    .disabled(!self.session.isPrimaryCoreActionEnabled || self.session.isRemoteTarget)
 
-                Button(self.tr("ui.action.stop")) {
-                    Task { await self.commandsViewModel.stopCore() }
-                }
-                .keyboardShortcut(".", modifiers: [.command, .shift])
-                .disabled(!self.commandsViewModel.isStopCoreEnabled)
+                    Button(self.tr("ui.action.stop")) {
+                        Task { await self.session.stopCore() }
+                    }
+                    .keyboardShortcut(".", modifiers: [.command, .shift])
+                    .disabled(self.session.isRemoteTarget || self.session.isCoreActionProcessing)
 
-                Divider()
+                    Divider()
 
-                Button(self.commandsViewModel.isTunEnabled ? self.tr("ui.action.disable_tun") : self
-                    .tr("ui.action.enable_tun"))
-                {
-                    Task { await self.commandsViewModel.toggleTunMode() }
+                    Button(self.session.isTunEnabled ? self.tr("ui.action.disable_tun") : self
+                        .tr("ui.action.enable_tun"))
+                    {
+                        Task { await self.session.toggleTunMode(!self.session.isTunEnabled) }
+                    }
+                    .keyboardShortcut("T", modifiers: [.command, .option])
+                    .disabled(!self.session.isTunToggleEnabled)
                 }
-                .keyboardShortcut("T", modifiers: [.command, .option])
-                .disabled(!self.commandsViewModel.isTunToggleEnabled)
+
+                CommandMenu("Panel") {
+                    ForEach(Self.panelShortcuts, id: \.tab) { entry in
+                        Button(self.tr(entry.key)) { self.session.setActiveMenuTab(entry.tab) }
+                            .keyboardShortcut(entry.shortcut, modifiers: [.command, .option])
+                    }
+                    Button(self.tr("ui.tab.system")) { self.session.setActiveMenuTab(.system) }
+                        .keyboardShortcut(",", modifiers: [.command])
+                }
+
+                CommandMenu("Actions") {
+                    Button(self.tr("ui.action.refresh")) {
+                        Task { await self.session.refreshActiveTab() }
+                    }
+                    .keyboardShortcut("K", modifiers: [.command, .shift])
+
+                    Button(self.tr("ui.quick.copy_terminal")) { self.session.copyProxyCommand() }
+                        .keyboardShortcut("C", modifiers: [.command, .option, .shift])
+
+                    Button(self.tr("ui.action.copy_all_logs")) { self.session.copyAllLogs() }
+                        .keyboardShortcut("L", modifiers: [.command, .option, .shift])
+
+                    Button(self.tr("ui.action.clear_all_logs")) { self.session.clearAllLogs() }
+                        .keyboardShortcut(.delete, modifiers: [.command, .option, .shift])
+                        .disabled(self.session.errorLogs.isEmpty)
+                }
             }
-
-            CommandMenu("Panel") {
-                Button(self.tr("ui.tab.proxy")) {
-                    self.commandsViewModel.setActiveMenuTab(.proxy)
-                }
-                .keyboardShortcut("1", modifiers: [.command, .option])
-
-                Button(self.tr("ui.tab.rules")) {
-                    self.commandsViewModel.setActiveMenuTab(.rules)
-                }
-                .keyboardShortcut("2", modifiers: [.command, .option])
-
-                Button(self.tr("ui.tab.connections")) {
-                    self.commandsViewModel.setActiveMenuTab(.connections)
-                }
-                .keyboardShortcut("3", modifiers: [.command, .option])
-
-                Button(self.tr("ui.tab.logs")) {
-                    self.commandsViewModel.setActiveMenuTab(.logs)
-                }
-                .keyboardShortcut("4", modifiers: [.command, .option])
-
-                Button(self.tr("ui.tab.system")) {
-                    self.commandsViewModel.setActiveMenuTab(.system)
-                }
-                .keyboardShortcut("5", modifiers: [.command, .option])
-
-                Button(self.tr("ui.tab.system")) {
-                    self.commandsViewModel.setActiveMenuTab(.system)
-                }
-                .keyboardShortcut(",", modifiers: [.command])
-            }
-
-            CommandMenu("Actions") {
-                Button(self.tr("ui.action.refresh")) {
-                    Task { await self.commandsViewModel.refreshActiveTab() }
-                }
-                .keyboardShortcut("K", modifiers: [.command, .shift])
-
-                Button(self.tr("ui.quick.copy_terminal")) {
-                    self.commandsViewModel.copyProxyCommand()
-                }
-                .keyboardShortcut("C", modifiers: [.command, .option, .shift])
-
-                Button(self.tr("ui.action.copy_all_logs")) {
-                    self.commandsViewModel.copyAllLogs()
-                }
-                .keyboardShortcut("L", modifiers: [.command, .option, .shift])
-
-                Button(self.tr("ui.action.clear_all_logs")) {
-                    self.commandsViewModel.clearAllLogs()
-                }
-                .keyboardShortcut(.delete, modifiers: [.command, .option, .shift])
-                .disabled(!self.commandsViewModel.hasLogs)
-            }
-        }
     }
 
+    private static let panelShortcuts: [(tab: RootTab, key: String, shortcut: KeyEquivalent)] = [
+        (.proxy, "ui.tab.proxy", "1"),
+        (.rules, "ui.tab.rules", "2"),
+        (.connections, "ui.tab.connections", "3"),
+        (.logs, "ui.tab.logs", "4"),
+    ]
+
     private func tr(_ key: String) -> String {
-        L10n.t(key, language: self.commandsViewModel.uiLanguage)
+        L10n.t(key, language: self.session.uiLanguage)
     }
 }

@@ -19,6 +19,16 @@ private final class FloatingPanel: NSPanel {
     }
 }
 
+private final class PassiveFloatingPanel: NSPanel {
+    override var canBecomeKey: Bool {
+        false
+    }
+
+    override var canBecomeMain: Bool {
+        false
+    }
+}
+
 private struct StatusItemPopoverRootView: View {
     @ObservedObject var appViewModel: AppViewModel
     @ObservedObject var popoverLayoutModel: PopoverLayoutModel
@@ -32,21 +42,185 @@ private struct StatusItemPopoverRootView: View {
     }
 }
 
+private struct StatusItemBannerRootView: View {
+    let banner: StatusItemBanner
+
+    var body: some View {
+        ZStack {
+            HStack(spacing: 0) {
+                self.leadingBadge
+                    .frame(width: 48, alignment: .leading)
+
+                Spacer(minLength: 0)
+
+                self.successBadge
+                    .frame(width: 48, alignment: .trailing)
+            }
+
+            VStack(spacing: 4) {
+                Text(self.banner.title)
+                    .font(.app(size: 11, weight: .semibold))
+                    .foregroundStyle(self.nativeSecondaryLabel)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+
+                self.detailLine
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 56)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .frame(
+            width: StatusItemController.bannerContentSize.width,
+            height: StatusItemController.bannerContentSize.height)
+        .background {
+            Capsule(style: .continuous)
+                .fill(.ultraThinMaterial)
+                .overlay {
+                    Capsule(style: .continuous)
+                        .fill(self.panelTint)
+                }
+        }
+        .overlay {
+            Capsule(style: .continuous)
+                .stroke(self.nativeControlBorder.opacity(0.78), lineWidth: 0.8)
+        }
+        .shadow(
+            color: Color(nsColor: .shadowColor).opacity(MenuBarLayoutTokens.Shadow.standard.opacity * 1.12),
+            radius: 14,
+            x: 0,
+            y: 7)
+        // Give the SwiftUI shadow bleed room inside the hosting view so
+        // it is not clipped at the panel edges. The panel is transparent
+        // in this outer band.
+        .frame(
+            width: StatusItemController.bannerPanelSize.width,
+            height: StatusItemController.bannerPanelSize.height,
+            alignment: .center)
+    }
+
+    private var detailLine: some View {
+        HStack(spacing: 7) {
+            Text(self.banner.primaryDetail)
+                .font(.app(size: 13, weight: .semibold))
+                .foregroundStyle(self.nativePrimaryLabel)
+                .lineLimit(1)
+                .truncationMode(.middle)
+
+            if let secondaryDetail = self.banner.secondaryDetail?.trimmedNonEmpty {
+                Circle()
+                    .fill(self.nativeTertiaryLabel)
+                    .frame(width: 3, height: 3)
+
+                Text(secondaryDetail)
+                    .font(.app(size: 12, weight: .medium))
+                    .foregroundStyle(self.nativeSecondaryLabel)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.82)
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    @ViewBuilder
+    private var leadingBadge: some View {
+        if let brandImage = BrandIcon.image ?? BrandIcon.runImage {
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .fill(self.logoBackground)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .stroke(self.iconBorder, lineWidth: 0.8)
+                }
+                .overlay {
+                    Image(nsImage: brandImage)
+                        .resizable()
+                        .interpolation(.high)
+                        .scaledToFit()
+                        .frame(width: 18, height: 18)
+                }
+                .frame(width: 34, height: 34)
+        } else {
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .fill(self.logoBackground)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .stroke(self.iconBorder, lineWidth: 0.8)
+                }
+                .overlay {
+                    Image(systemName: self.banner.symbolName)
+                        .font(.app(size: MenuBarLayoutTokens.FontSize.subhead, weight: .semibold))
+                        .foregroundStyle(self.iconForeground)
+                }
+                .frame(width: 34, height: 34)
+        }
+    }
+
+    private var successBadge: some View {
+        ZStack {
+            Circle()
+                .stroke(self.nativePositive.opacity(0.9), lineWidth: 2.2)
+                .background(
+                    Circle()
+                        .fill(self.nativePositive.opacity(0.12)))
+
+            Image(systemName: "checkmark")
+                .font(.app(size: 11, weight: .bold))
+                .foregroundStyle(self.nativePositive.opacity(MenuBarLayoutTokens.Opacity.solid))
+        }
+        .frame(width: 26, height: 26)
+    }
+
+    private var panelTint: Color {
+        self.nativeAccent.opacity(self.isDarkAppearance ? 0.04 : 0.025)
+    }
+
+    private var logoBackground: some ShapeStyle {
+        LinearGradient(
+            colors: [
+                self.nativeInfo.opacity(self.isDarkAppearance ? 0.24 : 0.16),
+                self.nativeAccent.opacity(self.isDarkAppearance ? 0.16 : 0.1),
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing)
+    }
+
+    private var iconBorder: Color {
+        self.nativeInfo.opacity(self.isDarkAppearance ? 0.22 : 0.16)
+    }
+
+    private var iconForeground: Color {
+        self.nativeInfo.opacity(MenuBarLayoutTokens.Opacity.solid)
+    }
+}
+
 @MainActor
 final class StatusItemController: NSObject {
     private let appViewModel: AppViewModel
     private let viewModel: StatusBarViewModel
     private let statusItem: NSStatusItem
     private let panel: FloatingPanel
+    private let bannerPanel: PassiveFloatingPanel
     private let statusContentView: StatusItemContentView
     private let popoverLayoutModel = PopoverLayoutModel()
     private let popoverFallbackMaxHeight: CGFloat = 640
     private let popoverScreenPadding: CGFloat = 10
     private let panelTopSpacing: CGFloat = 0
     private let panelHorizontalPadding: CGFloat = MenuBarLayoutTokens.space8
+    // Visual capsule top sits `bannerContentTopSpacing` below the menu bar;
+    // the hosting panel extends `bannerShadowBleed` above it so SwiftUI's
+    // shadow has room to render without hitting the panel edge.
+    private let bannerContentTopSpacing: CGFloat = 6
+    private var bannerTopSpacing: CGFloat {
+        self.bannerContentTopSpacing - Self.bannerShadowBleed
+    }
 
     private var changeCancellable: AnyCancellable?
     private var layoutCancellable: AnyCancellable?
+    private var bannerCancellable: AnyCancellable?
     private var refreshWorkItem: DispatchWorkItem?
     private var pendingDisplay: MenuBarDisplay?
     private var pendingRenderKey: StatusItemRenderKey?
@@ -56,12 +230,21 @@ final class StatusItemController: NSObject {
     private var screenParametersObserver: Any?
     private var lockedPanelOriginX: CGFloat?
     private var popoverHostingController: NSHostingController<StatusItemPopoverRootView>?
+    private var bannerHostingController: NSHostingController<StatusItemBannerRootView>?
     private var panelStabilizationTask: Task<Void, Never>?
+    private var bannerDismissTask: Task<Void, Never>?
 
     private let iconOnlyRefreshInterval: TimeInterval = 0.12
     // Status-item snapshotting is expensive on macOS when traffic text changes frequently.
     private let speedDisplayRefreshInterval: TimeInterval = 1.0
     private static let popoverContentWidth: CGFloat = MenuBarLayoutTokens.panelWidth
+    // Uniform transparent bleed around the visual capsule; must be ≥ shadow radius+offset.
+    fileprivate static let bannerShadowBleed: CGFloat = 24
+    fileprivate static let bannerContentSize = NSSize(width: 328, height: 68)
+    fileprivate static let bannerPanelSize = NSSize(
+        width: bannerContentSize.width + bannerShadowBleed * 2,
+        height: bannerContentSize.height + bannerShadowBleed * 2)
+    private let bannerDisplayDurationNanoseconds: UInt64 = 2_600_000_000
 
     init(appViewModel: AppViewModel) {
         self.appViewModel = appViewModel
@@ -76,14 +259,21 @@ final class StatusItemController: NSObject {
             styleMask: [.borderless],
             backing: .buffered,
             defer: true)
+        self.bannerPanel = PassiveFloatingPanel(
+            contentRect: NSRect(origin: .zero, size: Self.bannerPanelSize),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: true)
         self.statusContentView = StatusItemContentView(frame: .zero)
 
         super.init()
 
         self.configurePanel()
+        self.configureBannerPanel()
         self.configureStatusItem()
         self.bindSession()
         self.bindPopoverLayout()
+        self.bindBanner()
         self.observeScreenParameterChanges()
         self.refreshPopoverMaximumHeight()
         self.refreshDisplayNow()
@@ -95,10 +285,14 @@ final class StatusItemController: NSObject {
         self.pendingRenderKey = nil
         self.panelStabilizationTask?.cancel()
         self.panelStabilizationTask = nil
+        self.bannerDismissTask?.cancel()
+        self.bannerDismissTask = nil
         self.changeCancellable?.cancel()
         self.layoutCancellable?.cancel()
+        self.bannerCancellable?.cancel()
         self.stopGlobalMonitor()
         self.stopObservingScreenParameters()
+        self.bannerPanel.orderOut(nil)
         self.unloadPopoverContent()
         self.viewModel.setPanelPresented(false)
         NSStatusBar.system.removeStatusItem(self.statusItem)
@@ -152,6 +346,21 @@ final class StatusItemController: NSObject {
         self.panel.contentViewController = nil
     }
 
+    private func configureBannerPanel() {
+        self.bannerPanel.isReleasedWhenClosed = false
+        self.bannerPanel.isOpaque = false
+        self.bannerPanel.backgroundColor = .clear
+        // SwiftUI draws its own capsule-shaped shadow; NSPanel's rectangular
+        // shadow would double up and leak outside the capsule, producing
+        // irregular dark edges around the corners.
+        self.bannerPanel.hasShadow = false
+        self.bannerPanel.ignoresMouseEvents = true
+        self.bannerPanel.level = .statusBar
+        self.bannerPanel.collectionBehavior = [.transient, .moveToActiveSpace, .ignoresCycle]
+        self.bannerPanel.alphaValue = 0
+        self.bannerPanel.contentViewController = nil
+    }
+
     private func ensurePopoverContent() {
         if self.popoverHostingController == nil {
             let hc = NSHostingController(rootView: self.popoverRootView)
@@ -203,6 +412,19 @@ final class StatusItemController: NSObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] preferredHeight in
                 self?.applyPopoverSize(preferredHeight: preferredHeight, preserveHorizontalPosition: true)
+            }
+    }
+
+    private func bindBanner() {
+        self.bannerCancellable = self.appViewModel.$statusItemBanner
+            .receive(on: RunLoop.main)
+            .sink { [weak self] banner in
+                guard let self else { return }
+                guard let banner else {
+                    self.dismissBanner(animated: true)
+                    return
+                }
+                self.presentBanner(banner)
             }
     }
 
@@ -439,5 +661,92 @@ final class StatusItemController: NSObject {
 
     private func resolvedStatusItemAnchorContext(for button: NSStatusBarButton?) -> PanelAnchorContext? {
         PanelAnchorContext.resolve(for: button)
+    }
+
+    private func presentBanner(_ banner: StatusItemBanner) {
+        self.ensureBannerContent(banner)
+        self.placeBannerRelativeToStatusButton(self.statusItem.button)
+
+        let shouldAnimate = !self.bannerPanel.isVisible
+        if shouldAnimate {
+            self.bannerPanel.alphaValue = 0
+            self.bannerPanel.orderFrontRegardless()
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.18
+                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                self.bannerPanel.animator().alphaValue = 1
+            }
+        } else {
+            self.bannerPanel.alphaValue = 1
+            self.bannerPanel.orderFrontRegardless()
+        }
+
+        self.bannerDismissTask?.cancel()
+        let bannerID = banner.id
+        self.bannerDismissTask = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: self?.bannerDisplayDurationNanoseconds ?? 2_600_000_000)
+            } catch {
+                return
+            }
+
+            guard let self, self.appViewModel.statusItemBanner?.id == bannerID else { return }
+            self.appViewModel.statusItemBanner = nil
+        }
+    }
+
+    private func dismissBanner(animated: Bool) {
+        self.bannerDismissTask?.cancel()
+        self.bannerDismissTask = nil
+
+        guard self.bannerPanel.isVisible else { return }
+        let hideBannerIfStillInactive = { [weak self] in
+            guard let self, self.appViewModel.statusItemBanner == nil else { return }
+            self.bannerPanel.orderOut(nil)
+            self.bannerPanel.alphaValue = 0
+        }
+
+        guard animated else {
+            hideBannerIfStillInactive()
+            return
+        }
+
+        let animationDuration = 0.16
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.16
+            context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            self.bannerPanel.animator().alphaValue = 0
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration) {
+            hideBannerIfStillInactive()
+        }
+    }
+
+    private func ensureBannerContent(_ banner: StatusItemBanner) {
+        if self.bannerHostingController == nil {
+            self.bannerHostingController = NSHostingController(rootView: StatusItemBannerRootView(banner: banner))
+        } else {
+            self.bannerHostingController?.rootView = StatusItemBannerRootView(banner: banner)
+        }
+        self.bannerPanel.contentViewController = self.bannerHostingController
+        self.bannerPanel.setContentSize(Self.bannerPanelSize)
+    }
+
+    private func placeBannerRelativeToStatusButton(_ button: NSStatusBarButton?) {
+        guard
+            let anchorContext = self.resolvedStatusItemAnchorContext(for: button)
+        else {
+            return
+        }
+
+        let placement = anchorContext.menuBarDropdownPlacement(
+            panelSize: Self.bannerPanelSize,
+            options: MenuBarDropdownPlacementOptions(
+                horizontalPadding: self.panelHorizontalPadding,
+                verticalSpacing: self.bannerTopSpacing,
+                screenPadding: self.popoverScreenPadding,
+                lockedOriginX: nil,
+                preserveHorizontalPosition: false))
+        self.bannerPanel.setFrame(placement.frame, display: true, animate: false)
     }
 }

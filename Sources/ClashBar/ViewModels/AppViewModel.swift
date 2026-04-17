@@ -155,6 +155,10 @@ final class AppViewModel: ObservableObject {
     @Published var systemProxyOpenFailureHint: String?
     @Published var systemProxyExceptions: [EditableSystemProxyException] = []
     @Published var systemProxyNewException: String = ""
+    @Published var ssidStrategyRules: [SSIDStrategyRule] = []
+    @Published var ssidStrategyCurrentSSID: String?
+    @Published var ssidStrategyAuthorizationStatus: SSIDMonitorAuthorizationStatus = .notDetermined
+    @Published var statusItemBanner: StatusItemBanner?
 
     var isProxySyncing: Bool {
         get { self.proxyStore.isProxySyncing }
@@ -226,19 +230,12 @@ final class AppViewModel: ObservableObject {
         let normalized = self.statusText.lowercased()
         if normalized == "starting" { return .starting }
         if normalized == "failed" { return .failed }
-
-        let running = self.coreRepository.isRunning || normalized == "running"
-        if running {
-            switch self.apiStatus {
-            case .healthy:
-                return .runningHealthy
-            case .failed:
-                return .failed
-            case .degraded, .unknown:
-                return .runningDegraded
-            }
+        guard self.coreRepository.isRunning || normalized == "running" else { return .stopped }
+        switch self.apiStatus {
+        case .healthy: return .runningHealthy
+        case .failed: return .failed
+        case .degraded, .unknown: return .runningDegraded
         }
-        return .stopped
     }
 
     var runtimeStatusText: String {
@@ -264,16 +261,11 @@ final class AppViewModel: ObservableObject {
 
     var menuBarSymbolName: String {
         switch self.runtimeVisualStatus {
-        case .runningHealthy:
-            "bolt.horizontal.circle.fill"
-        case .runningDegraded:
-            "bolt.horizontal.circle"
-        case .starting:
-            "clock.arrow.circlepath"
-        case .failed:
-            "exclamationmark.triangle.fill"
-        case .stopped:
-            "bolt.slash.circle"
+        case .runningHealthy: "bolt.horizontal.circle.fill"
+        case .runningDegraded: "bolt.horizontal.circle"
+        case .starting: "clock.arrow.circlepath"
+        case .failed: "exclamationmark.triangle.fill"
+        case .stopped: "bolt.slash.circle"
         }
     }
 
@@ -299,52 +291,26 @@ final class AppViewModel: ObservableObject {
     }
 
     private var computedMenuBarDisplay: MenuBarDisplay {
-        let running = self.isRuntimeRunning
-        switch self.statusBarDisplayMode {
-        case .iconOnly:
-            return MenuBarDisplay(
-                mode: .iconOnly,
-                symbolName: self.menuBarSymbolName,
-                speedLines: nil,
-                isRunning: running)
-        case .iconAndSpeed:
-            return MenuBarDisplay(
-                mode: .iconAndSpeed,
-                symbolName: self.menuBarSymbolName,
-                speedLines: self.menuBarSpeedLines,
-                isRunning: running)
-        case .speedOnly:
-            return MenuBarDisplay(
-                mode: .speedOnly,
-                symbolName: nil,
-                speedLines: self.menuBarSpeedLines,
-                isRunning: running)
-        }
+        let mode = self.statusBarDisplayMode
+        return MenuBarDisplay(
+            mode: mode,
+            symbolName: mode == .speedOnly ? nil : self.menuBarSymbolName,
+            speedLines: mode == .iconOnly ? nil : self.menuBarSpeedLines,
+            isRunning: self.isRuntimeRunning)
     }
 
     func compactMenuBarRate(_ bytesPerSecond: Int64) -> String {
         let normalizedBytes = max(0, bytesPerSecond)
-        if normalizedBytes == 0 {
-            return "0K"
-        }
-
+        guard normalizedBytes > 0 else { return "0K" }
         var value = Double(normalizedBytes) / 1024
         let units = ["K", "M", "G", "T"]
         var unitIndex = 0
-
         while value >= 1000, unitIndex < units.count - 1 {
             value /= 1024
             unitIndex += 1
         }
-
-        let unit = units[unitIndex]
-        if value < 10 {
-            return String(format: "%.2f%@", value, unit)
-        } else if value < 100 {
-            return String(format: "%.1f%@", value, unit)
-        } else {
-            return String(format: "%.0f%@", min(value, 999), unit)
-        }
+        let format = value < 10 ? "%.2f%@" : (value < 100 ? "%.1f%@" : "%.0f%@")
+        return String(format: format, min(value, 999), units[unitIndex])
     }
 
     func refreshMenuBarDisplaySnapshotIfNeeded() {
@@ -405,6 +371,7 @@ final class AppViewModel: ObservableObject {
     let launchAtLoginRepository: any LaunchAtLoginRepository
     let workingDirectoryManager: WorkingDirectoryManager
     let networkReachabilityMonitor: NetworkReachabilityMonitor
+    let ssidMonitorService: SSIDMonitorService
     let remoteMachineStore: RemoteMachineStore
     var apiClient: MihomoAPIService?
     var modeSwitchTransportOverride: MihomoAPITransporting?
@@ -430,6 +397,10 @@ final class AppViewModel: ObservableObject {
     var pendingTrafficPayload: Data?
     var pendingMihomoLogs: [AppErrorLogEntry] = []
     var modeSwitchInFlight = false
+    /// Latches on first observed `/providers/proxies` failure (e.g. older cores
+    /// that don't expose the endpoint) so we only emit the "API unavailable"
+    /// log once per session rather than on every medium-frequency poll tick.
+    var proxyProvidersAPIUnavailableLogged = false
     var activatedTabRefreshGeneration: Int = 0
     var configFileSignatureSnapshot: [String: String] = [:]
     var pendingConfigChangeRestart = false
@@ -438,6 +409,7 @@ final class AppViewModel: ObservableObject {
     let defaults = UserDefaults.standard
     @AppStorage("clashbar.auto.start.core") var autoStartCore: Bool = false
     @AppStorage("clashbar.auto.core.network.recovery") private var autoCoreControlOnNetworkChange: Bool = true
+    @AppStorage("clashbar.ssid.strategy.enabled") var ssidStrategyEnabledStorage: Bool = false
     @AppStorage("clashbar.statusbar.display.mode") private var statusBarDisplayModeRaw: String = StatusBarDisplayMode
         .iconOnly.rawValue
     @AppStorage("clashbar.proxy.node.hide_unavailable") var hideUnavailableProxyNodes: Bool = false
@@ -449,6 +421,7 @@ final class AppViewModel: ObservableObject {
     let editableSettingsSnapshotKey = "clashbar.settings.editable.snapshot.v1"
     let systemProxyEnabledOnQuitKey = "clashbar.system_proxy.enabled_on_quit"
     let systemProxyExceptionsKey = "clashbar.system_proxy.exceptions.v1"
+    let ssidStrategyRulesKey = "clashbar.ssid.strategy.rules.v1"
     let uiLanguageKey = "clashbar.ui.language"
     let appearanceModeKey = "clashbar.ui.appearance.mode"
     let maxLogEntries = 200
@@ -481,9 +454,13 @@ final class AppViewModel: ObservableObject {
     var networkReachabilityStatus: NetworkReachabilityStatus = .unknown
     var shouldResumeCoreAfterNetworkRecovery = false
     var isNetworkReachabilityMonitoring = false
+    var isSSIDStrategyMonitoring = false
     var pendingCoreFeatureRecoveryState: CoreFeatureRecoveryState?
     var deferredEditableSettingsOverlay: (snapshot: EditableSettingsSnapshot, syncingKey: String)?
     var remoteConfigSubscriptions: [String: RemoteConfigSubscription] = [:]
+    var ssidStrategyLastLogFingerprint: String?
+    var pendingSSIDBindingConfigFileName: String?
+    var ssidStrategyApplyTask: Task<Void, Never>?
     var remoteConfigAutoUpdateTask: Task<Void, Never>?
     var remoteConfigMenuRefreshTask: Task<Void, Never>?
     var externalControllerWarningKeys: Set<String> = []
@@ -501,6 +478,7 @@ final class AppViewModel: ObservableObject {
         configImportService: ConfigImportService = ConfigImportService(),
         appLaunchService: AppLaunchService = AppLaunchService(),
         networkReachabilityMonitor: NetworkReachabilityMonitor = NetworkReachabilityMonitor(),
+        ssidMonitorService: SSIDMonitorService = SSIDMonitorService(),
         remoteMachineStore: RemoteMachineStore = RemoteMachineStore(),
         clashbarLogStore: AppLogStore? = nil,
         mihomoLogStore: AppLogStore? = nil,
@@ -513,6 +491,7 @@ final class AppViewModel: ObservableObject {
         self.tunPermissionRepository = DefaultTunPermissionRepository(service: tunPermissionService)
         self.launchAtLoginRepository = DefaultLaunchAtLoginRepository(service: appLaunchService)
         self.networkReachabilityMonitor = networkReachabilityMonitor
+        self.ssidMonitorService = ssidMonitorService
         self.remoteMachineStore = remoteMachineStore
         self.clashbarLogStore = clashbarLogStore
         self.mihomoLogStore = mihomoLogStore
@@ -546,5 +525,19 @@ final class AppViewModel: ObservableObject {
         mediumFrequencyTask?.cancel()
         lowFrequencyTask?.cancel()
         providerRefreshTask?.cancel()
+        ssidStrategyApplyTask?.cancel()
+        remoteConfigAutoUpdateTask?.cancel()
+        remoteConfigMenuRefreshTask?.cancel()
+        proxyPortsAutoSaveTask?.cancel()
+        settingsFeedbackClearTask?.cancel()
+        coreUpgradeFeedbackClearTask?.cancel()
+
+        // Stream coordinator owns WS receive loops; detach cleanup onto the
+        // main actor using captured references so we never touch `self` after
+        // deinit begins.
+        let coordinator = streamCoordinator
+        Task { @MainActor in
+            coordinator.cancelAll()
+        }
     }
 }

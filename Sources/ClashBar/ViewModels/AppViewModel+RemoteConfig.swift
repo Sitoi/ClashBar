@@ -175,15 +175,11 @@ extension AppViewModel {
     }
 
     private func confirmDeleteConfig(named fileName: String) -> Bool {
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = tr("app.config.delete.title", fileName)
-        alert.informativeText = tr("app.config.delete.message")
-        alert.addButton(withTitle: tr("ui.action.delete"))
-        alert.addButton(withTitle: tr("ui.action.cancel"))
-        self.prepareModalWindowPresentation()
-        self.configureModalWindow(alert.window)
-        return alert.runModal() == .alertFirstButtonReturn
+        self.runModalAlert(
+            style: .warning,
+            message: tr("app.config.delete.title", fileName),
+            informative: tr("app.config.delete.message"),
+            buttons: [tr("ui.action.delete"), tr("ui.action.cancel")]) == .alertFirstButtonReturn
     }
 
     func showSelectedConfigInFinder() {
@@ -251,6 +247,13 @@ extension AppViewModel {
 
         self.pruneRemoteConfigSubscriptionsIfNeeded()
         self.setRemoteConfigMenuState(for: fileName, phase: .refreshing)
+        defer {
+            // Guarantee the menu state never sticks at .refreshing if any early
+            // return path bails out without setting a terminal phase.
+            if self.remoteConfigMenuState(for: fileName).phase == .refreshing {
+                self.setRemoteConfigMenuState(for: fileName, phase: .idle)
+            }
+        }
 
         guard let sub = self.remoteConfigSubscriptions[fileName],
               let remoteURL = URL(string: sub.urlString),
@@ -368,28 +371,21 @@ extension AppViewModel {
     }
 
     func confirmOverwriteConfig(named fileName: String) -> Bool {
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = tr("app.config.import.overwrite.title", fileName)
-        alert.informativeText = tr("app.config.import.overwrite.message")
-        alert.addButton(withTitle: tr("ui.action.overwrite"))
-        alert.addButton(withTitle: tr("ui.action.cancel"))
-        self.prepareModalWindowPresentation()
-        self.configureModalWindow(alert.window)
-        return alert.runModal() == .alertFirstButtonReturn
+        self.runModalAlert(
+            style: .warning,
+            message: tr("app.config.import.overwrite.title", fileName),
+            informative: tr("app.config.import.overwrite.message"),
+            buttons: [tr("ui.action.overwrite"), tr("ui.action.cancel")]) == .alertFirstButtonReturn
     }
 
     private func presentRemoteConfigImportResultAlert(success: Bool, message: String) {
-        let alert = NSAlert()
-        alert.alertStyle = success ? .informational : .warning
-        alert.messageText = success
-            ? tr("app.config.remote_import.alert.success.title")
-            : tr("app.config.remote_import.alert.failure.title")
-        alert.informativeText = message
-        alert.addButton(withTitle: tr("ui.action.ok"))
-        self.prepareModalWindowPresentation()
-        self.configureModalWindow(alert.window)
-        alert.runModal()
+        self.runModalAlert(
+            style: success ? .informational : .warning,
+            message: success
+                ? tr("app.config.remote_import.alert.success.title")
+                : tr("app.config.remote_import.alert.failure.title"),
+            informative: message,
+            buttons: [tr("ui.action.ok")])
     }
 
     private struct RemoteConfigImportInput {
@@ -400,13 +396,6 @@ extension AppViewModel {
     }
 
     private func promptRemoteConfigImportInput() -> RemoteConfigImportInput? {
-        let alert = NSAlert()
-        alert.alertStyle = .informational
-        alert.messageText = tr("ui.quick.import_remote_config")
-        alert.informativeText = tr("app.config.remote_import.prompt")
-        alert.addButton(withTitle: tr("ui.action.import"))
-        alert.addButton(withTitle: tr("ui.action.cancel"))
-
         // Use fixed frames in accessory view to avoid NSAlert auto-layout overlap in compact windows.
         let container = NSView(frame: NSRect(x: 0, y: 0, width: 340, height: 142))
 
@@ -459,11 +448,13 @@ extension AppViewModel {
         container.addSubview(eachLabel)
         container.addSubview(intervalField)
         container.addSubview(intervalUnit)
-        alert.accessoryView = container
 
-        self.prepareModalWindowPresentation()
-        self.configureModalWindow(alert.window)
-        guard alert.runModal() == .alertFirstButtonReturn else { return nil }
+        let response = self.runModalAlert(
+            style: .informational,
+            message: tr("ui.quick.import_remote_config"),
+            informative: tr("app.config.remote_import.prompt"),
+            buttons: [tr("ui.action.import"), tr("ui.action.cancel")]) { $0.accessoryView = container }
+        guard response == .alertFirstButtonReturn else { return nil }
 
         let autoUpdate = autoUpdateCheckbox.state == .on
         let intervalHours = max(

@@ -64,6 +64,8 @@ extension AppViewModel {
         self.remoteConfigSubscriptions = loadPersistedRemoteConfigSubscriptions()
         pruneRemoteConfigSubscriptionsIfNeeded()
         restartRemoteConfigBackgroundTasksIfNeeded()
+        self.ssidStrategyRules = loadPersistedSSIDStrategyRules()
+        self.pruneSSIDStrategyRulesIfNeeded()
         // Always start in local mode. Remote target is session-level only.
         self.remoteMachineStore.resetActiveTarget()
         self.controllerUIURL = makeControllerUIURL(self.controller)
@@ -77,15 +79,16 @@ extension AppViewModel {
         self.lastSavedSystemProxyExceptions = self.normalizedSystemProxyExceptionValues(persistedSystemProxyExceptions)
 
         if startBackgroundRefresh {
-            Task {
-                await refreshFromAPI(includeSlowCalls: true)
-                await applyPendingAppLaunchSettingsOverlayIfNeeded()
+            Task { [weak self] in
+                guard let self else { return }
+                await self.refreshFromAPI(includeSlowCalls: true)
+                await self.applyPendingAppLaunchSettingsOverlayIfNeeded()
                 self.seedCoreFeatureRecoveryFromPersistedQuitState()
                 if self.hasSystemProxyOpenIntent {
                     await self.systemProxyRepository.warmUpHelperIfPossible()
                     await self.refreshSystemProxyHelperStatus()
-                    await refreshSystemProxyStatus()
-                    await ensureSystemProxyConsistencyOnFirstLaunchIfNeeded()
+                    await self.refreshSystemProxyStatus()
+                    await self.ensureSystemProxyConsistencyOnFirstLaunchIfNeeded()
                 } else {
                     self.resetSystemProxyObservedState()
                     self.didCheckSystemProxyConsistencyOnLaunch = true
@@ -102,6 +105,7 @@ extension AppViewModel {
             }
         }
 
+        self.refreshSSIDStrategyState(requestAuthorizationIfNeeded: self.ssidStrategyEnabled)
         self.updateNetworkReachabilityMonitoringState()
         self.refreshMenuBarDisplaySnapshotIfNeeded()
     }

@@ -171,6 +171,14 @@ struct MenuBarDisplay: Equatable {
     let isRunning: Bool
 }
 
+struct StatusItemBanner: Equatable, Identifiable {
+    let id = UUID()
+    let symbolName: String
+    let title: String
+    let primaryDetail: String
+    let secondaryDetail: String?
+}
+
 struct CoreFeatureRecoveryState {
     let systemProxyEnabled: Bool
     let tunEnabled: Bool

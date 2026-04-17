@@ -157,6 +157,8 @@ struct AttachedPopoverMenuItem: View {
     var subtitle: String?
     var leadingSymbol: String?
     var leadingTint: Color = .secondary
+    var trailingStatusText: String?
+    var trailingStatusTextColor: Color?
     var showLeadingDot: Bool = false
     var selected: Bool = false
     var selectionIndicatorPlacement: SelectionIndicatorPlacement = .leading
@@ -203,6 +205,13 @@ struct AttachedPopoverMenuItem: View {
                     }
                 }
                 Spacer(minLength: 0)
+                if let trailingStatusText = self.trailingStatusText?.trimmedNonEmpty {
+                    Text(trailingStatusText)
+                        .font(.app(size: T.FontSize.caption, weight: .regular))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .foregroundStyle(self.trailingStatusForeground)
+                }
                 if self.selected, self.selectionIndicatorPlacement == .trailing {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.app(size: T.FontSize.caption, weight: .semibold))
@@ -238,6 +247,13 @@ struct AttachedPopoverMenuItem: View {
             return Color(nsColor: .selectedMenuItemTextColor)
         }
         return Color(nsColor: .controlAccentColor)
+    }
+
+    private var trailingStatusForeground: Color {
+        if self.isHovered {
+            return Color(nsColor: .selectedMenuItemTextColor).opacity(0.96)
+        }
+        return self.trailingStatusTextColor ?? .secondary
     }
 }
 

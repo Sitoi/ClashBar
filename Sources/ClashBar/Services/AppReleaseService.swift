@@ -28,15 +28,8 @@ enum AppReleaseService {
     }
 
     private static func makeSession() -> URLSession {
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.timeoutIntervalForRequest = 8
-        configuration.timeoutIntervalForResource = 15
-        configuration.waitsForConnectivity = false
-        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        configuration.urlCache = nil
-        configuration.httpCookieStorage = nil
-        configuration.httpShouldSetCookies = false
-        configuration.urlCredentialStorage = nil
-        return URLSession(configuration: configuration)
+        URLSessionFactory.makeEphemeralSession(options: .init(
+            timeoutIntervalForRequest: 8,
+            timeoutIntervalForResource: 15))
     }
 }

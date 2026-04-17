@@ -1,13 +1,5 @@
 import SwiftUI
 
-enum AppMaterialStyle {
-    case flat
-
-    static var current: Self {
-        .flat
-    }
-}
-
 enum AppSurfaceFallbackStyle {
     case material(Material)
     case color(Color)
