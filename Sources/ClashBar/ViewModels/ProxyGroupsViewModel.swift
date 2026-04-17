@@ -10,8 +10,13 @@ final class ProxyGroupsViewModel: ObservableObject {
         self.currentTab = tab
     }
 
-    func updateFilteredProxyGroups(from groups: [ProxyGroup], hideHiddenGroups: Bool) {
-        let nextGroups = hideHiddenGroups ? groups.filter { $0.hidden != true } : groups
+    func updateFilteredProxyGroups(from groups: [ProxyGroup], hideHiddenGroups: Bool, currentMode: CoreMode) {
+        let nextGroups = groups.filter { group in
+            guard currentMode == .global || group.name.caseInsensitiveCompare("GLOBAL") != .orderedSame else {
+                return false
+            }
+            return !hideHiddenGroups || group.hidden != true
+        }
         guard nextGroups != self.filteredProxyGroups else { return }
         self.filteredProxyGroups = nextGroups
     }

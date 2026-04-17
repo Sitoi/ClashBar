@@ -139,9 +139,12 @@ extension AppViewModel {
     }
 
     func refreshAllGroupLatencies(includeHiddenGroups: Bool = false) async {
+        let modeScopedGroups = self.currentMode == .global
+            ? self.proxyGroups
+            : self.proxyGroups.filter { $0.name.caseInsensitiveCompare("GLOBAL") != .orderedSame }
         let groups = includeHiddenGroups
-            ? proxyGroups
-            : proxyGroups.filter { $0.hidden != true }
+            ? modeScopedGroups
+            : modeScopedGroups.filter { $0.hidden != true }
         await withTaskGroup(of: Void.self) { taskGroup in
             for group in groups {
                 taskGroup.addTask { [weak self] in
