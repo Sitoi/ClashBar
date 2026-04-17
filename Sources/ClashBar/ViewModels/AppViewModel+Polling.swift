@@ -220,6 +220,11 @@ extension AppViewModel {
         if !self.isRemoteTarget, let externalController = config.externalController {
             applyExternalControllerFromConfig(externalController)
         }
+        if self.isRemoteTarget || config.externalUIURL != nil || config.externalUIName != nil {
+            self.applyExternalUIConfiguration(
+                hasURL: config.externalUIURL.trimmedNonEmpty != nil,
+                name: config.externalUIName)
+        }
         syncEditableSettings(from: config)
         refreshLogsStreamLevelIfNeeded()
     }

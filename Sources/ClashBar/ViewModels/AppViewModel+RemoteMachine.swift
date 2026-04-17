@@ -29,7 +29,7 @@ extension AppViewModel {
                 self.controllerSecret = nil
                 self.externalControllerDisplay = fallback
                 self.localExternalControllerDisplay = fallback
-                self.controllerUIURL = self.makeControllerUIURL(fallback)
+                self.applyExternalUIConfiguration(hasURL: false, name: nil)
                 self.ensureAPIClient()
             }
 
@@ -47,7 +47,7 @@ extension AppViewModel {
             self.controller = machine.controllerAddress
             self.controllerSecret = machine.secret
             self.externalControllerDisplay = machine.displayAddress
-            self.controllerUIURL = self.makeControllerUIURL(machine.controllerAddress)
+            self.applyExternalUIConfiguration(hasURL: false, name: nil)
             self.ensureAPIClient()
             self.lastSyncedEditableSettings = nil
             self.preserveLocalSettingsOnNextSync = false

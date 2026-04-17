@@ -32,8 +32,8 @@ extension AppViewModel {
         let didChangeController = controller != clientController
         if didChangeController {
             controller = clientController
-            controllerUIURL = makeControllerUIURL(clientController)
         }
+        self.refreshControllerUIURL()
         if didChangeController || apiClient == nil {
             ensureAPIClient()
         }
@@ -87,6 +87,7 @@ extension AppViewModel {
         let launchController = self.resolvedControllerFromSelectedConfigFile(configPath: configPath)
         self.applyExternalControllerFromConfig(launchController)
         self.syncControllerSecretFromConfigFileIfReadable(configPath: configPath)
+        self.syncExternalUIConfigurationFromConfigFileIfReadable(configPath: configPath)
         return launchController
     }
 
@@ -103,6 +104,7 @@ extension AppViewModel {
         if normalizedSecret != currentSecret {
             controllerSecret = normalizedSecret
         }
+        self.refreshControllerUIURL()
         ensureAPIClient()
     }
 
@@ -112,6 +114,35 @@ extension AppViewModel {
         }
         let parsedSecret = self.parseYAMLScalarValue(forKey: "secret", fromConfigContent: raw)
         self.applyControllerSecretFromConfig(parsedSecret)
+    }
+
+    private func syncExternalUIConfigurationFromConfigFileIfReadable(configPath: String) {
+        guard let raw = try? String(contentsOfFile: configPath, encoding: .utf8) else {
+            return
+        }
+
+        let parsedExternalUIURL = self.parseYAMLScalarValue(forKey: "external-ui-url", fromConfigContent: raw)
+        let parsedExternalUIName = self.parseYAMLScalarValue(forKey: "external-ui-name", fromConfigContent: raw)
+        self.applyExternalUIConfiguration(
+            hasURL: parsedExternalUIURL.trimmedNonEmpty != nil,
+            name: parsedExternalUIName)
+    }
+
+    func applyExternalUIConfiguration(hasURL: Bool, name: String?) {
+        self.hasConfiguredExternalUI = hasURL
+        self.configuredExternalUIName = hasURL ? self.normalizedExternalUIName(name) : nil
+        self.refreshControllerUIURL()
+    }
+
+    func refreshControllerUIURL() {
+        let nextURL = self.makeControllerUIURL(
+            self.controller,
+            secret: self.controllerSecret,
+            hasConfiguredExternalUI: self.hasConfiguredExternalUI,
+            externalUIName: self.configuredExternalUIName)
+        if self.controllerUIURL != nextURL {
+            self.controllerUIURL = nextURL
+        }
     }
 
     private func parseYAMLScalarValue(forKey key: String, fromConfigContent raw: String) -> String? {
@@ -180,6 +211,19 @@ extension AppViewModel {
             return nil
         }
         return trimmed
+    }
+
+    private func normalizedExternalUIName(_ value: String?) -> String? {
+        guard var trimmed = value?.trimmedNonEmpty else { return nil }
+
+        while trimmed.hasPrefix("/") {
+            trimmed.removeFirst()
+        }
+        while trimmed.hasSuffix("/") {
+            trimmed.removeLast()
+        }
+
+        return trimmed.trimmedNonEmpty
     }
 
     private func leadingWhitespaceCount(in line: String) -> Int {

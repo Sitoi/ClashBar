@@ -52,6 +52,7 @@ struct MenuBarHeaderView: TranslatingView {
 
                     HStack(spacing: MenuBarLayoutTokens.space6) {
                         self.headerConnectionControl
+                        self.headerControllerWebUIButton
                         if self.appViewModel.isExternalControllerWildcardIPv4 {
                             self.headerControllerWarningIcon
                         }
@@ -201,6 +202,21 @@ struct MenuBarHeaderView: TranslatingView {
             .foregroundStyle(nativeWarning)
             .help("external-controller is 0.0.0.0 and can be accessed from your LAN.")
             .accessibilityLabel("Warning: external-controller is bound to 0.0.0.0")
+    }
+
+    var headerControllerWebUIButton: some View {
+        Button {
+            self.appViewModel.openControllerWebUI()
+        } label: {
+            Image(systemName: "safari")
+                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .semibold))
+                .foregroundStyle(self.nativeSecondaryLabel)
+        }
+        .buttonStyle(.plain)
+        .help("Open WebUI")
+        .accessibilityLabel("Open WebUI")
+        .disabled(self.isSwitchingMachine)
+        .opacity(self.isSwitchingMachine ? 0.6 : 1)
     }
 
     func headerPopoverSection(_ title: String) -> some View {

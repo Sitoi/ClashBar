@@ -244,8 +244,65 @@ extension AppViewModel {
         return "\(trimmedHost):\(port)"
     }
 
-    func makeControllerUIURL(_ controller: String) -> String {
-        "\(normalizedControllerAddress(controller))/ui"
+    func makeControllerUIURL(
+        _ controller: String,
+        secret: String? = nil,
+        hasConfiguredExternalUI: Bool? = nil,
+        externalUIName: String? = nil) -> String
+    {
+        let resolvedSecret = secret ?? self.controllerSecret
+        let resolvedHasConfiguredExternalUI = hasConfiguredExternalUI ?? self.hasConfiguredExternalUI
+        let resolvedExternalUIName = externalUIName ?? self.configuredExternalUIName
+
+        if resolvedHasConfiguredExternalUI {
+            return self.configuredControllerUIURL(controller, externalUIName: resolvedExternalUIName)
+        }
+        return self.metaCubeXDSetupURL(controller, secret: resolvedSecret)
+    }
+
+    func openControllerWebUI() {
+        guard let url = URL(string: self.controllerUIURL) else { return }
+        _ = NSWorkspace.shared.open(url)
+    }
+
+    private func configuredControllerUIURL(_ controller: String, externalUIName: String?) -> String {
+        guard var components = URLComponents(string: self.normalizedControllerAddress(controller)) else {
+            return "\(self.normalizedControllerAddress(controller))/ui"
+        }
+
+        var path = "/ui"
+        if let externalUIName = externalUIName?.trimmedNonEmpty {
+            path += "/\(self.encodedURLPathComponent(externalUIName))"
+        }
+        components.path = path
+        components.query = nil
+        components.fragment = nil
+        return components.string ?? "\(self.normalizedControllerAddress(controller))\(path)"
+    }
+
+    private func metaCubeXDSetupURL(_ controller: String, secret: String?) -> String {
+        let controllerComponents = URLComponents(string: self.normalizedControllerAddress(controller))
+        let usesHTTPS = controllerComponents?.scheme?.lowercased() == "https"
+        let host = controllerComponents?.host?.trimmedNonEmpty ?? "127.0.0.1"
+        let port = controllerComponents?.port ?? (usesHTTPS ? 443 : 80)
+
+        var fragmentComponents = URLComponents()
+        fragmentComponents.path = "/setup"
+        fragmentComponents.queryItems = [
+            URLQueryItem(name: "http", value: usesHTTPS ? "false" : "true"),
+            URLQueryItem(name: "hostname", value: host),
+            URLQueryItem(name: "port", value: String(port)),
+            URLQueryItem(name: "secret", value: secret?.trimmed ?? ""),
+        ]
+
+        var components = URLComponents(string: "https://metacubex.github.io/metacubexd/")!
+        components.fragment = fragmentComponents.string
+        return components.string ?? "https://metacubex.github.io/metacubexd/#/setup"
+    }
+
+    private func encodedURLPathComponent(_ value: String) -> String {
+        let allowedCharacters = CharacterSet.urlPathAllowed.subtracting(CharacterSet(charactersIn: "/"))
+        return value.addingPercentEncoding(withAllowedCharacters: allowedCharacters) ?? value
     }
 }
 

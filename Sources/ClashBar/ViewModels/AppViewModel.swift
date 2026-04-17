@@ -12,8 +12,11 @@ final class AppViewModel: ObservableObject {
     @Published var controller: String = "127.0.0.1:9090"
     @Published var externalControllerDisplay: String = "127.0.0.1:9090"
     var localExternalControllerDisplay: String = "127.0.0.1:9090"
-    @Published var controllerUIURL: String = "http://127.0.0.1:9090/ui"
+    @Published var controllerUIURL: String =
+        "https://metacubex.github.io/metacubexd/#/setup?http=true&hostname=127.0.0.1&port=9090&secret="
     @Published var controllerSecret: String?
+    var hasConfiguredExternalUI = false
+    var configuredExternalUIName: String?
 
     let trafficStore = TrafficStore()
     var traffic: TrafficSnapshot {

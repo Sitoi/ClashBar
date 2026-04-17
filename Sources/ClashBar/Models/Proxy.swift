@@ -97,6 +97,8 @@ struct ConfigSnapshot: Codable, Equatable {
     let mixedPort: Int?
     let tun: TunConfig?
     let externalController: String?
+    let externalUIURL: String?
+    let externalUIName: String?
 
     var tunEnabled: Bool? {
         self.tun?.enable
@@ -115,5 +117,7 @@ struct ConfigSnapshot: Codable, Equatable {
         case mixedPort = "mixed-port"
         case tun
         case externalController = "external-controller"
+        case externalUIURL = "external-ui-url"
+        case externalUIName = "external-ui-name"
     }
 }
