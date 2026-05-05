@@ -38,12 +38,19 @@ extension AppViewModel {
     func configureStreamCoordinator() {
         streamCoordinator.shouldReconnect = { [weak self] in
             guard let self else { return false }
+            // Safety net: never reconnect while the network-managed stop is in
+            // progress. The stop task cancels polling immediately, but this guard
+            // covers any race where a stream error fires before cancellation lands.
+            if self.autoManageCoreOnNetworkChangeEnabled, self.networkReachabilityStatus == .offline {
+                return false
+            }
             return self.isRemoteTarget || self.coreRepository.isRunning
         }
         streamCoordinator.onDisconnect = { [weak self] key, message in
             guard let self else { return }
             let label = StreamKind.allCases.first(where: { $0.key == key })?.label ?? key
-            self.appendLog(level: "error", message: tr("log.stream.disconnected", tr(label), message))
+            self.appendLog(
+                level: "error", message: tr("log.stream.disconnected", tr(label), message))
         }
         streamCoordinator.onStartError = { [weak self] key, error in
             guard let self else { return }
@@ -126,7 +133,9 @@ extension AppViewModel {
     func startConnectionsStream(intervalMilliseconds: Int? = nil) {
         self.startDecodableStream(
             kind: .connections,
-            makeWebSocket: { try $0.makeWebSocketTask(for: .connections(interval: intervalMilliseconds)) },
+            makeWebSocket: {
+                try $0.makeWebSocketTask(for: .connections(interval: intervalMilliseconds))
+            },
             onDecoded: { [weak self] (snapshot: ConnectionsSnapshot) in
                 guard let self else { return }
                 self.applyConnectionsSnapshot(snapshot)
@@ -195,7 +204,8 @@ extension AppViewModel {
         guard let payload = self.pendingTrafficPayload else { return }
         self.pendingTrafficPayload = nil
 
-        guard let snapshot = try? self.streamJSONDecoder.decode(TrafficSnapshot.self, from: payload) else {
+        guard let snapshot = try? self.streamJSONDecoder.decode(TrafficSnapshot.self, from: payload)
+        else {
             return
         }
         self.lastTrafficDecodeAt = Date()
@@ -209,8 +219,11 @@ extension AppViewModel {
     private func applyTrafficSnapshot(_ snapshot: TrafficSnapshot) {
         self.traffic = snapshot
         guard self.isPanelPresented else {
-            if !self.trafficHistoryUp.isEmpty || !self.trafficHistoryDown
-                .isEmpty || self.displayUpTotal != 0 || self.displayDownTotal != 0 || self.lastTrafficSampleAt != nil
+            if !self.trafficHistoryUp.isEmpty
+                || !self.trafficHistoryDown
+                .isEmpty
+                || self.displayUpTotal != 0 || self.displayDownTotal != 0
+                || self.lastTrafficSampleAt != nil
             {
                 self.clearTrafficPresentationHistory()
             }
@@ -252,7 +265,8 @@ extension AppViewModel {
             makeWebSocket: makeWebSocket,
             onPayload: { [weak self] payload in
                 guard let self else { return }
-                guard let decoded = try? self.streamJSONDecoder.decode(Payload.self, from: payload) else {
+                guard let decoded = try? self.streamJSONDecoder.decode(Payload.self, from: payload)
+                else {
                     // Ignore malformed/empty payloads without reconnecting to avoid log storms.
                     return
                 }
@@ -261,6 +275,7 @@ extension AppViewModel {
     }
 
     func decodeLogLinePayload(_ payload: Data) -> (level: String, message: String)? {
-        self.decodeStreamLogPayloadUseCase.execute(payload: payload, decoder: self.streamJSONDecoder)
+        self.decodeStreamLogPayloadUseCase.execute(
+            payload: payload, decoder: self.streamJSONDecoder)
     }
 }

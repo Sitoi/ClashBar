@@ -73,6 +73,12 @@ extension AppViewModel {
             guard let self else { return }
             var didLog = false
 
+            // Immediately tear down all WebSocket streams when network is lost.
+            // This prevents log storms caused by mihomo reading from invalid file
+            // descriptors ("batch read packet: bad file descriptor") while the
+            // core is still running during the stop-waiting loop below.
+            self.cancelPolling()
+
             for _ in 0..<120 {
                 if Task.isCancelled { return }
                 guard self.autoManageCoreOnNetworkChangeEnabled else { return }
@@ -91,7 +97,8 @@ extension AppViewModel {
 
                 if !didLog {
                     didLog = true
-                    self.appendLog(level: "warning", message: self.tr("log.network.offline_auto_stop"))
+                    self.appendLog(
+                        level: "warning", message: self.tr("log.network.offline_auto_stop"))
                 }
                 await self.stopCore(trigger: .networkLoss)
 
