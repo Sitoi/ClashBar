@@ -62,7 +62,8 @@ struct MenuBarRootView: TranslatingView {
     @State var footerBarHeight: CGFloat = 0
     @State var currentTabContentHeight: CGFloat = 0
     @AppStorage("clashbar.proxy.group.hide_hidden") var hideHiddenProxyGroups: Bool = true
-    @AppStorage("clashbar.proxy.group.sort_nodes_by_latency") var sortGroupNodesByLatency: Bool = false
+    @AppStorage("clashbar.proxy.group.sort_nodes_by_latency") var sortGroupNodesByLatency: Bool =
+        false
 
     var contentWidth: CGFloat {
         MenuBarLayoutTokens.panelWidth - (MenuBarLayoutTokens.space8 * 2)
@@ -115,9 +116,14 @@ struct MenuBarRootView: TranslatingView {
         self.panelSections
             .frame(width: self.contentWidth, alignment: .topLeading)
             .padding(.horizontal, MenuBarLayoutTokens.space8)
-            .frame(width: MenuBarLayoutTokens.panelWidth, height: resolvedPanelHeight, alignment: .topLeading)
+            .frame(
+                width: MenuBarLayoutTokens.panelWidth,
+                height: resolvedPanelHeight,
+                alignment: .topLeading)
             .background(self.panelBackground)
-            .clipShape(RoundedRectangle(cornerRadius: MenuBarLayoutTokens.panelCornerRadius, style: .continuous))
+            .clipShape(
+                RoundedRectangle(
+                    cornerRadius: MenuBarLayoutTokens.panelCornerRadius, style: .continuous))
     }
 
     var panelContent: some View {
@@ -155,17 +161,17 @@ struct MenuBarRootView: TranslatingView {
                     hideHiddenGroups: self.hideHiddenProxyGroups,
                     currentMode: self.appViewModel.currentMode)
             }
-            .onChange(of: self.hideHiddenProxyGroups) { _ in
+            .onChange(of: self.hideHiddenProxyGroups) { newValue in
                 self.rootViewModel.updateFilteredProxyGroups(
                     from: self.appViewModel.proxyGroups,
-                    hideHiddenGroups: self.hideHiddenProxyGroups,
+                    hideHiddenGroups: newValue,
                     currentMode: self.appViewModel.currentMode)
             }
-            .onChange(of: self.appViewModel.currentMode) { _ in
+            .onChange(of: self.appViewModel.currentMode) { newMode in
                 self.rootViewModel.updateFilteredProxyGroups(
                     from: self.appViewModel.proxyGroups,
                     hideHiddenGroups: self.hideHiddenProxyGroups,
-                    currentMode: self.appViewModel.currentMode)
+                    currentMode: newMode)
             }
     }
 
@@ -224,7 +230,8 @@ struct MenuBarRootView: TranslatingView {
             fallbackStyle: .material(.regularMaterial),
             stroke: nativeSeparator)
             .shadow(
-                color: Color(nsColor: .shadowColor).opacity(MenuBarLayoutTokens.Shadow.standard.opacity),
+                color: Color(nsColor: .shadowColor).opacity(
+                    MenuBarLayoutTokens.Shadow.standard.opacity),
                 radius: MenuBarLayoutTokens.Shadow.standard.radius,
                 x: MenuBarLayoutTokens.Shadow.standard.x,
                 y: MenuBarLayoutTokens.Shadow.standard.y)
