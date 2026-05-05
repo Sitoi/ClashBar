@@ -87,6 +87,32 @@ ClashBar 的设计目标始终围绕两个关键词：**轻量** 与 **稳定**�
 | 🔐 系统集成      | 系统代理开关、开机启动、权限协同           | 与 macOS 深度协作，降低操作成本  |
 | 🌐 国际化        | 简体中文 / English                         | 支持团队协作与跨语言使用         |
 
+## 📦 安装
+
+### 要求
+
+- macOS Ventura (13.0) 及以上
+
+### Homebrew（推荐）
+
+```sh
+brew tap Sitoi/tap
+brew install --cask clashbar
+```
+
+### 手动安装
+
+从 [GitHub Releases](https://github.com/Sitoi/ClashBar/releases) 下载最新 `.dmg`，挂载后将 `ClashBar.app` 拖入 `/Applications`。
+
+### 卸载
+
+```sh
+brew uninstall --cask clashbar
+
+# 彻底清除所有数据
+brew uninstall --zap --cask clashbar
+```
+
 ## ⚠️ 安装与使用前注意事项
 
 先说人话。这些不是“可选建议”，很多时候是能不能正常用的前提：
@@ -256,3 +282,4 @@ sudo xattr -r -d com.apple.quarantine /Applications/ClashBar.app
 ## 📄 许可证
 
 本项目采用 `GPL-3.0 license`，详见 [LICENSE](LICENSE)。
+
