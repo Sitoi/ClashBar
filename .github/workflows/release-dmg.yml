@@ -261,3 +261,103 @@ jobs:
           fail_on_unmatched_files: true
           files: |
             dist/*.dmg
+            dist/*.dmg.sha256
+
+  update-formula:
+    runs-on: ubuntu-latest
+    needs: [prepare-version, release]
+    permissions:
+      contents: read
+    steps:
+      - name: Fetch SHA256 from release assets
+        env:
+          VERSION: ${{ needs.prepare-version.outputs.version }}
+          TAG: ${{ needs.prepare-version.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          fetch_sha() {
+            local suffix="$1"
+            curl -fsSL \
+              "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/ClashBar-${VERSION}-${suffix}.dmg.sha256" \
+              | awk '{print $1}'
+          }
+
+          ARM_WITH_CORE=$(fetch_sha "apple-silicon")
+          ARM_NO_CORE=$(fetch_sha "apple-silicon-no-core")
+          INTEL_WITH_CORE=$(fetch_sha "intel")
+          INTEL_NO_CORE=$(fetch_sha "intel-no-core")
+
+          for var in ARM_WITH_CORE ARM_NO_CORE INTEL_WITH_CORE INTEL_NO_CORE; do
+            if [[ -z "${!var}" ]]; then
+              echo "Failed to resolve checksum for ${var}" >&2
+              exit 1
+            fi
+          done
+
+          echo "arm_with_core=${ARM_WITH_CORE}" >> "$GITHUB_ENV"
+          echo "arm_no_core=${ARM_NO_CORE}"     >> "$GITHUB_ENV"
+          echo "intel_with_core=${INTEL_WITH_CORE}" >> "$GITHUB_ENV"
+          echo "intel_no_core=${INTEL_NO_CORE}" >> "$GITHUB_ENV"
+
+      - name: Update Homebrew Cask (Personal Tap)
+        env:
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+          VERSION: ${{ needs.prepare-version.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          git clone "https://x-access-token:${PAT_TOKEN}@github.com/Sitoi/homebrew-tap.git" /tmp/homebrew-tap
+          CASK_FILE="/tmp/homebrew-tap/Casks/clashbar.rb"
+
+          # Use Python to safely replace version and all 4 SHA values.
+          # Cask SHA pattern (has_core branch):
+          #   on_arm   { sha256 has_core ? "<no-core-sha>" : "<with-core-sha>" }
+          #   on_intel { sha256 has_core ? "<no-core-sha>" : "<with-core-sha>" }
+          python3 - "$CASK_FILE" "$VERSION" \
+            "$arm_no_core" "$arm_with_core" \
+            "$intel_no_core" "$intel_with_core" <<'PYEOF'
+          import re, sys
+
+          cask_file, version, arm_no_core, arm_with_core, intel_no_core, intel_with_core = sys.argv[1:]
+
+          with open(cask_file) as f:
+              content = f.read()
+
+          # version
+          content = re.sub(r'version "[0-9.]+"', f'version "{version}"', content)
+
+          sha = r'[0-9a-f]{64}'
+
+          # on_arm block: has_core ? "<no-core>" \ : "<with-core>"
+          content = re.sub(
+              rf'(on_arm do\s+sha256 has_core \? ")({sha})(" \\\s+: ")({sha})(")',
+              lambda m: m.group(1) + arm_no_core + m.group(3) + arm_with_core + m.group(5),
+              content,
+          )
+
+          # on_intel block
+          content = re.sub(
+              rf'(on_intel do\s+sha256 has_core \? ")({sha})(" \\\s+: ")({sha})(")',
+              lambda m: m.group(1) + intel_no_core + m.group(3) + intel_with_core + m.group(5),
+              content,
+          )
+
+          with open(cask_file, 'w') as f:
+              f.write(content)
+
+          print("Cask updated successfully.")
+          PYEOF
+
+          cd /tmp/homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet -- Casks/clashbar.rb; then
+            echo "No cask changes to push"
+            exit 0
+          fi
+
+          git add Casks/clashbar.rb
+          git commit -m "clashbar ${VERSION}" -m "Automated release via GitHub Actions"
+          git push origin HEAD:main
