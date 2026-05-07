@@ -20,6 +20,24 @@
   <a href="https://github.com/Sitoi/ClashBar/issues" target="_blank" rel="noopener noreferrer">
     <img alt="Issues" src="https://img.shields.io/github/issues/Sitoi/ClashBar?style=flat-square&logo=github" />
   </a>
+  <a href="https://github.com/Sitoi/ClashBar/pulls" target="_blank" rel="noopener noreferrer">
+    <img alt="PRs" src="https://img.shields.io/github/issues-pr/Sitoi/ClashBar?style=flat-square&logo=github" />
+  </a>
+  <a href="https://github.com/Sitoi/ClashBar/network/members" target="_blank" rel="noopener noreferrer">
+    <img alt="Forks" src="https://img.shields.io/github/forks/Sitoi/ClashBar?style=flat-square&logo=github" />
+  </a>
+  <a href="https://github.com/Sitoi/ClashBar/releases" target="_blank" rel="noopener noreferrer">
+    <img alt="Downloads" src="https://img.shields.io/github/downloads/Sitoi/ClashBar/total?style=flat-square&logo=github" />
+  </a>
+  <a href="https://github.com/Sitoi/ClashBar/commits" target="_blank" rel="noopener noreferrer">
+    <img alt="Commit Activity" src="https://img.shields.io/github/commit-activity/m/Sitoi/ClashBar?style=flat-square&logo=github" />
+  </a>
+  <a href="https://github.com/Sitoi/ClashBar/commits" target="_blank" rel="noopener noreferrer">
+    <img alt="Last Commit" src="https://img.shields.io/github/last-commit/Sitoi/ClashBar?style=flat-square&logo=github" />
+  </a>
+  <a href="https://github.com/Sitoi/ClashBar/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">
+    <img alt="License" src="https://img.shields.io/github/license/Sitoi/ClashBar?style=flat-square" />
+  </a>
   <a href="https://t.me/clashbars" target="_blank" rel="noopener noreferrer">
     <img alt="Telegram" src="https://img.shields.io/badge/Telegram-@clashbars-26A5E4?style=flat-square&logo=telegram&logoColor=white" />
   </a>
@@ -259,6 +277,28 @@ sudo xattr -r -d com.apple.quarantine /Applications/ClashBar.app
 3. 在 `Connections` 定位对应连接，核对目标地址与链路。
 4. 在 `Logs` 通过关键词过滤交叉验证最终路由决策。
 
+### 6) 日志出现 "can't find MMDB, start download" 🗺️
+
+**现象**：Core 启动后日志中出现 `can't find MMDB, start download`，网络访问异常或规则不生效。  
+**原因**：GeoIP 数据库文件（`Country.mmdb`）缺失，Core 正在自动下载，首次启动或数据目录被清理后常见。
+
+**处理步骤**
+
+1. 使用**默认配置**启动一次，等待 Core 自动下载完成（需要网络可达）。
+2. 下载完成后重新启动 Core，问题一般自动消失。
+3. 若网络受限无法下载，可手动将 `Country.mmdb` 放入 `~/Library/Application Support/clashbar/` 目录后再启动。
+
+### 7) 出现 "There was a bad response from the server" 或 API request failed (401) ⚠️
+
+**现象**：操作时弹出 `There was a bad response from the server` 或 `API request failed (401)` 错误提示。  
+**原因**：通常是其他 Clash/mihomo 系客户端残留进程占用了同一端口，导致 API 鉴权失败。
+
+**处理步骤**
+
+1. 退出所有其他 `mihomo` / Clash 系客户端（ClashX、Clash Verge、Clash Nyanpasu、Clash Party 等）。
+2. 在 ClashBar 中执行 `Restart`，确认 Core 由 ClashBar 独立拉起。
+3. 若退出所有软件后仍复现，说明有残留进程在后台占用端口，**重启电脑**后重试即可彻底清除。
+
 ## 🙌 反馈与支持
 
 - Telegram 社区：<https://t.me/clashbars>
@@ -282,4 +322,3 @@ sudo xattr -r -d com.apple.quarantine /Applications/ClashBar.app
 ## 📄 许可证
 
 本项目采用 `GPL-3.0 license`，详见 [LICENSE](LICENSE)。
-
