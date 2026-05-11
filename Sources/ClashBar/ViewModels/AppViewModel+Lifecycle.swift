@@ -99,7 +99,8 @@ extension AppViewModel {
         defer { coreActionState = .idle }
         await self.prepareCoreFeatureRecoveryBeforeCoreTransition(
             fallbackRecovery: recoverySnapshotBeforeStop,
-            transitionKind: .stop)
+            transitionKind: .stop,
+            disableRuntimeTunBeforeStop: trigger == .networkLoss)
         self.cancelDeferredEditableSettingsOverlaySync()
         cancelProviderRefresh(reason: "stop requested")
         await self.coreRepository.stop()
@@ -131,7 +132,8 @@ extension AppViewModel {
             let recoverySnapshotBeforeRestart = self.currentCoreFeatureRecoverySnapshot()
             await self.prepareCoreFeatureRecoveryBeforeCoreTransition(
                 fallbackRecovery: recoverySnapshotBeforeRestart,
-                transitionKind: .restart)
+                transitionKind: .restart,
+                disableRuntimeTunBeforeStop: false)
             let settingsOverlay = self.overlayApplyingPendingCoreFeatureRecovery(currentEditableSettingsSnapshot())
             _ = try await self.coreRepository.restart(configPath: configPath, controller: launchController)
             await self.completeCoreBootstrap(
@@ -372,7 +374,8 @@ extension AppViewModel {
 
     private func prepareCoreFeatureRecoveryBeforeCoreTransition(
         fallbackRecovery: CoreFeatureRecoveryState,
-        transitionKind: CoreTransitionKind) async
+        transitionKind: CoreTransitionKind,
+        disableRuntimeTunBeforeStop: Bool) async
     {
         let runtimeRunningBeforeTransition = self.isRuntimeRunning
         let capturedRecovery = CoreFeatureRecoveryState(
@@ -390,6 +393,15 @@ extension AppViewModel {
         self.pendingCoreFeatureRecoveryState = recovery.shouldRecoverAnyFeature ? recovery : nil
 
         if runtimeRunningBeforeTransition, recovery.tunEnabled {
+            if transitionKind == .stop, disableRuntimeTunBeforeStop {
+                do {
+                    try await self.applyTunRuntimeChange(enabled: false)
+                } catch {
+                    self.appendLog(
+                        level: "error",
+                        message: self.tr("log.tun.toggle_failed", self.tunErrorMessage(error)))
+                }
+            }
             self.isTunEnabled = false
             self.appendLog(level: "info", message: self.tr("log.tun.toggled", self.tr("log.tun.disabled")))
         }
