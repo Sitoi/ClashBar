@@ -4,6 +4,10 @@ import SwiftUI
 struct ConnectionsTabView: TranslatingView {
     @EnvironmentObject var appViewModel: AppViewModel
     @EnvironmentObject var connectionsStore: ConnectionsStore
+    @AppStorage("clashbar.connections.transport_filter") private var storedTransportFilterRawValue =
+        ConnectionsTransportFilter.all.rawValue
+    @AppStorage("clashbar.connections.sort_option") private var storedSortOptionRawValue =
+        ConnectionsSortOption.default.rawValue
     @StateObject private var viewModel = ConnectionsViewModel()
 
     private enum ConnectionsLayout {
@@ -40,7 +44,10 @@ struct ConnectionsTabView: TranslatingView {
                 }
             }
         }
-        .onAppear { self.refreshData() }
+        .onAppear {
+            self.restoreStoredPreferences()
+            self.refreshData()
+        }
         .onChange(of: self.connectionsStore.connections) { _ in self.refreshData() }
         .onChange(of: self.viewModel.filterText) { _ in self.refreshData() }
         .onChange(of: self.viewModel.transportFilter) { _ in self.refreshData() }
@@ -51,6 +58,31 @@ struct ConnectionsTabView: TranslatingView {
         self.viewModel.updateVisibleConnections(
             from: self.connectionsStore.connections,
             searchText: { connection in self.connectionSearchText(for: connection) })
+    }
+
+    private func restoreStoredPreferences() {
+        let transportFilter = ConnectionsTransportFilter(rawValue: self.storedTransportFilterRawValue) ?? .all
+        let sortOption = ConnectionsSortOption(rawValue: self.storedSortOptionRawValue) ?? .default
+
+        self.viewModel.transportFilter = transportFilter
+        self.viewModel.sortOption = sortOption
+
+        if self.storedTransportFilterRawValue != transportFilter.rawValue {
+            self.storedTransportFilterRawValue = transportFilter.rawValue
+        }
+        if self.storedSortOptionRawValue != sortOption.rawValue {
+            self.storedSortOptionRawValue = sortOption.rawValue
+        }
+    }
+
+    private func selectTransportFilter(_ filter: ConnectionsTransportFilter) {
+        self.viewModel.transportFilter = filter
+        self.storedTransportFilterRawValue = filter.rawValue
+    }
+
+    private func selectSortOption(_ sortOption: ConnectionsSortOption) {
+        self.viewModel.sortOption = sortOption
+        self.storedSortOptionRawValue = sortOption.rawValue
     }
 
     var connectionsControlCard: some View {
@@ -91,7 +123,7 @@ struct ConnectionsTabView: TranslatingView {
             symbol: "line.3.horizontal.decrease.circle",
             helpText: self.tr("ui.network.filter.transport"),
             optionTitle: { self.tr($0.titleKey) },
-            onSelect: { self.viewModel.transportFilter = $0 }))
+            onSelect: { self.selectTransportFilter($0) }))
     }
 
     var connectionsSortMenu: some View {
@@ -101,7 +133,7 @@ struct ConnectionsTabView: TranslatingView {
             symbol: "arrow.up.arrow.down",
             helpText: self.tr("ui.network.sort.label"),
             optionTitle: { self.tr($0.titleKey) },
-            onSelect: { self.viewModel.sortOption = $0 }))
+            onSelect: { self.selectSortOption($0) }))
     }
 
     func connectionRow(_ conn: ConnectionSummary) -> some View {
