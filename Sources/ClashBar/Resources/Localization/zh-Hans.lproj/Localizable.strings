@@ -25,6 +25,8 @@
 "ui.action.sort_nodes_by_latency" = "节点按延迟排序";
 "ui.action.sort_nodes_default" = "节点默认排序";
 "ui.action.refresh" = "刷新";
+"ui.action.expand" = "展开";
+"ui.action.collapse" = "折叠";
 "ui.action.close_all" = "关闭全部";
 "ui.action.close_connection" = "关闭连接";
 "ui.action.copy_all_logs" = "复制全部日志";

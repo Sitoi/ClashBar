@@ -12,10 +12,26 @@ extension ProxyTabView {
                 tr("ui.section.proxy_providers"),
                 symbol: "externaldrive.fill",
                 count: "\(providers.count)")
+            {
+                let label = tr(isProxyProvidersCollapsed ? "ui.action.expand" : "ui.action.collapse")
+                Button {
+                    withAnimation(.easeInOut(duration: 0.16)) {
+                        isProxyProvidersCollapsed.toggle()
+                    }
+                } label: {
+                    Image(systemName: isProxyProvidersCollapsed ? "chevron.right" : "chevron.down")
+                        .font(.app(size: T.FontSize.caption, weight: .semibold))
+                        .foregroundStyle(nativeSecondaryLabel)
+                        .frame(width: T.rowLeadingIcon, height: T.rowLeadingIcon)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(label)
+                .help(label)
+            }
 
             if providers.isEmpty {
                 emptyCard(tr("ui.empty.proxy_providers"))
-            } else {
+            } else if !isProxyProvidersCollapsed {
                 VStack(spacing: T.space2) {
                     ForEach(providers, id: \.self) { name in
                         self.proxyProviderRow(name: name, detail: appViewModel.proxyProvidersDetail[name])
@@ -321,6 +337,14 @@ extension ProxyTabView {
                 if let iconURL {
                     self.proxyGroupLeadingIcon(iconURL)
                 }
+            } trailing: {
+                self.providerActionButton(
+                    .healthcheck,
+                    isLoading: appViewModel.groupLatencyLoading.contains(group.name))
+                {
+                    await appViewModel.refreshGroupLatency(group)
+                }
+                .help(tr("ui.action.test_latency"))
             }
 
             let nodes = sortGroupNodesByLatency
@@ -426,7 +450,8 @@ extension ProxyTabView {
     func popoverHeader(
         name: String,
         count: Int,
-        @ViewBuilder leading: () -> some View = { EmptyView() }) -> some View
+        @ViewBuilder leading: () -> some View = { EmptyView() },
+        @ViewBuilder trailing: () -> some View = { EmptyView() }) -> some View
     {
         VStack(spacing: 0) {
             HStack(spacing: T.space1) {
@@ -437,14 +462,16 @@ extension ProxyTabView {
                     .foregroundStyle(nativePrimaryLabel)
                     .lineLimit(1)
 
-                Spacer(minLength: 0)
-
                 Text("\(count)")
                     .font(.app(size: T.FontSize.caption, weight: .medium))
                     .foregroundStyle(nativeSecondaryLabel)
                     .padding(.horizontal, T.space4)
                     .padding(.vertical, T.space1)
                     .background(nativeBadgeCapsule())
+
+                Spacer(minLength: 0)
+
+                trailing()
             }
             .padding(.horizontal, T.space4)
             .padding(.bottom, T.space2)
