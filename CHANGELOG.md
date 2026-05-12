@@ -1,3 +1,25 @@
+## v0.2.5
+
+![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.2.5-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
+
+> 本次更新集中在 **Connections 页面偏好持久化与 Mac 休眠唤醒后的 TUN 句柄失效问题**：连接列表现在会记住传输协议过滤器和排序方式，重新打开菜单或重启应用后不再回到默认视图；同时修正 Mac 休眠断网触发停服时的 TUN 运行态关闭顺序，先关闭运行中的 TUN 再停止内核，避免唤醒后 Mihomo 继续读取已被 macOS 释放的旧 TUN / UDP Socket 句柄并刷出 `socket operation on non-socket` 错误。
+
+### 📝 更新日志 (Changelog)
+
+**✨ 新增功能 (New Features)**
+
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **Connections 过滤与排序偏好持久化**：Connections 页面会保存传输协议过滤器和排序选项；用户重新打开菜单或重启应用后，会自动恢复上次选择的连接列表视图。
+
+**🚀 优化改进 (Improvements)**
+
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **Connections 偏好恢复容错**：读取到失效的过滤或排序配置时会回退到默认值并写回，避免旧配置或异常值导致连接列表状态不可预期。
+
+**🐞 修复问题 (Bug Fixes)**
+
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **休眠唤醒后 Mihomo 旧句柄刷屏**：修复 Mac 进入休眠后网络连接被系统断开、TUN 虚拟网卡或 UDP Socket 句柄在内核层面失效，但 Mihomo 唤醒后仍尝试读取旧句柄导致 `socket operation on non-socket` 错误持续刷屏的问题；现在断网停服会先尝试关闭 TUN 运行态，再进入内核停止流程。
+
+---
+
 ## v0.2.4
 
 ![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.2.4-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
@@ -227,4 +249,3 @@
 **🐞 修复问题 (Bug Fixes)**
 
 - ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **升级响应兼容性**：兼容 Mihomo `/upgrade` 接口的多种响应与错误文案，正确识别“已是最新版”场景，避免把正常结果误判为失败。
-
