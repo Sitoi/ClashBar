@@ -19,12 +19,17 @@ extension AppViewModel {
         message: String,
         informative: String,
         buttons: [String],
+        scrollable: Bool = false,
         configure: ((NSAlert) -> Void)? = nil) -> NSApplication.ModalResponse
     {
         let alert = NSAlert()
         alert.alertStyle = style
         alert.messageText = message
-        alert.informativeText = informative
+        if scrollable {
+            alert.setScrollableInformativeText(informative)
+        } else {
+            alert.informativeText = informative
+        }
         for title in buttons {
             alert.addButton(withTitle: title)
         }
@@ -60,7 +65,8 @@ extension AppViewModel {
             style: style,
             message: title,
             informative: message,
-            buttons: [tr("ui.action.ok")])
+            buttons: [tr("ui.action.ok")],
+            scrollable: true)
     }
 
     func presentConfigValidationFailedAlert(fileName: String, details: String) {
@@ -68,7 +74,8 @@ extension AppViewModel {
             style: .critical,
             message: tr("app.config.validation_failed.title"),
             informative: tr("app.config.validation_failed.message", fileName, details),
-            buttons: [tr("ui.action.ok")])
+            buttons: [tr("ui.action.ok")],
+            scrollable: true)
     }
 
     func presentInitialNoCoreSetupGuideIfNeeded() {
