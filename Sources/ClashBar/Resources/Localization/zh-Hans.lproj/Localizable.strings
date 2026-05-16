@@ -39,6 +39,8 @@
 "ui.action.overwrite" = "覆盖";
 "ui.action.delete" = "删除";
 "ui.action.cancel" = "取消";
+"ui.action.pin" = "固定";
+"ui.action.unpin" = "取消固定";
 "ui.action.close" = "关闭";
 "ui.action.ok" = "确定";
 "ui.action.flush_fakeip_cache" = "清理 FakeIP 缓存";

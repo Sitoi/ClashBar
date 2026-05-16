@@ -72,6 +72,11 @@ final class AppViewModel: ObservableObject {
     @Published var configDirectoryPath: String = "-"
     @Published var availableConfigFileNames: [String] = []
     @Published var remoteConfigMenuStates: [String: RemoteConfigMenuState] = [:]
+    @Published var isPinned: Bool = false
+
+    func togglePinned() {
+        self.isPinned.toggle()
+    }
 
     let proxyStore = ProxyStore()
     var proxyGroups: [ProxyGroup] {
