@@ -1,3 +1,25 @@
+## v0.2.6
+
+![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.2.6-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
+
+> 本次更新集中在 **菜单栏窗口固定、Proxy 页面操作密度与流量曲线显示稳定性**：Header 新增固定按钮，可让主窗口在切换应用或点击外部时继续保持显示；Proxy Providers 区域支持折叠并记住状态，代理组标题也补上了快捷延迟测试入口；同时流量 Sparkline 改为固定 60 点滑动窗口，避免短序列被拉满整段宽度导致趋势判断失真。
+
+### 📝 更新日志 (Changelog)
+
+**✨ 新增功能 (New Features)**
+
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **菜单栏窗口固定模式**：Header 新增固定 / 取消固定按钮；固定后主窗口会保留在所有 Space 中，并且点击外部区域不会自动关闭，适合需要持续观察代理状态、连接列表或日志的场景。
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **Proxy Providers 折叠控制**：Proxy 页面中的 Providers 区域新增展开 / 折叠按钮，并通过本地偏好保存折叠状态，订阅较多时可以减少页面占用。
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **代理组快捷延迟测试**：代理组弹出面板标题区新增延迟测试按钮，可以直接对当前代理组触发测速，不必再进入更深层级寻找操作。
+
+**🚀 优化改进 (Improvements)**
+
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **流量曲线固定窗口**：状态栏流量 Sparkline 改为固定 60 点滑动窗口，最新数据从右侧推进，历史点按固定间距保留，短数据序列不再被强行铺满整个图表。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **流量面积填充对齐真实数据**：Sparkline 面积闭合改为使用首尾真实数据点的横坐标，避免数据不足时填充区域延伸到不存在的时间段。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **本地化文案补齐**：补充展开、折叠、固定和取消固定的中英文文案，让新增控件的无障碍标签与悬停提示保持一致。
+
+---
+
 ## v0.2.5
 
 ![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.2.5-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)

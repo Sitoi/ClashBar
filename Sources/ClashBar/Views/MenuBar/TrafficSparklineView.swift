@@ -89,7 +89,7 @@ struct TrafficSparklineView: View {
 
         let firstPointX = self.point(at: 0, in: values, context: context).x
         let lastPointX = self.point(at: values.count - 1, in: values, context: context).x
-        
+
         path.addLine(to: CGPoint(x: lastPointX, y: context.axisY))
         path.addLine(to: CGPoint(x: firstPointX, y: context.axisY))
         path.closeSubpath()
