@@ -220,6 +220,7 @@ final class StatusItemController: NSObject {
 
     private var changeCancellable: AnyCancellable?
     private var layoutCancellable: AnyCancellable?
+    private var pinStateCancellable: AnyCancellable?
     private var bannerCancellable: AnyCancellable?
     private var refreshWorkItem: DispatchWorkItem?
     private var pendingDisplay: MenuBarDisplay?
@@ -289,6 +290,7 @@ final class StatusItemController: NSObject {
         self.bannerDismissTask = nil
         self.changeCancellable?.cancel()
         self.layoutCancellable?.cancel()
+        self.pinStateCancellable?.cancel()
         self.bannerCancellable?.cancel()
         self.stopGlobalMonitor()
         self.stopObservingScreenParameters()
@@ -405,6 +407,23 @@ final class StatusItemController: NSObject {
             .sink { [weak self] display in
                 self?.scheduleRefresh(display: display)
             }
+
+        self.pinStateCancellable = self.appViewModel.$isPinned
+            .removeDuplicates()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] isPinned in
+                self?.handlePinStateChanged(isPinned: isPinned)
+            }
+    }
+
+    private func handlePinStateChanged(isPinned: Bool) {
+        if isPinned {
+            self.panel.collectionBehavior = [.canJoinAllSpaces, .ignoresCycle]
+            self.panel.hidesOnDeactivate = false
+        } else {
+            self.panel.collectionBehavior = [.transient, .moveToActiveSpace, .ignoresCycle]
+            self.panel.hidesOnDeactivate = false
+        }
     }
 
     private func bindPopoverLayout() {
@@ -530,7 +549,10 @@ final class StatusItemController: NSObject {
             .rightMouseDown,
         ]) { [weak self] _ in
             DispatchQueue.main.async {
-                self?.closePopover(nil)
+                guard let self else { return }
+                if !self.appViewModel.isPinned {
+                    self.closePopover(nil)
+                }
             }
         }
     }

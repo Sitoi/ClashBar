@@ -377,6 +377,8 @@
 "fmt.expiry_short.today" = "Expires today";
 "fmt.expiry_short.days" = "%d days left";
 "fmt.expiry_short.long_term" = "Permanent";
+"ui.action.pin" = "Pin";
+"ui.action.unpin" = "Unpin";
 
 // Remote config subscription
 "ui.quick.remote.auto_update_label" = "Auto Update";

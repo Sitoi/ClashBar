@@ -385,7 +385,8 @@ extension AppViewModel {
                 ? tr("app.config.remote_import.alert.success.title")
                 : tr("app.config.remote_import.alert.failure.title"),
             informative: message,
-            buttons: [tr("ui.action.ok")])
+            buttons: [tr("ui.action.ok")],
+            scrollable: true)
     }
 
     private struct RemoteConfigImportInput {

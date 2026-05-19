@@ -9,29 +9,25 @@ struct TrafficSparklineView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let fallbackDown = [20, 13, 18, 10, 12, 6, 12, 5, 9, 7, 4, 14, 10, 15, 8, 11, 7, 9, 5, 12].map(Int64.init)
-            let fallbackUp = [10, 7, 12, 8, 9, 4, 9, 3, 7, 5, 2, 10, 8, 11, 6, 8, 5, 7, 4, 9].map(Int64.init)
-            let downPoints = self.downValues.isEmpty ? fallbackDown : self.downValues
-            let upPoints = self.upValues.isEmpty ? fallbackUp : self.upValues
-            let sharedCount = max(downPoints.count, upPoints.count)
-            let normalizedDown = self.normalizePoints(downPoints, count: sharedCount)
-            let normalizedUp = self.normalizePoints(upPoints, count: sharedCount)
-            let maxY = max(1.0, Double(max(normalizedDown.max() ?? 0, normalizedUp.max() ?? 0)))
+            let maxY = max(1.0, Double(max(self.downValues.max() ?? 0, self.upValues.max() ?? 0)))
             let axisY = floor(geo.size.height * 0.5)
             let upperSpan = max(1, axisY - 2)
             let lowerSpan = max(1, geo.size.height - axisY - 2)
+            let maxPoints = 60
             let upContext = SparklinePathContext(
                 width: geo.size.width,
                 axisY: axisY,
                 span: upperSpan,
                 maxY: maxY,
-                direction: .up)
+                direction: .up,
+                maxPoints: maxPoints)
             let downContext = SparklinePathContext(
                 width: geo.size.width,
                 axisY: axisY,
                 span: lowerSpan,
                 maxY: maxY,
-                direction: .down)
+                direction: .down,
+                maxPoints: maxPoints)
 
             ZStack {
                 self.axisPath(width: geo.size.width, axisY: axisY)
@@ -39,7 +35,7 @@ struct TrafficSparklineView: View {
                         Color(nsColor: .separatorColor).opacity(0.55),
                         style: StrokeStyle(lineWidth: T.stroke, lineCap: .round))
 
-                self.lineAreaPath(for: normalizedUp, context: upContext)
+                self.lineAreaPath(for: self.upValues, context: upContext)
                     .fill(
                         LinearGradient(
                             colors: [
@@ -49,7 +45,7 @@ struct TrafficSparklineView: View {
                             startPoint: .top,
                             endPoint: .bottom))
 
-                self.lineAreaPath(for: normalizedDown, context: downContext)
+                self.lineAreaPath(for: self.downValues, context: downContext)
                     .fill(
                         LinearGradient(
                             colors: [
@@ -59,12 +55,12 @@ struct TrafficSparklineView: View {
                             startPoint: .top,
                             endPoint: .bottom))
 
-                self.linePath(for: normalizedUp, context: upContext)
+                self.linePath(for: self.upValues, context: upContext)
                     .stroke(
                         Color(nsColor: .controlAccentColor).opacity(0.9),
                         style: StrokeStyle(lineWidth: 1.2, lineCap: .round, lineJoin: .round))
 
-                self.linePath(for: normalizedDown, context: downContext)
+                self.linePath(for: self.downValues, context: downContext)
                     .stroke(
                         Color(nsColor: .systemGreen).opacity(0.9),
                         style: StrokeStyle(lineWidth: 1.2, lineCap: .round, lineJoin: .round))
@@ -72,31 +68,16 @@ struct TrafficSparklineView: View {
         }
     }
 
-    private func normalizePoints(_ values: [Int64], count: Int) -> [Int64] {
-        guard count > 0 else { return [] }
-        guard !values.isEmpty else { return Array(repeating: 0, count: count) }
-        if values.count == count { return values }
-        if values.count > count { return Array(values.suffix(count)) }
-        return Array(repeating: values.first ?? 0, count: count - values.count) + values
-    }
-
     private func linePath(for values: [Int64], context: SparklinePathContext) -> Path {
         var path = Path()
         guard !values.isEmpty else { return path }
 
-        let count = values.count
-        for (index, value) in values.enumerated() {
-            let x = CGFloat(index) / CGFloat(max(count - 1, 1)) * context.width
-            let y = self.yPosition(
-                value,
-                axisY: context.axisY,
-                span: context.span,
-                maxY: context.maxY,
-                direction: context.direction)
+        for index in 0..<values.count {
+            let p = self.point(at: index, in: values, context: context)
             if index == 0 {
-                path.move(to: CGPoint(x: x, y: y))
+                path.move(to: p)
             } else {
-                path.addLine(to: CGPoint(x: x, y: y))
+                path.addLine(to: p)
             }
         }
         return path
@@ -106,10 +87,26 @@ struct TrafficSparklineView: View {
         var path = self.linePath(for: values, context: context)
         guard !values.isEmpty else { return path }
 
-        path.addLine(to: CGPoint(x: context.width, y: context.axisY))
-        path.addLine(to: CGPoint(x: 0, y: context.axisY))
+        let firstPointX = self.point(at: 0, in: values, context: context).x
+        let lastPointX = self.point(at: values.count - 1, in: values, context: context).x
+        
+        path.addLine(to: CGPoint(x: lastPointX, y: context.axisY))
+        path.addLine(to: CGPoint(x: firstPointX, y: context.axisY))
         path.closeSubpath()
         return path
+    }
+
+    private func point(at index: Int, in values: [Int64], context: SparklinePathContext) -> CGPoint {
+        let clampedIndex = min(max(index, 0), values.count - 1)
+        let offsetFromRight = values.count - 1 - clampedIndex
+        let x = context.width - (CGFloat(offsetFromRight) / CGFloat(max(context.maxPoints - 1, 1)) * context.width)
+        let y = self.yPosition(
+            values[clampedIndex],
+            axisY: context.axisY,
+            span: context.span,
+            maxY: context.maxY,
+            direction: context.direction)
+        return CGPoint(x: x, y: y)
     }
 
     private func axisPath(width: CGFloat, axisY: CGFloat) -> Path {
@@ -143,6 +140,7 @@ struct TrafficSparklineView: View {
         let span: CGFloat
         let maxY: Double
         let direction: LineDirection
+        let maxPoints: Int
     }
 
     private enum LineDirection {

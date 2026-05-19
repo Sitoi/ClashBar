@@ -64,6 +64,14 @@ struct MenuBarHeaderView: TranslatingView {
 
             HStack(spacing: MenuBarLayoutTokens.space6) {
                 self.compactTopIcon(
+                    self.appViewModel.isPinned ? "pin.fill" : "pin",
+                    label: self.appViewModel.isPinned ? self.tr("ui.action.unpin") : self.tr("ui.action.pin"),
+                    toneOverride: self.appViewModel.isPinned ? nativeInfo : nativeTertiaryLabel)
+                {
+                    self.appViewModel.togglePinned()
+                }
+
+                self.compactTopIcon(
                     "arrow.clockwise",
                     label: self.appViewModel.primaryCoreActionLabel,
                     toneOverride: nativeInfo)
