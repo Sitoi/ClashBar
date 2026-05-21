@@ -283,6 +283,7 @@ extension AppViewModel {
         preserveLocalSettingsOnNextSync = true
         proxyGroups = []
         groupLatencies = [:]
+        proxyHistoryLatestDelay = [:]
         proxyNodeTypes = [:]
         groupLatencyLoading = []
         proxyLatencyTesting = []

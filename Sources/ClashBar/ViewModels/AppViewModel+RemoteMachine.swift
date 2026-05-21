@@ -14,6 +14,11 @@ extension AppViewModel {
         self.resetTrafficPresentation()
         self.clearAllLogs()
         self.proxyGroups = []
+        self.groupLatencies = [:]
+        self.proxyHistoryLatestDelay = [:]
+        self.proxyNodeTypes = [:]
+        self.groupLatencyLoading = []
+        self.proxyLatencyTesting = []
         self.ruleItems = []
         self.connectionsStore.connections = []
         self.connectionsStore.connectionsCount = 0
