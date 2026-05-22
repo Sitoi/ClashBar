@@ -107,6 +107,7 @@ extension AppViewModel {
         cancelPolling()
         statusText = "Stopped"
         apiStatus = .unknown
+        clearProxyPresentation()
         resetTrafficPresentation()
     }
 
@@ -281,12 +282,7 @@ extension AppViewModel {
 
         pendingConfigSwitchOverlaySettings = currentEditableSettingsSnapshot()
         preserveLocalSettingsOnNextSync = true
-        proxyGroups = []
-        groupLatencies = [:]
-        proxyHistoryLatestDelay = [:]
-        proxyNodeTypes = [:]
-        groupLatencyLoading = []
-        proxyLatencyTesting = []
+        clearProxyPresentation()
         appendLog(level: "info", message: tr("log.config.changed_restart"))
         cancelProviderRefresh(reason: "config switch requested")
         await self.restartCore(trigger: .configSwitch)

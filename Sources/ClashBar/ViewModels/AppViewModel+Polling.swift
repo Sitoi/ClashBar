@@ -234,6 +234,15 @@ extension AppViewModel {
         self.clearTrafficPresentationHistory()
     }
 
+    func clearProxyPresentation() {
+        proxyGroups = []
+        groupLatencies = [:]
+        proxyHistoryLatestDelay = [:]
+        proxyNodeTypes = [:]
+        groupLatencyLoading = []
+        proxyLatencyTesting = []
+    }
+
     func clearTrafficPresentationHistory() {
         displayUpTotal = 0
         displayDownTotal = 0

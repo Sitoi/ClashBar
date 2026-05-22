@@ -13,12 +13,7 @@ extension AppViewModel {
         self.cancelPolling()
         self.resetTrafficPresentation()
         self.clearAllLogs()
-        self.proxyGroups = []
-        self.groupLatencies = [:]
-        self.proxyHistoryLatestDelay = [:]
-        self.proxyNodeTypes = [:]
-        self.groupLatencyLoading = []
-        self.proxyLatencyTesting = []
+        self.clearProxyPresentation()
         self.ruleItems = []
         self.connectionsStore.connections = []
         self.connectionsStore.connectionsCount = 0
