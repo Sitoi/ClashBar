@@ -300,6 +300,15 @@ final class StatusItemController: NSObject {
         NSStatusBar.system.removeStatusItem(self.statusItem)
     }
 
+    func presentPopover(tab: RootTab? = nil) {
+        if let tab {
+            self.appViewModel.setActiveMenuTab(tab)
+        }
+        guard let button = statusItem.button else { return }
+        guard !self.panel.isVisible else { return }
+        self.openPopover(relativeTo: button)
+    }
+
     @objc
     private func togglePopover(_ sender: AnyObject?) {
         guard let button = statusItem.button else { return }
@@ -309,6 +318,10 @@ final class StatusItemController: NSObject {
             return
         }
 
+        self.openPopover(relativeTo: button)
+    }
+
+    private func openPopover(relativeTo button: NSStatusBarButton) {
         self.ensurePopoverContent()
         self.refreshPopoverMaximumHeight()
         self.applyPopoverSize(

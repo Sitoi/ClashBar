@@ -241,6 +241,9 @@ extension AppViewModel {
         proxyNodeTypes = [:]
         groupLatencyLoading = []
         proxyLatencyTesting = []
+        providerProxyCount = 0
+        proxyProvidersDetail = [:]
+        providerUpdating = []
     }
 
     func clearTrafficPresentationHistory() {
@@ -263,11 +266,8 @@ extension AppViewModel {
         groupLatencies.removeAll(keepingCapacity: false)
         proxyLatencyTesting.removeAll(keepingCapacity: false)
 
-        providerProxyCount = 0
         providerRuleCount = 0
         rulesCount = 0
-        proxyProvidersDetail.removeAll(keepingCapacity: false)
-        providerUpdating.removeAll(keepingCapacity: false)
         ruleProviders.removeAll(keepingCapacity: false)
         ruleItems.removeAll(keepingCapacity: false)
     }

@@ -23,4 +23,8 @@ final class ClashBarAppDelegate: NSObject, NSApplicationDelegate {
         self.statusItemController?.shutdown()
         self.statusItemController = nil
     }
+
+    func showSettingsPanel() {
+        self.statusItemController?.presentPopover(tab: .system)
+    }
 }

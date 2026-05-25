@@ -12,6 +12,13 @@ struct ClashBarApp: App {
     var body: some Scene {
         Settings { EmptyView() }
             .commands {
+                CommandGroup(replacing: .appSettings) {
+                    Button(self.tr("ui.tab.system")) {
+                        self.appDelegate.showSettingsPanel()
+                    }
+                    .keyboardShortcut(",", modifiers: .command)
+                }
+
                 CommandMenu("Core") {
                     Button(self.session.primaryCoreActionLabel) {
                         Task { await self.session.performPrimaryCoreAction() }
@@ -42,7 +49,7 @@ struct ClashBarApp: App {
                             .keyboardShortcut(entry.shortcut, modifiers: [.command, .option])
                     }
                     Button(self.tr("ui.tab.system")) { self.session.setActiveMenuTab(.system) }
-                        .keyboardShortcut(",", modifiers: [.command])
+                        .keyboardShortcut("5", modifiers: [.command, .option])
                 }
 
                 CommandMenu("Actions") {

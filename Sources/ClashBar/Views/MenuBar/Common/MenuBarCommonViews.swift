@@ -74,7 +74,7 @@ extension MenuBarRootView {
             HStack(spacing: MenuBarLayoutTokens.space6) {
                 HStack(spacing: MenuBarLayoutTokens.space6) {
                     self.footerInfo(
-                        tr("ui.footer.core_mihomo", appViewModel.version),
+                        tr("ui.footer.core_mihomo", self.footerMihomoVersionText),
                         url: mihomoRepositoryURL,
                         iconSystemName: mihomoSymbol)
 
@@ -100,6 +100,12 @@ extension MenuBarRootView {
                         self.nativeControlBorder.opacity(self.isDarkAppearance ? 0.40 : 0.12),
                         lineWidth: MenuBarLayoutTokens.stroke)
             }
+    }
+
+    var footerMihomoVersionText: String {
+        let version = self.appViewModel.version.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard version.first?.isNumber == true else { return version }
+        return "v\(version)"
     }
 
     @ViewBuilder

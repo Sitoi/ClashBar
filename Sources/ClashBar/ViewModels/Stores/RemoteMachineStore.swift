@@ -183,6 +183,7 @@ final class RemoteMachineStore: ObservableObject {
             let session = URLSessionFactory.makeEphemeralSession(options: .init(
                 timeoutIntervalForRequest: timeoutInterval,
                 timeoutIntervalForResource: timeoutInterval))
+            defer { session.finishTasksAndInvalidate() }
             let (data, response) = try await session.data(for: request)
 
             guard let httpResponse = response as? HTTPURLResponse else {
