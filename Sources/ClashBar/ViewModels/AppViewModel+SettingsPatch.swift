@@ -25,12 +25,28 @@ extension AppViewModel {
     }
 
     func applySettingBool(key: String, value: Bool) async {
+        if key == EditableCoreSetting.ipv6.configKey, isTunEnabled, !value {
+            let tunBody = await self.tunOverlayPatchBody(enabled: isTunEnabled, ipv6Enabled: value)
+            await self.patchSingleConfig(
+                key,
+                value: .bool(value),
+                extraBody: ["tun": .object(tunBody)])
+            return
+        }
+
         await self.patchSingleConfig(key, value: .bool(value))
     }
 
-    func patchSingleConfig(_ key: String, value: ConfigPatchValue) async {
+    func patchSingleConfig(
+        _ key: String,
+        value: ConfigPatchValue,
+        extraBody: [String: ConfigPatchValue] = [:]) async
+    {
+        var body = extraBody
+        body[key] = value
+
         _ = await self.patchConfigBody(
-            [key: value],
+            body,
             syncingKey: key,
             successMessage: tr("app.settings.saved.single_key", key))
     }
@@ -233,13 +249,18 @@ extension AppViewModel {
         ]
     }
 
-    func tunOverlayPatchBody(enabled: Bool) async -> [String: ConfigPatchValue] {
+    func tunOverlayPatchBody(enabled: Bool, ipv6Enabled: Bool? = nil) async -> [String: ConfigPatchValue] {
         var tunBody: [String: ConfigPatchValue] = ["enable": .bool(enabled)]
-        if enabled {
-            let hasConfiguredStack = await self.selectedConfigDeclaresTunStack()
-            if !hasConfiguredStack {
-                tunBody["stack"] = .string("mixed")
-            }
+        guard enabled else { return tunBody }
+
+        let hasConfiguredStack = await self.selectedConfigDeclaresTunStack()
+        if !hasConfiguredStack {
+            tunBody["stack"] = .string("mixed")
+        }
+
+        let hasConfiguredInet6Address = await self.selectedConfigDeclaresTunInet6Address()
+        if !(ipv6Enabled ?? settingsIPv6), !hasConfiguredInet6Address {
+            tunBody["inet6-address"] = .array([])
         }
         return tunBody
     }

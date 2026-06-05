@@ -47,6 +47,7 @@ enum ConfigPatchValue {
     case int(Int)
     case string(String)
     indirect case object([String: ConfigPatchValue])
+    indirect case array([ConfigPatchValue])
 
     var jsonValue: JSONValue {
         switch self {
@@ -58,6 +59,8 @@ enum ConfigPatchValue {
             .string(value)
         case let .object(value):
             .object(value.mapValues(\.jsonValue))
+        case let .array(value):
+            .array(value.map(\.jsonValue))
         }
     }
 }

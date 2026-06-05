@@ -181,8 +181,16 @@ extension AppViewModel {
         let client = try clientOrThrow()
         var tunBody: [String: JSONValue] = ["enable": .bool(enable)]
 
-        if enable, await !self.selectedConfigDeclaresTunStack() {
-            tunBody["stack"] = .string("mixed")
+        if enable {
+            let hasConfiguredStack = await self.selectedConfigDeclaresTunStack()
+            if !hasConfiguredStack {
+                tunBody["stack"] = .string("mixed")
+            }
+
+            let hasConfiguredInet6Address = await self.selectedConfigDeclaresTunInet6Address()
+            if !settingsIPv6, !hasConfiguredInet6Address {
+                tunBody["inet6-address"] = .array([])
+            }
         }
 
         var body: [String: JSONValue] = ["tun": .object(tunBody)]
@@ -227,6 +235,19 @@ extension AppViewModel {
         let lines = raw.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
         guard let tunRange = self.topLevelBlockRange(for: "tun", lines: lines) else { return false }
         return self.childLineExists(for: "stack", lines: lines, range: tunRange)
+    }
+
+    func selectedConfigDeclaresTunInet6Address() async -> Bool {
+        guard
+            let configPath = await resolveSelectedConfigPath(),
+            let raw = try? String(contentsOfFile: configPath, encoding: .utf8)
+        else {
+            return false
+        }
+
+        let lines = raw.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
+        guard let tunRange = self.topLevelBlockRange(for: "tun", lines: lines) else { return false }
+        return self.childLineExists(for: "inet6-address", lines: lines, range: tunRange)
     }
 
     private func childLineExists(for key: String, lines: [String], range: Range<Int>) -> Bool {

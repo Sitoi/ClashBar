@@ -265,7 +265,7 @@ extension AppViewModel {
             "tcp-concurrent": .bool(overlay.tcpConcurrent),
             "log-level": .string(resolvedLogLevel),
         ]
-        let tunBody = await self.tunOverlayPatchBody(enabled: overlay.tunEnabled)
+        let tunBody = await self.tunOverlayPatchBody(enabled: overlay.tunEnabled, ipv6Enabled: overlay.ipv6)
         body["tun"] = .object(tunBody)
         if overlay.tunEnabled {
             body["dns"] = .object(["enable": .bool(true)])
