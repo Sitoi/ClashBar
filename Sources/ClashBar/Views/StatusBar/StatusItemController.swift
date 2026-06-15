@@ -402,7 +402,10 @@ final class StatusItemController: NSObject {
     private func configureStatusItem() {
         guard let button = statusItem.button else { return }
 
-        button.image = nil
+        // Set a transparent 1x1 placeholder image so ControlCenter recognizes this
+        // status item as having content and renders it on macOS 26.5.1+.
+        // The actual visual content is provided by statusContentView subview.
+        button.image = Self.makeTransparentPlaceholderImage()
         button.title = ""
         button.target = self
         button.action = #selector(self.togglePopover(_:))
@@ -411,6 +414,16 @@ final class StatusItemController: NSObject {
         self.statusContentView.frame = button.bounds
         self.statusContentView.autoresizingMask = [.width, .height]
         button.addSubview(self.statusContentView)
+    }
+
+    private static func makeTransparentPlaceholderImage() -> NSImage {
+        let size = NSSize(width: 1, height: 1)
+        let image = NSImage(size: size)
+        image.lockFocus()
+        NSColor.clear.setFill()
+        NSRect(origin: .zero, size: size).fill()
+        image.unlockFocus()
+        return image
     }
 
     private func bindSession() {

@@ -2,6 +2,24 @@ import AppKit
 import Foundation
 import SwiftUI
 
+enum LogCapacity: Int, CaseIterable {
+    case small = 1000
+    case medium = 5000
+    case large = 10000
+    case xlarge = 20000
+    case xxlarge = 50000
+
+    var displayKey: String {
+        switch self {
+        case .small: "ui.settings.log_capacity.1000"
+        case .medium: "ui.settings.log_capacity.5000"
+        case .large: "ui.settings.log_capacity.10000"
+        case .xlarge: "ui.settings.log_capacity.20000"
+        case .xxlarge: "ui.settings.log_capacity.50000"
+        }
+    }
+}
+
 @MainActor
 final class AppViewModel: ObservableObject {
     @Published var statusText: String = "Stopped" {
@@ -432,8 +450,21 @@ final class AppViewModel: ObservableObject {
     let ssidStrategyRulesKey = "clashbar.ssid.strategy.rules.v1"
     let uiLanguageKey = "clashbar.ui.language"
     let appearanceModeKey = "clashbar.ui.appearance.mode"
-    let maxLogEntries = 200
+    @AppStorage("clashbar.log.max_entries") private var maxLogEntriesRaw: Int = 10000
     let hiddenPanelMaxInMemoryLogEntries = 20
+
+    var maxLogEntries: Int {
+        get {
+            // 安全范围检查：100 到 100000
+            max(100, min(self.maxLogEntriesRaw, 100_000))
+        }
+        set {
+            self.maxLogEntriesRaw = newValue
+            // 立即应用新限制
+            self.trimInMemoryLogsForCurrentVisibility()
+        }
+    }
+
     let maxBufferedMihomoLogEntries = 40
     let historyMaxPoints = 60
     let mihomoLogFlushIntervalNanoseconds: UInt64 = 150_000_000

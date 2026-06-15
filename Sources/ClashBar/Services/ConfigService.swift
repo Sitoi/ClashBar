@@ -40,8 +40,12 @@ struct WorkingDirectoryManager {
     }
 
     func normalizeAndValidateWithinRoot(_ url: URL, mustBeDirectory: Bool? = nil) throws -> URL {
-        let standardized = url.standardizedFileURL.resolvingSymlinksInPath()
-        let root = self.rootDirectoryURL.standardizedFileURL.resolvingSymlinksInPath()
+        // Use standardizedFileURL without resolving symlinks, so that symlinks
+        // within the ClashBar directory are allowed (e.g., linking to external
+        // config files). We only verify that the symlink itself is within the
+        // safe directory, not where it points to.
+        let standardized = url.standardizedFileURL
+        let root = self.rootDirectoryURL.standardizedFileURL
         guard self.isDescendantOrEqual(standardized, parent: root) else {
             throw NSError(
                 domain: "ClashBar.PathSecurity",
@@ -50,6 +54,7 @@ struct WorkingDirectoryManager {
         }
 
         if let mustBeDirectory {
+            // resourceValues automatically follows symlinks to check the target's type
             let values = try standardized.resourceValues(forKeys: [.isDirectoryKey])
             if values.isDirectory != mustBeDirectory {
                 throw NSError(
@@ -119,7 +124,7 @@ final class ConfigDirectoryManager {
 
     func setConfigDirectory(_ url: URL) {
         guard let safeURL = try? workingDirectoryManager.normalizeAndValidateWithinRoot(url, mustBeDirectory: true),
-              safeURL == workingDirectoryManager.configDirectoryURL.standardizedFileURL.resolvingSymlinksInPath()
+              safeURL == workingDirectoryManager.configDirectoryURL.standardizedFileURL
         else {
             return
         }
@@ -184,7 +189,35 @@ struct ConfigImportService {
                 code: 422,
                 userInfo: [NSLocalizedDescriptionKey: "Remote config response is empty"])
         }
+
+        guard self.validateClashConfigData(data) else {
+            // 提取前 200 字符用于错误提示
+            let preview = String(data: data.prefix(200), encoding: .utf8) ?? "<binary data>"
+            let message = """
+            Remote config is not a valid Clash configuration (missing proxy keys). \
+            Content preview: \(preview)
+            """
+            throw NSError(
+                domain: "ClashBar.ConfigImport",
+                code: 422,
+                userInfo: [NSLocalizedDescriptionKey: message])
+        }
+
         try data.write(to: targetURL, options: .atomic)
+    }
+
+    private func validateClashConfigData(_ data: Data) -> Bool {
+        // 尝试转为 UTF-8 文本
+        guard let text = String(data: data, encoding: .utf8) else {
+            return false
+        }
+
+        // Clash 配置必须包含至少一个核心键
+        let hasProxies = text.contains("proxies:")
+        let hasProxyGroups = text.contains("proxy-groups:")
+        let hasProxyProviders = text.contains("proxy-providers:")
+
+        return hasProxies || hasProxyGroups || hasProxyProviders
     }
 
     func normalizedConfigFileName(_ fileName: String, fallback: String? = nil) -> String? {
