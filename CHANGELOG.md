@@ -1,3 +1,30 @@
+## v0.2.7
+
+![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.2.7-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
+
+> 本次更新集中在 **日志管理、订阅配置验证、配置文件软链接支持与 macOS 26.5.1 兼容性修复**：新增可配置的日志容量设置，默认无限制，用户可根据需要选择 1K 到 50K 条限制；订阅更新现在会验证配置内容，拒绝过期提示等非法内容，避免内核崩溃和日志爆炸；配置目录支持软链接指向外部配置文件，方便跨设备同步；同时修复 macOS 26.5.1+ 菜单栏图标不可见的问题，并优化菜单栏显示逻辑。
+
+### 📝 更新日志 (Changelog)
+
+**✨ 新增功能 (New Features)**
+
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **可配置的日志容量**：在 System 设置页面新增"最大日志条目数"选项，默认无限制，可选择 1,000 / 5,000 / 10,000 / 20,000 / 50,000 条限制，替代原有硬编码的 200 条上限。
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **订阅配置内容验证** (#80)：订阅更新时会验证返回内容是否为合法的 Clash 配置，拒绝纯文本提示、HTML 页面等非法内容，防止错误配置覆盖导致内核 reload 失败和日志风暴。
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **配置文件软链接支持** (#74)：配置目录现在支持软链接（symlink）指向外部配置文件，方便使用 mackup 等工具进行跨设备配置同步，兼容其他 Clash 客户端的使用习惯。
+
+**🚀 优化改进 (Improvements)**
+
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **菜单栏行为优化**：改进菜单栏打开/关闭时的状态清理逻辑，避免代理组信息在重新打开时闪烁；停止内核时清除代理展示状态，避免停止后仍显示过期信息。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **远程机器状态管理**：优化远程机器验证会话的失效处理，在切换或断开时正确清理验证状态。
+
+**🐞 修复问题 (Bug Fixes)**
+
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **macOS 26.5.1+ 菜单栏图标不可见** (#82)：修复在 macOS 26.5.1 及更高版本上菜单栏图标无法显示的问题；通过设置透明占位图片确保 ControlCenter 识别 status item 有内容并正确渲染。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **订阅过期导致日志爆炸** (#80)：修复订阅过期后服务器返回错误提示文本被当作配置写入，导致内核反复 reload 失败、触发 TUN 句柄错误、CPU 占用 100% 和日志文件在短时间内膨胀到数十 GB 的问题。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **配置软链接无法识别** (#74)：修复配置目录中的软链接文件无法被识别为有效配置的问题；现在安全检查会验证软链接本身是否在安全目录内，而不是解析到真实路径进行检查。
+
+---
+
 ## v0.2.6
 
 ![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.2.6-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
