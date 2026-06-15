@@ -567,7 +567,9 @@ struct SystemTabView: TranslatingView {
     }
 
     func logCapacityLabel(_ value: Int) -> String {
-        if let capacity = LogCapacity(rawValue: value) {
+        // Int.max 表示无限制，映射到 rawValue 0
+        let normalizedValue = (value == Int.max) ? 0 : value
+        if let capacity = LogCapacity(rawValue: normalizedValue) {
             return self.tr(capacity.displayKey)
         }
         // 回退：如果不是预设值，直接显示数字

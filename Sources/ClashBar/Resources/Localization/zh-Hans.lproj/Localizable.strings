@@ -398,3 +398,4 @@
 "ui.settings.log_capacity.10000" = "10,000 条";
 "ui.settings.log_capacity.20000" = "20,000 条";
 "ui.settings.log_capacity.50000" = "50,000 条";
+"ui.settings.log_capacity.unlimited" = "无限制";

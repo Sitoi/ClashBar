@@ -3,6 +3,7 @@ import Foundation
 import SwiftUI
 
 enum LogCapacity: Int, CaseIterable {
+    case unlimited = 0
     case small = 1000
     case medium = 5000
     case large = 10000
@@ -11,6 +12,7 @@ enum LogCapacity: Int, CaseIterable {
 
     var displayKey: String {
         switch self {
+        case .unlimited: "ui.settings.log_capacity.unlimited"
         case .small: "ui.settings.log_capacity.1000"
         case .medium: "ui.settings.log_capacity.5000"
         case .large: "ui.settings.log_capacity.10000"
@@ -450,13 +452,17 @@ final class AppViewModel: ObservableObject {
     let ssidStrategyRulesKey = "clashbar.ssid.strategy.rules.v1"
     let uiLanguageKey = "clashbar.ui.language"
     let appearanceModeKey = "clashbar.ui.appearance.mode"
-    @AppStorage("clashbar.log.max_entries") private var maxLogEntriesRaw: Int = 10000
+    @AppStorage("clashbar.log.max_entries") private var maxLogEntriesRaw: Int = 0
     let hiddenPanelMaxInMemoryLogEntries = 20
 
     var maxLogEntries: Int {
         get {
+            // 0 表示无限制（Int.max）
+            if self.maxLogEntriesRaw == 0 {
+                return Int.max
+            }
             // 安全范围检查：100 到 100000
-            max(100, min(self.maxLogEntriesRaw, 100_000))
+            return max(100, min(self.maxLogEntriesRaw, 100_000))
         }
         set {
             self.maxLogEntriesRaw = newValue
