@@ -35,6 +35,7 @@
 "ui.action.copy_connection_id" = "复制连接 ID";
 "ui.action.copy_log_message" = "复制日志消息";
 "ui.action.copy_log_entry" = "复制完整日志";
+"ui.action.copy_details" = "复制详情";
 "ui.action.import" = "导入";
 "ui.action.overwrite" = "覆盖";
 "ui.action.delete" = "删除";
@@ -261,7 +262,9 @@
 "app.config.remote_import.alert.success.title" = "订阅导入成功";
 "app.config.remote_import.alert.failure.title" = "订阅导入失败";
 "app.config.validation_failed.title" = "配置校验失败";
-"app.config.validation_failed.message" = "选中的配置文件未通过 mihomo -t 校验，无法启动内核。\n\n文件：%@\n\n详情：\n%@";
+"app.config.validation_failed.message" = "选中的配置文件未通过 mihomo -t 校验，无法启动内核。\n\n文件：%@";
+"app.config.validation_failed.hint.geo" = "检测到该错误可能与基础 GEO 资源有关（geoip / geosite / mmdb / asn）。";
+"app.config.validation_failed.hint.common" = "常见原因：配置语法或字段有误；或缺少基础 GEO 资源（geoip / geosite / mmdb / asn）。缺少 GEO 资源时，可在配置中用 geox-url 指定自定义下载地址。详细报错见下方。";
 "app.config.validation_failed.startup" = "启动前配置校验失败：%@";
 
 "app.provider_refresh.cancelled_reason" = "Providers 更新已取消 (%@)";

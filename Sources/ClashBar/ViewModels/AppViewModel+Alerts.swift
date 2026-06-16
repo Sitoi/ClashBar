@@ -64,11 +64,40 @@ extension AppViewModel {
     }
 
     func presentConfigValidationFailedAlert(fileName: String, details: String) {
-        self.runModalAlert(
+        let trimmedDetails = details.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        var informativeParts = [tr("app.config.validation_failed.message", fileName)]
+        if Self.validationFailureLooksGeoRelated(trimmedDetails) {
+            informativeParts.append(tr("app.config.validation_failed.hint.geo"))
+        }
+        informativeParts.append(tr("app.config.validation_failed.hint.common"))
+
+        let response = self.runModalAlert(
             style: .critical,
             message: tr("app.config.validation_failed.title"),
-            informative: tr("app.config.validation_failed.message", fileName, details),
-            buttons: [tr("ui.action.ok")])
+            informative: informativeParts.joined(separator: "\n\n"),
+            buttons: [tr("ui.action.ok"), tr("ui.action.copy_details")])
+        { alert in
+            alert.setScrollableDetails(trimmedDetails.isEmpty ? self.tr("ui.common.unknown") : trimmedDetails)
+        }
+
+        if response == .alertSecondButtonReturn {
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.setString(trimmedDetails, forType: .string)
+        }
+    }
+
+    /// Heuristic: does the mihomo `-t` output point at missing/failed base GEO
+    /// resources rather than a plain config syntax error? Drives an extra hint
+    /// line so the user knows a custom `geox-url` download address may fix it.
+    private static func validationFailureLooksGeoRelated(_ details: String) -> Bool {
+        let lower = details.lowercased()
+        let needles = [
+            "geoip", "geosite", "mmdb", "geox-url", "geodata",
+            "country.mmdb", "geosite.dat", "geoip.dat", ".metadb", "geolite", "asn",
+        ]
+        return needles.contains { lower.contains($0) }
     }
 
     func presentInitialNoCoreSetupGuideIfNeeded() {

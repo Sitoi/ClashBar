@@ -35,6 +35,7 @@
 "ui.action.copy_connection_id" = "Copy Connection ID";
 "ui.action.copy_log_message" = "Copy Log Message";
 "ui.action.copy_log_entry" = "Copy Full Log Entry";
+"ui.action.copy_details" = "Copy Details";
 "ui.action.import" = "Import";
 "ui.action.overwrite" = "Overwrite";
 "ui.action.delete" = "Delete";
@@ -259,7 +260,9 @@
 "app.config.remote_import.alert.success.title" = "Subscription Imported";
 "app.config.remote_import.alert.failure.title" = "Subscription Import Failed";
 "app.config.validation_failed.title" = "Configuration Validation Failed";
-"app.config.validation_failed.message" = "Cannot start core because the selected config file failed mihomo -t validation.\n\nFile: %@\n\nDetails:\n%@";
+"app.config.validation_failed.message" = "Cannot start core because the selected config file failed mihomo -t validation.\n\nFile: %@";
+"app.config.validation_failed.hint.geo" = "The error looks related to base GEO resources (geoip / geosite / mmdb / asn).";
+"app.config.validation_failed.hint.common" = "Common causes: invalid config syntax/fields, or missing base GEO resources (geoip / geosite / mmdb / asn). For missing GEO data, set custom download URLs via geox-url in your config. Full error output is shown below.";
 "app.config.validation_failed.startup" = "Config validation failed before startup: %@";
 
 "app.provider_refresh.cancelled_reason" = "Providers update cancelled (%@)";
