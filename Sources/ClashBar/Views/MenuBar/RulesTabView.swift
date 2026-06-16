@@ -1,5 +1,8 @@
 import SwiftUI
 
+// swiftlint:disable:next type_name
+private typealias T = MenuBarLayoutTokens
+
 struct RulesTabView: TranslatingView {
     @EnvironmentObject var appViewModel: AppViewModel
     @StateObject private var viewModel = RulesViewModel()
@@ -11,7 +14,7 @@ struct RulesTabView: TranslatingView {
 
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 0) {
-                HStack(spacing: MenuBarLayoutTokens.space8) {
+                HStack(spacing: T.space8) {
                     self.rulesStatChip(title: self.tr("ui.rule.stats.rules"), value: "\(self.appViewModel.rulesCount)")
                     self.rulesStatChip(
                         title: self.tr("ui.rule.stats.sets"),
@@ -21,45 +24,45 @@ struct RulesTabView: TranslatingView {
                 Spacer(minLength: 0)
                 self.rulesRefreshButton
             }
-            .padding(.vertical, MenuBarLayoutTokens.space6)
+            .padding(.vertical, T.space6)
             .overlay(alignment: .bottom) {
                 Rectangle()
                     .fill(nativeSeparator)
-                    .frame(height: MenuBarLayoutTokens.stroke)
+                    .frame(height: T.stroke)
             }
 
             HStack(spacing: 0) {
                 Color.clear.frame(width: 24)
                 Text(self.tr("ui.rules.column.target_type"))
-                    .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .medium))
+                    .font(.app(size: T.FontSize.caption, weight: .medium))
                     .foregroundStyle(nativeTertiaryLabel)
                     .frame(width: 120, alignment: .leading)
-                    .padding(.trailing, MenuBarLayoutTokens.space6)
+                    .padding(.trailing, T.space6)
                 Text(self.tr("ui.rules.column.policy"))
-                    .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .medium))
+                    .font(.app(size: T.FontSize.caption, weight: .medium))
                     .foregroundStyle(nativeTertiaryLabel)
-                    .padding(.leading, MenuBarLayoutTokens.space6)
+                    .padding(.leading, T.space6)
                     .frame(width: 90, alignment: .leading)
                 Text(self.tr("ui.rules.column.stats"))
-                    .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .medium))
+                    .font(.app(size: T.FontSize.caption, weight: .medium))
                     .foregroundStyle(nativeTertiaryLabel)
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
             .textCase(.uppercase)
-            .padding(.horizontal, MenuBarLayoutTokens.space4)
-            .padding(.vertical, MenuBarLayoutTokens.space6)
+            .padding(.horizontal, T.space4)
+            .padding(.vertical, T.space6)
             .overlay(alignment: .bottom) {
                 Rectangle()
                     .fill(nativeSeparator)
-                    .frame(height: MenuBarLayoutTokens.stroke)
+                    .frame(height: T.stroke)
             }
 
             if visibleRules.isEmpty {
                 Text(self.tr("ui.empty.rules"))
-                    .font(.app(size: MenuBarLayoutTokens.FontSize.body, weight: .regular))
+                    .font(.app(size: T.FontSize.body, weight: .regular))
                     .foregroundStyle(nativeSecondaryLabel)
-                    .padding(.horizontal, MenuBarLayoutTokens.space4)
-                    .padding(.vertical, MenuBarLayoutTokens.space8)
+                    .padding(.horizontal, T.space4)
+                    .padding(.vertical, T.space8)
                     .frame(maxWidth: .infinity, minHeight: 52, alignment: .topLeading)
             } else {
                 VStack(spacing: 0) {
@@ -69,7 +72,7 @@ struct RulesTabView: TranslatingView {
                         if index < visibleRules.count - 1 {
                             Rectangle()
                                 .fill(nativeSeparator)
-                                .frame(height: MenuBarLayoutTokens.stroke)
+                                .frame(height: T.stroke)
                         }
                     }
                 }
@@ -87,16 +90,16 @@ struct RulesTabView: TranslatingView {
     }
 
     func rulesStatChip(title: String, value: String) -> some View {
-        HStack(spacing: MenuBarLayoutTokens.space4) {
+        HStack(spacing: T.space4) {
             Text(title.uppercased())
-                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .semibold))
+                .font(.app(size: T.FontSize.caption, weight: .semibold))
                 .foregroundStyle(nativeTertiaryLabel)
             Text(value)
-                .font(.app(size: MenuBarLayoutTokens.FontSize.body, weight: .bold))
+                .font(.app(size: T.FontSize.body, weight: .bold))
                 .foregroundStyle(nativePrimaryLabel)
         }
-        .padding(.horizontal, MenuBarLayoutTokens.space6)
-        .padding(.vertical, MenuBarLayoutTokens.space2)
+        .padding(.horizontal, T.space6)
+        .padding(.vertical, T.space2)
     }
 
     var rulesRefreshButton: some View {
@@ -123,53 +126,53 @@ struct RulesTabView: TranslatingView {
 
         return HStack(spacing: 0) {
             Image(systemName: iconSpec.symbol)
-                .font(.app(size: MenuBarLayoutTokens.FontSize.body, weight: .medium))
+                .font(.app(size: T.FontSize.body, weight: .medium))
                 .foregroundStyle(iconSpec.color)
                 .frame(width: 24, alignment: .leading)
 
-            VStack(alignment: .leading, spacing: MenuBarLayoutTokens.space1) {
+            VStack(alignment: .leading, spacing: T.space1) {
                 Text(targetText)
-                    .font(.app(size: MenuBarLayoutTokens.FontSize.body, weight: .medium))
+                    .font(.app(size: T.FontSize.body, weight: .medium))
                     .foregroundStyle(nativePrimaryLabel)
                     .lineLimit(1)
                     .truncationMode(.tail)
                 Text(typeText)
-                    .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .regular))
+                    .font(.app(size: T.FontSize.caption, weight: .regular))
                     .foregroundStyle(nativeTertiaryLabel)
                     .lineLimit(1)
             }
             .frame(width: 120, alignment: .leading)
-            .padding(.trailing, MenuBarLayoutTokens.space6)
+            .padding(.trailing, T.space6)
 
-            HStack(spacing: MenuBarLayoutTokens.space1) {
+            HStack(spacing: T.space1) {
                 if let symbol = badge.symbol {
                     Image(systemName: symbol)
-                        .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .semibold))
+                        .font(.app(size: T.FontSize.caption, weight: .semibold))
                         .foregroundStyle(badge.color)
                 }
                 Text(policyText)
-                    .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .medium))
+                    .font(.app(size: T.FontSize.caption, weight: .medium))
                     .foregroundStyle(badge.color)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
             .frame(width: 90, alignment: .leading)
 
-            VStack(alignment: .trailing, spacing: MenuBarLayoutTokens.space1) {
+            VStack(alignment: .trailing, spacing: T.space1) {
                 Text("\(stats.count)")
-                    .font(.app(size: MenuBarLayoutTokens.FontSize.body, weight: .regular))
+                    .font(.app(size: T.FontSize.body, weight: .regular))
                     .foregroundStyle(stats.hasProvider ? nativeSecondaryLabel : nativeTertiaryLabel)
                 if let updatedText = stats.updatedText {
                     Text(updatedText)
-                        .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .regular))
+                        .font(.app(size: T.FontSize.caption, weight: .regular))
                         .foregroundStyle(nativeTertiaryLabel)
                         .lineLimit(1)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .padding(.horizontal, MenuBarLayoutTokens.space4)
-        .frame(height: MenuBarLayoutTokens.rowHeight)
+        .padding(.horizontal, T.space4)
+        .frame(height: T.rowHeight)
         .background(nativeHoverRowBackground(hovered))
         .onHover { self.hoveredRuleIndex = self.nextHovered(
             current: self.hoveredRuleIndex, target: index, isHovering: $0) }
@@ -178,15 +181,15 @@ struct RulesTabView: TranslatingView {
     func ruleTypeIcon(for type: String) -> (symbol: String, color: Color) {
         let lower = type.lowercased()
         if lower.contains("ipcidr") {
-            return ("globe.americas.fill", nativeInfo.opacity(MenuBarLayoutTokens.Opacity.solid))
+            return ("globe.americas.fill", nativeInfo.opacity(T.Opacity.solid))
         }
         if lower.contains("domain") || lower.contains("suffix") || lower.contains("keyword") {
-            return ("network", nativeTeal.opacity(MenuBarLayoutTokens.Opacity.solid))
+            return ("network", nativeTeal.opacity(T.Opacity.solid))
         }
         if lower.contains("ruleset") {
-            return ("list.bullet.rectangle.fill", nativeWarning.opacity(MenuBarLayoutTokens.Opacity.solid))
+            return ("list.bullet.rectangle.fill", nativeWarning.opacity(T.Opacity.solid))
         }
-        return ("circle.grid.2x2.fill", nativeIndigo.opacity(MenuBarLayoutTokens.Opacity.solid))
+        return ("circle.grid.2x2.fill", nativeIndigo.opacity(T.Opacity.solid))
     }
 
     func rulePolicyBadge(for policy: String) -> (symbol: String?, color: Color) {
@@ -194,7 +197,7 @@ struct RulesTabView: TranslatingView {
         if lower.contains("fishy") {
             return (
                 symbol: "exclamationmark.triangle.fill",
-                color: nativeAccent.opacity(MenuBarLayoutTokens.Opacity.solid))
+                color: nativeAccent.opacity(T.Opacity.solid))
         }
         return (
             symbol: nil,

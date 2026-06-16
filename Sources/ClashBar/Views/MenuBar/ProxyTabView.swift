@@ -83,7 +83,7 @@ struct ProxyTabView: TranslatingView {
     }
 
     var quickRowTrailingColumnWidth: CGFloat {
-        let contentWidth = MenuBarLayoutTokens.panelWidth - (MenuBarLayoutTokens.space8 * 2)
+        let contentWidth = T.panelWidth - (T.space8 * 2)
         return min(170, max(126, contentWidth * 0.44))
     }
 

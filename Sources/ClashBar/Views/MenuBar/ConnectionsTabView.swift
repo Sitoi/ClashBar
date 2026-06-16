@@ -1,6 +1,9 @@
 import AppKit
 import SwiftUI
 
+// swiftlint:disable:next type_name
+private typealias T = MenuBarLayoutTokens
+
 struct ConnectionsTabView: TranslatingView {
     @EnvironmentObject var appViewModel: AppViewModel
     @EnvironmentObject var connectionsStore: ConnectionsStore
@@ -11,18 +14,18 @@ struct ConnectionsTabView: TranslatingView {
     @StateObject private var viewModel = ConnectionsViewModel()
 
     private enum ConnectionsLayout {
-        static let topLineSpacing: CGFloat = MenuBarLayoutTokens.space2
-        static let topMetaSpacing: CGFloat = MenuBarLayoutTokens.space1
-        static let secondLineSpacing: CGFloat = MenuBarLayoutTokens.space2
+        static let topLineSpacing: CGFloat = T.space2
+        static let topMetaSpacing: CGFloat = T.space1
+        static let secondLineSpacing: CGFloat = T.space2
         static let rowLineHeight: CGFloat = 16
         static let topRuleMinWidth: CGFloat = 26
         static let topPayloadMinWidth: CGFloat = 14
         static let rowContentWidth: CGFloat =
-            MenuBarLayoutTokens.panelWidth
-                - (MenuBarLayoutTokens.space8 * 2)
-                - (MenuBarLayoutTokens.space4 * 2)
-                - MenuBarLayoutTokens.rowLeadingIcon
-                - (MenuBarLayoutTokens.space6 * 2)
+            T.panelWidth
+                - (T.space8 * 2)
+                - (T.space4 * 2)
+                - T.rowLeadingIcon
+                - (T.space6 * 2)
                 - 12
     }
 
@@ -31,7 +34,7 @@ struct ConnectionsTabView: TranslatingView {
     var body: some View {
         let connections = self.viewModel.visibleConnections
 
-        return VStack(alignment: .leading, spacing: MenuBarLayoutTokens.space6) {
+        return VStack(alignment: .leading, spacing: T.space6) {
             self.connectionsControlCard
 
             if connections.isEmpty {
@@ -86,8 +89,8 @@ struct ConnectionsTabView: TranslatingView {
     }
 
     var connectionsControlCard: some View {
-        VStack(alignment: .leading, spacing: MenuBarLayoutTokens.space4) {
-            HStack(spacing: MenuBarLayoutTokens.space6) {
+        VStack(alignment: .leading, spacing: T.space4) {
+            HStack(spacing: T.space6) {
                 self.connectionsFilterMenu
                 self.connectionsSortMenu
 
@@ -110,10 +113,10 @@ struct ConnectionsTabView: TranslatingView {
 
             TextField(self.tr("ui.placeholder.filter_connection"), text: self.$viewModel.filterText)
                 .textFieldStyle(.roundedBorder)
-                .font(.app(size: MenuBarLayoutTokens.FontSize.body, weight: .regular))
+                .font(.app(size: T.FontSize.body, weight: .regular))
                 .foregroundStyle(nativePrimaryLabel)
         }
-        .menuRowPadding(vertical: MenuBarLayoutTokens.space4)
+        .menuRowPadding(vertical: T.space4)
     }
 
     var connectionsFilterMenu: some View {
@@ -152,16 +155,16 @@ struct ConnectionsTabView: TranslatingView {
             ?? parsedRule?.payload.trimmedNonEmpty
             ?? "--"
 
-        return HStack(alignment: .center, spacing: MenuBarLayoutTokens.space6) {
+        return HStack(alignment: .center, spacing: T.space6) {
             Image(systemName: visual.symbol)
-                .font(.app(size: MenuBarLayoutTokens.FontSize.body, weight: .semibold))
+                .font(.app(size: T.FontSize.body, weight: .semibold))
                 .foregroundStyle(visual.color)
                 .frame(
-                    width: MenuBarLayoutTokens.rowLeadingIcon,
-                    height: MenuBarLayoutTokens.rowLeadingIcon,
+                    width: T.rowLeadingIcon,
+                    height: T.rowLeadingIcon,
                     alignment: .center)
 
-            VStack(alignment: .leading, spacing: MenuBarLayoutTokens.space2) {
+            VStack(alignment: .leading, spacing: T.space2) {
                 self.connectionRowTopLine(host: hostText, ruleType: ruleTypeText, rulePayload: rulePayloadText)
                 self.connectionRowMetrics(time: timeText, network: networkType, up: upText, down: downText)
                 self.connectionsChainsLine(parts: self.connectionChainsParts(conn.chains))
@@ -170,8 +173,8 @@ struct ConnectionsTabView: TranslatingView {
 
             self.connectionRowCloseButton(id: conn.id, hovered: hovered)
         }
-        .padding(.horizontal, MenuBarLayoutTokens.space4)
-        .padding(.vertical, MenuBarLayoutTokens.space2)
+        .padding(.horizontal, T.space4)
+        .padding(.vertical, T.space2)
         .background(nativeHoverRowBackground(hovered))
         .onHover { self.viewModel.hoveredConnectionID = self.nextHovered(
             current: self.viewModel.hoveredConnectionID, target: conn.id, isHovering: $0) }
@@ -179,7 +182,6 @@ struct ConnectionsTabView: TranslatingView {
     }
 
     private func connectionRowTopLine(host: String, ruleType: String, rulePayload: String) -> some View {
-        // Use static rowContentWidth constant — no GeometryReader needed since panel is always 360pt
         let layout = self.connectionsTopLineLayout(
             totalWidth: ConnectionsLayout.rowContentWidth,
             ruleText: ruleType,
@@ -187,7 +189,7 @@ struct ConnectionsTabView: TranslatingView {
 
         return HStack(spacing: ConnectionsLayout.topLineSpacing) {
             Text(host)
-                .font(.app(size: MenuBarLayoutTokens.FontSize.body, weight: .semibold))
+                .font(.app(size: T.FontSize.body, weight: .semibold))
                 .foregroundStyle(nativePrimaryLabel)
                 .lineLimit(1)
                 .truncationMode(.tail)
@@ -207,7 +209,6 @@ struct ConnectionsTabView: TranslatingView {
     }
 
     private func connectionRowMetrics(time: String, network: String, up: String, down: String) -> some View {
-        // Use static rowContentWidth — no GeometryReader needed since panel is always 360pt
         let columnWidth = max(
             (ConnectionsLayout.rowContentWidth - (ConnectionsLayout.secondLineSpacing * 3)) / 4,
             0)
@@ -226,16 +227,16 @@ struct ConnectionsTabView: TranslatingView {
             self.connectionsMetricColumn(
                 symbol: "arrow.up",
                 text: up,
-                symbolColor: nativeInfo.opacity(MenuBarLayoutTokens.Opacity.solid),
-                textColor: nativeInfo.opacity(MenuBarLayoutTokens.Opacity.solid),
+                symbolColor: nativeInfo.opacity(T.Opacity.solid),
+                textColor: nativeInfo.opacity(T.Opacity.solid),
                 spacing: 0,
                 truncation: .tail,
                 width: columnWidth)
             self.connectionsMetricColumn(
                 symbol: "arrow.down",
                 text: down,
-                symbolColor: nativePositive.opacity(MenuBarLayoutTokens.Opacity.solid),
-                textColor: nativePositive.opacity(MenuBarLayoutTokens.Opacity.solid),
+                symbolColor: nativePositive.opacity(T.Opacity.solid),
+                textColor: nativePositive.opacity(T.Opacity.solid),
                 spacing: 0,
                 truncation: .tail,
                 width: columnWidth)
@@ -248,7 +249,7 @@ struct ConnectionsTabView: TranslatingView {
             Task { await self.appViewModel.closeConnection(id: id) }
         } label: {
             Image(systemName: "xmark")
-                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .semibold))
+                .font(.app(size: T.FontSize.caption, weight: .semibold))
                 .frame(width: 10, height: 10)
         }
         .buttonStyle(.plain)
@@ -286,7 +287,7 @@ struct ConnectionsTabView: TranslatingView {
         symbolColor: Color = .secondary,
         textColor: Color = .secondary,
         fallback: String? = nil,
-        spacing: CGFloat = MenuBarLayoutTokens.space2,
+        spacing: CGFloat = T.space2,
         truncation: Text.TruncationMode = .middle,
         width: CGFloat) -> some View
     {
@@ -294,11 +295,11 @@ struct ConnectionsTabView: TranslatingView {
 
         return HStack(spacing: spacing) {
             Image(systemName: symbol)
-                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .semibold))
+                .font(.app(size: T.FontSize.caption, weight: .semibold))
                 .foregroundStyle(symbolColor)
                 .frame(width: 10, alignment: .leading)
             Text(renderedText)
-                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .regular))
+                .font(.app(size: T.FontSize.caption, weight: .regular))
                 .foregroundStyle(textColor)
                 .lineLimit(1)
                 .truncationMode(truncation)
@@ -309,23 +310,23 @@ struct ConnectionsTabView: TranslatingView {
 
     func connectionsTopBadge(text: String) -> some View {
         Text(text)
-            .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .semibold))
+            .font(.app(size: T.FontSize.caption, weight: .semibold))
             .foregroundStyle(nativeSecondaryLabel)
             .lineLimit(1)
             .truncationMode(.tail)
-            .minimumScaleFactor(MenuBarLayoutTokens.minimumScale)
-            .padding(.horizontal, MenuBarLayoutTokens.space2)
-            .padding(.vertical, MenuBarLayoutTokens.space1)
+            .minimumScaleFactor(T.minimumScale)
+            .padding(.horizontal, T.space2)
+            .padding(.vertical, T.space1)
             .background(nativeBadgeCapsule())
     }
 
     func connectionsTopPayload(text: String) -> some View {
         Text(text)
-            .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .medium))
+            .font(.app(size: T.FontSize.caption, weight: .medium))
             .foregroundStyle(nativeSecondaryLabel)
             .lineLimit(1)
             .truncationMode(.middle)
-            .minimumScaleFactor(MenuBarLayoutTokens.minimumScale)
+            .minimumScaleFactor(T.minimumScale)
             .frame(maxWidth: .infinity, alignment: .trailing)
     }
 
@@ -333,14 +334,14 @@ struct ConnectionsTabView: TranslatingView {
         let chainText = parts.joined(separator: " > ")
         let displayText = parts.isEmpty ? self.tr("ui.common.na") : chainText
 
-        return HStack(spacing: MenuBarLayoutTokens.space2) {
+        return HStack(spacing: T.space2) {
             Image(systemName: "point.3.connected.trianglepath.dotted")
-                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .semibold))
+                .font(.app(size: T.FontSize.caption, weight: .semibold))
                 .foregroundStyle(nativeSecondaryLabel)
                 .frame(width: 10, alignment: .leading)
 
             Text(displayText)
-                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .regular))
+                .font(.app(size: T.FontSize.caption, weight: .regular))
                 .foregroundStyle(nativeSecondaryLabel)
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -364,14 +365,14 @@ struct ConnectionsTabView: TranslatingView {
             self
                 .connectionsMonospacedTextWidth(
                     ruleText,
-                    size: MenuBarLayoutTokens.FontSize.caption,
+                    size: T.FontSize.caption,
                     weight: .semibold) +
                 4)
         var payloadWidth = max(
             ConnectionsLayout.topPayloadMinWidth,
             self.connectionsMonospacedTextWidth(
                 payloadText,
-                size: MenuBarLayoutTokens.FontSize.caption,
+                size: T.FontSize.caption,
                 weight: .medium))
         let desiredMetaWidth = ruleWidth + ConnectionsLayout.topMetaSpacing + payloadWidth
 
@@ -471,25 +472,25 @@ struct ConnectionsTabView: TranslatingView {
         let network = conn.metadata?.network?.lowercased() ?? ""
 
         if host.contains("google") || host.contains("gstatic") {
-            return ("shield.fill", nativePurple.opacity(MenuBarLayoutTokens.Opacity.solid))
+            return ("shield.fill", nativePurple.opacity(T.Opacity.solid))
         }
         if host.contains("icloud") || host.contains("apple") {
-            return ("icloud.fill", nativeInfo.opacity(MenuBarLayoutTokens.Opacity.solid))
+            return ("icloud.fill", nativeInfo.opacity(T.Opacity.solid))
         }
         if host.contains("github") {
-            return ("terminal.fill", nativeIndigo.opacity(MenuBarLayoutTokens.Opacity.solid))
+            return ("terminal.fill", nativeIndigo.opacity(T.Opacity.solid))
         }
         if host.contains("twitter") || host.contains("x.com") {
-            return ("lock.fill", nativePositive.opacity(MenuBarLayoutTokens.Opacity.solid))
+            return ("lock.fill", nativePositive.opacity(T.Opacity.solid))
         }
         if host.contains("amazon") {
-            return ("cart.fill", nativeWarning.opacity(MenuBarLayoutTokens.Opacity.solid))
+            return ("cart.fill", nativeWarning.opacity(T.Opacity.solid))
         }
         if network.contains("udp") {
-            return ("dot.radiowaves.left.and.right", nativeTeal.opacity(MenuBarLayoutTokens.Opacity.solid))
+            return ("dot.radiowaves.left.and.right", nativeTeal.opacity(T.Opacity.solid))
         }
         if network.contains("tcp") {
-            return ("network", nativeInfo.opacity(MenuBarLayoutTokens.Opacity.solid))
+            return ("network", nativeInfo.opacity(T.Opacity.solid))
         }
         return ("globe", nativeSecondaryLabel)
     }

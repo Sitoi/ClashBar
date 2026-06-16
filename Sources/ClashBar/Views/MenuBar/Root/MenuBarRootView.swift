@@ -1,5 +1,8 @@
 import SwiftUI
 
+// swiftlint:disable:next type_name
+private typealias T = MenuBarLayoutTokens
+
 enum RootTab: String, CaseIterable, Hashable {
     case proxy
     case rules
@@ -66,7 +69,7 @@ struct MenuBarRootView: TranslatingView {
         false
 
     var contentWidth: CGFloat {
-        MenuBarLayoutTokens.panelWidth - (MenuBarLayoutTokens.space8 * 2)
+        T.panelWidth - (T.space8 * 2)
     }
 
     func setCurrentTabWithoutAnimation(_ tab: RootTab) {
@@ -84,7 +87,7 @@ struct MenuBarRootView: TranslatingView {
             self.panelContent
             Spacer(minLength: 0)
         }
-        .frame(width: MenuBarLayoutTokens.panelWidth, alignment: .topLeading)
+        .frame(width: T.panelWidth, alignment: .topLeading)
     }
 
     private var panelSections: some View {
@@ -115,15 +118,15 @@ struct MenuBarRootView: TranslatingView {
     private var styledPanelContent: some View {
         self.panelSections
             .frame(width: self.contentWidth, alignment: .topLeading)
-            .padding(.horizontal, MenuBarLayoutTokens.space8)
+            .padding(.horizontal, T.space8)
             .frame(
-                width: MenuBarLayoutTokens.panelWidth,
+                width: T.panelWidth,
                 height: resolvedPanelHeight,
                 alignment: .topLeading)
             .background(self.panelBackground)
             .clipShape(
                 RoundedRectangle(
-                    cornerRadius: MenuBarLayoutTokens.panelCornerRadius, style: .continuous))
+                    cornerRadius: T.panelCornerRadius, style: .continuous))
     }
 
     var panelContent: some View {
@@ -215,7 +218,7 @@ struct MenuBarRootView: TranslatingView {
     @ViewBuilder
     func tabContent(for tab: RootTab) -> some View {
         let content = self.tabBody(for: tab)
-            .padding(.top, MenuBarLayoutTokens.space2)
+            .padding(.top, T.space2)
 
         if self.tabUsesDynamicHeight(tab) {
             content.fixedSize(horizontal: false, vertical: true)
@@ -226,15 +229,15 @@ struct MenuBarRootView: TranslatingView {
 
     var panelBackground: some View {
         AppMaterialSurface(
-            cornerRadius: MenuBarLayoutTokens.panelCornerRadius,
+            cornerRadius: T.panelCornerRadius,
             fallbackStyle: .material(.regularMaterial),
             stroke: nativeSeparator)
             .shadow(
                 color: Color(nsColor: .shadowColor).opacity(
-                    MenuBarLayoutTokens.Shadow.standard.opacity),
-                radius: MenuBarLayoutTokens.Shadow.standard.radius,
-                x: MenuBarLayoutTokens.Shadow.standard.x,
-                y: MenuBarLayoutTokens.Shadow.standard.y)
+                    T.Shadow.standard.opacity),
+                radius: T.Shadow.standard.radius,
+                x: T.Shadow.standard.x,
+                y: T.Shadow.standard.y)
     }
 
     func refreshDerivedData(for tab: RootTab) {

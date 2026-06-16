@@ -248,12 +248,12 @@ struct SystemTabView: TranslatingView {
     }
 
     var settingsMenuControlWidth: CGFloat {
-        let contentWidth = MenuBarLayoutTokens.panelWidth - (MenuBarLayoutTokens.space8 * 2)
+        let contentWidth = T.panelWidth - (T.space8 * 2)
         return min(152, max(118, contentWidth * 0.43))
     }
 
     var settingsPortFieldWidth: CGFloat {
-        let contentWidth = MenuBarLayoutTokens.panelWidth - (MenuBarLayoutTokens.space8 * 2)
+        let contentWidth = T.panelWidth - (T.space8 * 2)
         return min(108, max(92, contentWidth * 0.30))
     }
 

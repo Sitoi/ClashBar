@@ -1,5 +1,8 @@
 import SwiftUI
 
+// swiftlint:disable:next type_name
+private typealias T = MenuBarLayoutTokens
+
 struct MenuBarHeaderView: TranslatingView {
     @EnvironmentObject var appViewModel: AppViewModel
     @EnvironmentObject var remoteMachineStore: RemoteMachineStore
@@ -15,16 +18,16 @@ struct MenuBarHeaderView: TranslatingView {
     }
 
     var topHeader: some View {
-        HStack(alignment: .center, spacing: MenuBarLayoutTokens.space8) {
-            HStack(alignment: .top, spacing: MenuBarLayoutTokens.space8) {
+        HStack(alignment: .center, spacing: T.space8) {
+            HStack(alignment: .top, spacing: T.space8) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: MenuBarLayoutTokens.cornerRadius, style: .continuous)
-                        .fill(nativeControlFill.opacity(MenuBarLayoutTokens.Opacity.solid))
+                    RoundedRectangle(cornerRadius: T.cornerRadius, style: .continuous)
+                        .fill(nativeControlFill.opacity(T.Opacity.solid))
                         .overlay {
-                            RoundedRectangle(cornerRadius: MenuBarLayoutTokens.cornerRadius, style: .continuous)
+                            RoundedRectangle(cornerRadius: T.cornerRadius, style: .continuous)
                                 .stroke(
-                                    nativeControlBorder.opacity(MenuBarLayoutTokens.Opacity.solid),
-                                    lineWidth: MenuBarLayoutTokens.stroke)
+                                    nativeControlBorder.opacity(T.Opacity.solid),
+                                    lineWidth: T.stroke)
                         }
 
                     if let brandImage = BrandIcon.image {
@@ -45,12 +48,12 @@ struct MenuBarHeaderView: TranslatingView {
                 }
                 .frame(width: self.headerLogoSize, height: self.headerLogoSize)
 
-                VStack(alignment: .leading, spacing: MenuBarLayoutTokens.space2) {
+                VStack(alignment: .leading, spacing: T.space2) {
                     Text("ClashBar")
-                        .font(.app(size: MenuBarLayoutTokens.FontSize.title3, weight: .semibold))
+                        .font(.app(size: T.FontSize.title3, weight: .semibold))
                         .foregroundStyle(nativePrimaryLabel)
 
-                    HStack(spacing: MenuBarLayoutTokens.space6) {
+                    HStack(spacing: T.space6) {
                         self.headerConnectionControl
                         self.headerControllerWebUIButton
                         if self.appViewModel.isExternalControllerWildcardIPv4 {
@@ -60,9 +63,9 @@ struct MenuBarHeaderView: TranslatingView {
                 }
             }
 
-            Spacer(minLength: MenuBarLayoutTokens.space6)
+            Spacer(minLength: T.space6)
 
-            HStack(spacing: MenuBarLayoutTokens.space6) {
+            HStack(spacing: T.space6) {
                 self.compactTopIcon(
                     self.appViewModel.isPinned ? "pin.fill" : "pin",
                     label: self.appViewModel.isPinned ? self.tr("ui.action.unpin") : self.tr("ui.action.pin"),
@@ -102,7 +105,7 @@ struct MenuBarHeaderView: TranslatingView {
                 }
             }
         }
-        .padding(.vertical, MenuBarLayoutTokens.space8)
+        .padding(.vertical, T.space8)
         .sheet(isPresented: self.$showRemoteMachineManager) {
             RemoteMachineManagerView(
                 store: self.remoteMachineStore,
@@ -124,7 +127,7 @@ struct MenuBarHeaderView: TranslatingView {
                 self.remoteMachineStore.checkAllConnectivity()
             },
             label: { _ in
-                HStack(spacing: MenuBarLayoutTokens.space6) {
+                HStack(spacing: T.space6) {
                     if self.isSwitchingMachine {
                         ProgressView()
                             .controlSize(.mini)
@@ -136,7 +139,7 @@ struct MenuBarHeaderView: TranslatingView {
                     }
 
                     Text(self.headerConnectionDisplayText)
-                        .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .semibold))
+                        .font(.app(size: T.FontSize.caption, weight: .semibold))
                         .foregroundStyle(nativePrimaryLabel)
                         .lineLimit(1)
                         .truncationMode(.tail)
@@ -152,7 +155,7 @@ struct MenuBarHeaderView: TranslatingView {
                 AttachedPopoverMenuItem(
                     title: self.tr("ui.machine.local"),
                     leadingSymbol: "desktopcomputer",
-                    leadingTint: self.nativeInfo.opacity(MenuBarLayoutTokens.Opacity.solid),
+                    leadingTint: self.nativeInfo.opacity(T.Opacity.solid),
                     selected: self.remoteMachineStore.activeTarget.isLocal,
                     selectionIndicatorPlacement: .trailing)
                 {
@@ -206,7 +209,7 @@ struct MenuBarHeaderView: TranslatingView {
 
     var headerControllerWarningIcon: some View {
         Image(systemName: "exclamationmark.triangle.fill")
-            .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .semibold))
+            .font(.app(size: T.FontSize.caption, weight: .semibold))
             .foregroundStyle(nativeWarning)
             .help("external-controller is 0.0.0.0 and can be accessed from your LAN.")
             .accessibilityLabel("Warning: external-controller is bound to 0.0.0.0")
@@ -217,7 +220,7 @@ struct MenuBarHeaderView: TranslatingView {
             self.appViewModel.openControllerWebUI()
         } label: {
             Image(systemName: "safari")
-                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .semibold))
+                .font(.app(size: T.FontSize.caption, weight: .semibold))
                 .foregroundStyle(self.nativeSecondaryLabel)
         }
         .buttonStyle(.plain)
@@ -229,12 +232,12 @@ struct MenuBarHeaderView: TranslatingView {
 
     func headerPopoverSection(_ title: String) -> some View {
         Text(title)
-            .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .bold))
+            .font(.app(size: T.FontSize.caption, weight: .bold))
             .foregroundStyle(nativeTertiaryLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, MenuBarLayoutTokens.space6)
-            .padding(.top, MenuBarLayoutTokens.space2)
-            .padding(.bottom, MenuBarLayoutTokens.space1)
+            .padding(.horizontal, T.space6)
+            .padding(.top, T.space2)
+            .padding(.bottom, T.space1)
             .textCase(.uppercase)
     }
 

@@ -34,7 +34,7 @@ struct SeparatedForEach<Element: Equatable, ID: Hashable, RowContent: View>: Vie
             if !item.isLast {
                 Rectangle()
                     .fill(self.separator)
-                    .frame(height: MenuBarLayoutTokens.stroke)
+                    .frame(height: T.stroke)
             }
         }
     }
@@ -71,8 +71,8 @@ extension MenuBarRootView {
         let mihomoSymbol = "cpu"
 
         return VStack(spacing: 0) {
-            HStack(spacing: MenuBarLayoutTokens.space6) {
-                HStack(spacing: MenuBarLayoutTokens.space6) {
+            HStack(spacing: T.space6) {
+                HStack(spacing: T.space6) {
                     self.footerInfo(
                         tr("ui.footer.core_mihomo", self.footerMihomoVersionText),
                         url: mihomoRepositoryURL,
@@ -86,19 +86,19 @@ extension MenuBarRootView {
                 self.footerVersionInfo
                     .fixedSize(horizontal: true, vertical: false)
             }
-            .menuRowPadding(vertical: MenuBarLayoutTokens.space2)
+            .menuRowPadding(vertical: T.space2)
             .background(self.footerSurfaceBackground)
         }
     }
 
     var footerSurfaceBackground: some View {
-        RoundedRectangle(cornerRadius: MenuBarLayoutTokens.cornerRadius, style: .continuous)
+        RoundedRectangle(cornerRadius: T.cornerRadius, style: .continuous)
             .fill(self.nativeControlFill.opacity(self.isDarkAppearance ? 0.54 : 0.38))
             .overlay {
-                RoundedRectangle(cornerRadius: MenuBarLayoutTokens.cornerRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: T.cornerRadius, style: .continuous)
                     .stroke(
                         self.nativeControlBorder.opacity(self.isDarkAppearance ? 0.40 : 0.12),
-                        lineWidth: MenuBarLayoutTokens.stroke)
+                        lineWidth: T.stroke)
             }
     }
 
@@ -121,19 +121,19 @@ extension MenuBarRootView {
     }
 
     func footerInfoLabel(_ text: String, iconSystemName: String?) -> some View {
-        HStack(spacing: MenuBarLayoutTokens.space4) {
+        HStack(spacing: T.space4) {
             if let iconSystemName {
                 Image(systemName: iconSystemName)
-                    .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .semibold))
+                    .font(.app(size: T.FontSize.caption, weight: .semibold))
                     .foregroundStyle(self.nativeSecondaryLabel)
             }
 
             Text(text)
-                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .medium))
+                .font(.app(size: T.FontSize.caption, weight: .medium))
                 .foregroundStyle(self.nativeSecondaryLabel)
                 .lineLimit(1)
                 .truncationMode(.middle)
-                .minimumScaleFactor(MenuBarLayoutTokens.minimumScale)
+                .minimumScaleFactor(T.minimumScale)
                 .allowsTightening(true)
         }
         .help(text)
@@ -147,7 +147,7 @@ extension MenuBarRootView {
             baseTint: self.nativeSecondaryLabel,
             isLoading: self.appViewModel.isCoreUpgradeInFlight,
             size: 18,
-            fontSize: MenuBarLayoutTokens.FontSize.caption,
+            fontSize: T.FontSize.caption,
             hierarchicalSymbol: true)
         {
             await self.appViewModel.upgradeCore()
@@ -193,11 +193,11 @@ extension MenuBarRootView {
     var footerCoreUpgradeButtonTint: Color {
         switch self.appViewModel.coreUpgradeState {
         case .idle, .running:
-            self.nativeAccent.opacity(MenuBarLayoutTokens.Opacity.solid)
+            self.nativeAccent.opacity(T.Opacity.solid)
         case .succeeded, .alreadyLatest:
-            self.nativePositive.opacity(MenuBarLayoutTokens.Opacity.solid)
+            self.nativePositive.opacity(T.Opacity.solid)
         case .failed:
-            self.nativeCritical.opacity(MenuBarLayoutTokens.Opacity.solid)
+            self.nativeCritical.opacity(T.Opacity.solid)
         }
     }
 
@@ -206,11 +206,11 @@ extension MenuBarRootView {
         case .idle:
             self.nativeBadgeFill
         case .running:
-            self.nativeAccent.opacity(MenuBarLayoutTokens.Opacity.tint)
+            self.nativeAccent.opacity(T.Opacity.tint)
         case .succeeded, .alreadyLatest:
-            self.nativePositive.opacity(MenuBarLayoutTokens.Opacity.tint)
+            self.nativePositive.opacity(T.Opacity.tint)
         case .failed:
-            self.nativeCritical.opacity(MenuBarLayoutTokens.Opacity.tint)
+            self.nativeCritical.opacity(T.Opacity.tint)
         }
     }
 
@@ -243,7 +243,7 @@ extension MenuBarRootView {
                 self.footerVersionBadge(
                     text: tr("ui.footer.version", update.displayVersion),
                     symbol: "arrow.down.circle.fill",
-                    tint: self.nativeAccent.opacity(MenuBarLayoutTokens.Opacity.solid),
+                    tint: self.nativeAccent.opacity(T.Opacity.solid),
                     emphasized: true)
             }
             .buttonStyle(.plain)
@@ -274,22 +274,22 @@ extension MenuBarRootView {
     }
 
     func footerVersionBadge(text: String, symbol: String?, tint: Color, emphasized: Bool) -> some View {
-        HStack(spacing: MenuBarLayoutTokens.space4) {
+        HStack(spacing: T.space4) {
             if let symbol {
                 Image(systemName: symbol)
-                    .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .semibold))
+                    .font(.app(size: T.FontSize.caption, weight: .semibold))
             }
 
             Text(text)
                 .font(.app(
-                    size: MenuBarLayoutTokens.FontSize.caption,
+                    size: T.FontSize.caption,
                     weight: emphasized ? .bold : .medium))
                 .lineLimit(1)
-                .minimumScaleFactor(MenuBarLayoutTokens.minimumScale)
+                .minimumScaleFactor(T.minimumScale)
         }
         .foregroundStyle(tint)
-        .padding(.horizontal, MenuBarLayoutTokens.space6)
-        .padding(.vertical, MenuBarLayoutTokens.space2)
+        .padding(.horizontal, T.space6)
+        .padding(.vertical, T.space2)
     }
 
     var appVersionText: String {
@@ -299,16 +299,13 @@ extension MenuBarRootView {
 
 // MARK: - Shared Runtime Status
 
-/// `statusColor` / `runtimeBadgeText` are shared across any view that owns an
-/// `appViewModel`. Hoisting them onto `TranslatingView` removes the byte-for-byte
-/// duplicate that previously lived in `MenuBarHeaderView` and the root footer.
 extension TranslatingView {
     var statusColor: Color {
         switch appViewModel.runtimeVisualStatus {
-        case .runningHealthy: self.nativePositive.opacity(MenuBarLayoutTokens.Opacity.solid)
-        case .runningDegraded: self.nativeWarning.opacity(MenuBarLayoutTokens.Opacity.solid)
-        case .starting: self.nativeInfo.opacity(MenuBarLayoutTokens.Opacity.solid)
-        case .failed: self.nativeCritical.opacity(MenuBarLayoutTokens.Opacity.solid)
+        case .runningHealthy: self.nativePositive.opacity(T.Opacity.solid)
+        case .runningDegraded: self.nativeWarning.opacity(T.Opacity.solid)
+        case .starting: self.nativeInfo.opacity(T.Opacity.solid)
+        case .failed: self.nativeCritical.opacity(T.Opacity.solid)
         case .stopped: self.nativeSecondaryLabel
         }
     }
@@ -372,42 +369,42 @@ extension View {
     }
 
     var nativeBadgeFill: Color {
-        Color(nsColor: .quaternaryLabelColor).opacity(MenuBarLayoutTokens.Opacity.tint)
+        Color(nsColor: .quaternaryLabelColor).opacity(T.Opacity.tint)
     }
 
     var nativeSecondaryLabel: Color {
         Color(nsColor: .labelColor)
-            .opacity(self.isDarkAppearance ? MenuBarLayoutTokens.Theme.Dark.labelSecondary : MenuBarLayoutTokens.Theme
+            .opacity(self.isDarkAppearance ? T.Theme.Dark.labelSecondary : T.Theme
                 .Light.labelSecondary)
     }
 
     var nativeTertiaryLabel: Color {
         Color(nsColor: .labelColor)
-            .opacity(self.isDarkAppearance ? MenuBarLayoutTokens.Theme.Dark.labelTertiary : MenuBarLayoutTokens.Theme
+            .opacity(self.isDarkAppearance ? T.Theme.Dark.labelTertiary : T.Theme
                 .Light.labelTertiary)
     }
 
     var nativeSeparator: Color {
         Color(nsColor: .separatorColor)
-            .opacity(self.isDarkAppearance ? MenuBarLayoutTokens.Theme.Dark.separator : MenuBarLayoutTokens.Theme.Light
+            .opacity(self.isDarkAppearance ? T.Theme.Dark.separator : T.Theme.Light
                 .separator)
     }
 
     var nativeControlFill: Color {
         Color(nsColor: self.isDarkAppearance ? .controlBackgroundColor : .windowBackgroundColor)
-            .opacity(self.isDarkAppearance ? MenuBarLayoutTokens.Theme.Dark.controlFill : MenuBarLayoutTokens.Theme
+            .opacity(self.isDarkAppearance ? T.Theme.Dark.controlFill : T.Theme
                 .Light.controlFill)
     }
 
     var nativeControlBorder: Color {
         Color(nsColor: .separatorColor)
-            .opacity(self.isDarkAppearance ? MenuBarLayoutTokens.Theme.Dark.controlBorder : MenuBarLayoutTokens.Theme
+            .opacity(self.isDarkAppearance ? T.Theme.Dark.controlBorder : T.Theme
                 .Light.controlBorder)
     }
 
     var nativeHoverFill: Color {
         Color(nsColor: .selectedContentBackgroundColor)
-            .opacity(self.isDarkAppearance ? MenuBarLayoutTokens.Theme.Dark.hoverFill : MenuBarLayoutTokens.Theme.Light
+            .opacity(self.isDarkAppearance ? T.Theme.Dark.hoverFill : T.Theme.Light
                 .hoverFill)
     }
 
@@ -415,7 +412,7 @@ extension View {
 
     func nativeHoverRowBackground(
         _ hovered: Bool,
-        cornerRadius: CGFloat = MenuBarLayoutTokens.cornerRadius) -> some View
+        cornerRadius: CGFloat = T.cornerRadius) -> some View
     {
         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
             .fill(hovered ? self.nativeHoverFill : .clear)
@@ -427,26 +424,26 @@ extension View {
 
     func emptyCard(_ text: String) -> some View {
         Text(text)
-            .font(.app(size: MenuBarLayoutTokens.FontSize.body, weight: .regular))
+            .font(.app(size: T.FontSize.body, weight: .regular))
             .foregroundStyle(self.nativeSecondaryLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
             .menuRowPadding()
     }
 
     func fractionSummaryBadge(current: Int, total: Int) -> some View {
-        HStack(spacing: MenuBarLayoutTokens.space1) {
+        HStack(spacing: T.space1) {
             Text("\(current)")
-                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .bold))
+                .font(.app(size: T.FontSize.caption, weight: .bold))
                 .foregroundStyle(self.nativePrimaryLabel)
             Text("/")
-                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .medium))
+                .font(.app(size: T.FontSize.caption, weight: .medium))
                 .foregroundStyle(self.nativeTertiaryLabel)
             Text("\(total)")
-                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .medium))
+                .font(.app(size: T.FontSize.caption, weight: .medium))
                 .foregroundStyle(self.nativeSecondaryLabel)
         }
-        .padding(.horizontal, MenuBarLayoutTokens.space6)
-        .padding(.vertical, MenuBarLayoutTokens.space2)
+        .padding(.horizontal, T.space6)
+        .padding(.vertical, T.space2)
         .background(self.nativeBadgeCapsule())
     }
 
@@ -458,7 +455,7 @@ extension View {
         role: ButtonRole? = nil,
         isLoading: Bool = false,
         size: CGFloat = 20,
-        fontSize: CGFloat = MenuBarLayoutTokens.FontSize.body,
+        fontSize: CGFloat = T.FontSize.body,
         hierarchicalSymbol: Bool = false,
         action: @escaping () async -> Void) -> some View
     {
@@ -495,7 +492,7 @@ extension View {
         return self.compactAsyncIconButton(
             symbol: symbol,
             label: label,
-            tint: tone.opacity(MenuBarLayoutTokens.Opacity.solid),
+            tint: tone.opacity(T.Opacity.solid),
             role: role,
             isLoading: isLoading,
             action: action)
@@ -518,7 +515,7 @@ extension View {
             }
         } label: {
             Label(configuration.optionTitle(configuration.selection), systemImage: configuration.symbol)
-                .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .medium))
+                .font(.app(size: T.FontSize.caption, weight: .medium))
                 .lineLimit(1)
         }
         .appBorderedButtonStyle()
@@ -545,9 +542,9 @@ extension View {
 
     func latencyColor(_ value: Int?) -> Color {
         guard let value else { return self.nativeTertiaryLabel }
-        if value == 0 { return self.nativeCritical.opacity(MenuBarLayoutTokens.Opacity.solid) }
-        if value <= 400 { return self.nativePositive.opacity(MenuBarLayoutTokens.Opacity.solid) }
-        return self.nativeWarning.opacity(MenuBarLayoutTokens.Opacity.solid)
+        if value == 0 { return self.nativeCritical.opacity(T.Opacity.solid) }
+        if value <= 400 { return self.nativePositive.opacity(T.Opacity.solid) }
+        return self.nativeWarning.opacity(T.Opacity.solid)
     }
 
     func nextHovered<V: Equatable>(current: V?, target: V, isHovering: Bool) -> V? {
@@ -559,11 +556,11 @@ extension View {
         case .unknown:
             self.nativeSecondaryLabel
         case .checking:
-            self.nativeWarning.opacity(MenuBarLayoutTokens.Opacity.solid)
+            self.nativeWarning.opacity(T.Opacity.solid)
         case .connected:
-            self.nativePositive.opacity(MenuBarLayoutTokens.Opacity.solid)
+            self.nativePositive.opacity(T.Opacity.solid)
         case .failed:
-            self.nativeCritical.opacity(MenuBarLayoutTokens.Opacity.solid)
+            self.nativeCritical.opacity(T.Opacity.solid)
         }
     }
 }

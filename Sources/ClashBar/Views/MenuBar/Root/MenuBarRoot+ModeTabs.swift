@@ -1,5 +1,8 @@
 import SwiftUI
 
+// swiftlint:disable:next type_name
+private typealias T = MenuBarLayoutTokens
+
 extension MenuBarRootView {
     private struct SegmentedControlStyle {
         let isMode: Bool
@@ -32,7 +35,7 @@ extension MenuBarRootView {
         }
 
         var stackSpacing: CGFloat {
-            self.isMode ? MenuBarLayoutTokens.space1 : 0
+            self.isMode ? T.space1 : 0
         }
 
         var contentVerticalPadding: CGFloat {
@@ -61,7 +64,7 @@ extension MenuBarRootView {
     }
 
     var modeAndTabSection: some View {
-        VStack(spacing: MenuBarLayoutTokens.space2) {
+        VStack(spacing: T.space2) {
             self.modeSwitcher
             self.topTabs
         }
@@ -90,14 +93,14 @@ extension MenuBarRootView {
         switch self.machineSwitcherStatus {
         case .unknown, nil:
             remoteMachineStore.activeTarget.isLocal
-                ? nativeInfo.opacity(MenuBarLayoutTokens.Opacity.solid)
+                ? nativeInfo.opacity(T.Opacity.solid)
                 : nativeSecondaryLabel
         case .checking:
-            nativeWarning.opacity(MenuBarLayoutTokens.Opacity.solid)
+            nativeWarning.opacity(T.Opacity.solid)
         case .connected:
-            nativePositive.opacity(MenuBarLayoutTokens.Opacity.solid)
+            nativePositive.opacity(T.Opacity.solid)
         case .failed:
-            nativeCritical.opacity(MenuBarLayoutTokens.Opacity.solid)
+            nativeCritical.opacity(T.Opacity.solid)
         }
     }
 
@@ -146,16 +149,16 @@ extension MenuBarRootView {
         case .unknown:
             nativeSecondaryLabel
         case .checking:
-            nativeWarning.opacity(MenuBarLayoutTokens.Opacity.solid)
+            nativeWarning.opacity(T.Opacity.solid)
         case .connected:
-            nativePositive.opacity(MenuBarLayoutTokens.Opacity.solid)
+            nativePositive.opacity(T.Opacity.solid)
         case .failed:
-            nativeCritical.opacity(MenuBarLayoutTokens.Opacity.solid)
+            nativeCritical.opacity(T.Opacity.solid)
         }
     }
 
     var modeSwitcher: some View {
-        HStack(spacing: MenuBarLayoutTokens.space2) {
+        HStack(spacing: T.space2) {
             self.modeSegmentButton(
                 title: tr("ui.mode.rule"),
                 mode: .rule,
@@ -169,7 +172,7 @@ extension MenuBarRootView {
                 mode: .direct,
                 symbol: "bolt.fill")
         }
-        .padding(MenuBarLayoutTokens.space1)
+        .padding(T.space1)
         .frame(width: contentWidth)
         .background(
             AppMaterialSurface(
@@ -202,7 +205,7 @@ extension MenuBarRootView {
                             .tint(self.segmentedAccentColor(style: style))
                     } else {
                         Image(systemName: symbol)
-                            .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .bold))
+                            .font(.app(size: T.FontSize.caption, weight: .bold))
                             .foregroundStyle(self.segmentedIconColor(
                                 style: style,
                                 selected: selected,
@@ -210,7 +213,7 @@ extension MenuBarRootView {
                     }
 
                     Text(title)
-                        .font(.app(size: MenuBarLayoutTokens.FontSize.caption, weight: .semibold))
+                        .font(.app(size: T.FontSize.caption, weight: .semibold))
                         .lineLimit(1)
                         .foregroundStyle(self.segmentedLabelColor(style: style, selected: selected, hovered: hovered))
                 }
@@ -228,7 +231,7 @@ extension MenuBarRootView {
     }
 
     var topTabs: some View {
-        HStack(spacing: MenuBarLayoutTokens.space2) {
+        HStack(spacing: T.space2) {
             ForEach(RootTab.allCases, id: \.self) { tab in
                 self.tabSegmentButton(tab)
             }
@@ -249,9 +252,9 @@ extension MenuBarRootView {
         } label: {
             ZStack(alignment: .bottom) {
                 Text(self.tr(tab.titleKey))
-                    .font(.app(size: MenuBarLayoutTokens.FontSize.body, weight: selected ? .semibold : .medium))
+                    .font(.app(size: T.FontSize.body, weight: selected ? .semibold : .medium))
                     .lineLimit(1)
-                    .minimumScaleFactor(MenuBarLayoutTokens.minimumScale)
+                    .minimumScaleFactor(T.minimumScale)
                     .foregroundStyle(self.segmentedLabelColor(style: style, selected: selected, hovered: hovered))
                     .frame(maxWidth: .infinity)
                     .frame(height: style.rowHeight)
@@ -285,7 +288,7 @@ extension MenuBarRootView {
                 .overlay {
                     shape.stroke(
                         self.segmentedSelectionBorder(style: style),
-                        lineWidth: MenuBarLayoutTokens.stroke)
+                        lineWidth: T.stroke)
                 }
                 .matchedGeometryEffect(id: style.selectionBackgroundID, in: self.segmentedSelectionNamespace)
         } else if hovered {

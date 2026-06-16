@@ -2,6 +2,9 @@ import AppKit
 import Foundation
 import UniformTypeIdentifiers
 
+// swiftlint:disable:next type_name
+private typealias T = MenuBarLayoutTokens
+
 @MainActor
 extension AppViewModel {
     func importRemoteConfigFile() async {
@@ -399,14 +402,14 @@ extension AppViewModel {
         let container = NSView(frame: NSRect(x: 0, y: 0, width: 340, height: 142))
 
         let urlLabel = NSTextField(labelWithString: tr("ui.quick.remote.url_label"))
-        urlLabel.font = .systemFont(ofSize: MenuBarLayoutTokens.FontSize.callout, weight: .medium)
+        urlLabel.font = .systemFont(ofSize: T.FontSize.callout, weight: .medium)
         urlLabel.frame = NSRect(x: 0, y: 124, width: 340, height: 16)
 
         let urlField = NSTextField(frame: NSRect(x: 0, y: 98, width: 340, height: 24))
         urlField.placeholderString = tr("ui.quick.remote.url_placeholder")
 
         let fileLabel = NSTextField(labelWithString: tr("ui.quick.remote.filename_label"))
-        fileLabel.font = .systemFont(ofSize: MenuBarLayoutTokens.FontSize.callout, weight: .medium)
+        fileLabel.font = .systemFont(ofSize: T.FontSize.callout, weight: .medium)
         fileLabel.frame = NSRect(x: 0, y: 76, width: 340, height: 16)
 
         let fileField = NSTextField(frame: NSRect(x: 0, y: 50, width: 340, height: 24))
@@ -423,7 +426,7 @@ extension AppViewModel {
         autoUpdateCheckbox.state = .on
 
         let intervalUnit = NSTextField(labelWithString: tr("ui.quick.remote.interval_unit"))
-        intervalUnit.font = .systemFont(ofSize: MenuBarLayoutTokens.FontSize.callout, weight: .regular)
+        intervalUnit.font = .systemFont(ofSize: T.FontSize.callout, weight: .regular)
         intervalUnit.textColor = .secondaryLabelColor
         intervalUnit.frame = NSRect(x: 306, y: 12, width: 34, height: 16)
 
@@ -432,7 +435,7 @@ extension AppViewModel {
         intervalField.alignment = .center
 
         let eachLabel = NSTextField(labelWithString: tr("ui.quick.remote.interval_each"))
-        eachLabel.font = .systemFont(ofSize: MenuBarLayoutTokens.FontSize.callout, weight: .regular)
+        eachLabel.font = .systemFont(ofSize: T.FontSize.callout, weight: .regular)
         eachLabel.textColor = .secondaryLabelColor
         eachLabel.frame = NSRect(x: 220, y: 12, width: 28, height: 16)
 

@@ -2,6 +2,9 @@ import AppKit
 import Combine
 import SwiftUI
 
+// swiftlint:disable:next type_name
+private typealias T = MenuBarLayoutTokens
+
 private struct StatusItemRenderKey: Equatable {
     let mode: StatusBarDisplayMode
     let symbolName: String?
@@ -88,13 +91,10 @@ private struct StatusItemBannerRootView: View {
                 .stroke(self.nativeControlBorder.opacity(0.78), lineWidth: 0.8)
         }
         .shadow(
-            color: Color(nsColor: .shadowColor).opacity(MenuBarLayoutTokens.Shadow.standard.opacity * 1.12),
+            color: Color(nsColor: .shadowColor).opacity(T.Shadow.standard.opacity * 1.12),
             radius: 14,
             x: 0,
             y: 7)
-        // Give the SwiftUI shadow bleed room inside the hosting view so
-        // it is not clipped at the panel edges. The panel is transparent
-        // in this outer band.
         .frame(
             width: StatusItemController.bannerPanelSize.width,
             height: StatusItemController.bannerPanelSize.height,
@@ -152,7 +152,7 @@ private struct StatusItemBannerRootView: View {
                 }
                 .overlay {
                     Image(systemName: self.banner.symbolName)
-                        .font(.app(size: MenuBarLayoutTokens.FontSize.body, weight: .semibold))
+                        .font(.app(size: T.FontSize.body, weight: .semibold))
                         .foregroundStyle(self.iconForeground)
                 }
                 .frame(width: 34, height: 34)
@@ -169,7 +169,7 @@ private struct StatusItemBannerRootView: View {
 
             Image(systemName: "checkmark")
                 .font(.app(size: 11, weight: .bold))
-                .foregroundStyle(self.nativePositive.opacity(MenuBarLayoutTokens.Opacity.solid))
+                .foregroundStyle(self.nativePositive.opacity(T.Opacity.solid))
         }
         .frame(width: 26, height: 26)
     }
@@ -193,7 +193,7 @@ private struct StatusItemBannerRootView: View {
     }
 
     private var iconForeground: Color {
-        self.nativeInfo.opacity(MenuBarLayoutTokens.Opacity.solid)
+        self.nativeInfo.opacity(T.Opacity.solid)
     }
 }
 
@@ -209,10 +209,7 @@ final class StatusItemController: NSObject {
     private let popoverFallbackMaxHeight: CGFloat = 640
     private let popoverScreenPadding: CGFloat = 10
     private let panelTopSpacing: CGFloat = 0
-    private let panelHorizontalPadding: CGFloat = MenuBarLayoutTokens.space8
-    // Visual capsule top sits `bannerContentTopSpacing` below the menu bar;
-    // the hosting panel extends `bannerShadowBleed` above it so SwiftUI's
-    // shadow has room to render without hitting the panel edge.
+    private let panelHorizontalPadding: CGFloat = T.space8
     private let bannerContentTopSpacing: CGFloat = 6
     private var bannerTopSpacing: CGFloat {
         self.bannerContentTopSpacing - Self.bannerShadowBleed
@@ -236,10 +233,8 @@ final class StatusItemController: NSObject {
     private var bannerDismissTask: Task<Void, Never>?
 
     private let iconOnlyRefreshInterval: TimeInterval = 0.12
-    // Status-item snapshotting is expensive on macOS when traffic text changes frequently.
     private let speedDisplayRefreshInterval: TimeInterval = 1.0
-    private static let popoverContentWidth: CGFloat = MenuBarLayoutTokens.panelWidth
-    // Uniform transparent bleed around the visual capsule; must be ≥ shadow radius+offset.
+    private static let popoverContentWidth: CGFloat = T.panelWidth
     fileprivate static let bannerShadowBleed: CGFloat = 24
     fileprivate static let bannerContentSize = NSSize(width: 328, height: 68)
     fileprivate static let bannerPanelSize = NSSize(
@@ -365,9 +360,6 @@ final class StatusItemController: NSObject {
         self.bannerPanel.isReleasedWhenClosed = false
         self.bannerPanel.isOpaque = false
         self.bannerPanel.backgroundColor = .clear
-        // SwiftUI draws its own capsule-shaped shadow; NSPanel's rectangular
-        // shadow would double up and leak outside the capsule, producing
-        // irregular dark edges around the corners.
         self.bannerPanel.hasShadow = false
         self.bannerPanel.ignoresMouseEvents = true
         self.bannerPanel.level = .statusBar
@@ -402,9 +394,6 @@ final class StatusItemController: NSObject {
     private func configureStatusItem() {
         guard let button = statusItem.button else { return }
 
-        // Set a transparent 1x1 placeholder image so ControlCenter recognizes this
-        // status item as having content and renders it on macOS 26.5.1+.
-        // The actual visual content is provided by statusContentView subview.
         button.image = Self.makeTransparentPlaceholderImage()
         button.title = ""
         button.target = self
