@@ -38,9 +38,6 @@ extension AppViewModel {
     func configureStreamCoordinator() {
         streamCoordinator.shouldReconnect = { [weak self] in
             guard let self else { return false }
-            // Safety net: never reconnect while the network-managed stop is in
-            // progress. The stop task cancels polling immediately, but this guard
-            // covers any race where a stream error fires before cancellation lands.
             if self.autoManageCoreOnNetworkChangeEnabled, self.networkReachabilityStatus == .offline {
                 return false
             }
@@ -67,7 +64,6 @@ extension AppViewModel {
         makeWebSocket: @escaping (MihomoAPIService) throws -> URLSessionWebSocketTask,
         onPayload: @escaping (Data) -> Void)
     {
-        // Domain-specific side effects on cancel
         if kind == .connections { currentConnectionsStreamIntervalMilliseconds = nil }
         if kind == .logs { currentLogsStreamLevel = nil }
         if kind == .traffic { self.resetPendingTrafficSnapshotState() }
@@ -267,7 +263,6 @@ extension AppViewModel {
                 guard let self else { return }
                 guard let decoded = try? self.streamJSONDecoder.decode(Payload.self, from: payload)
                 else {
-                    // Ignore malformed/empty payloads without reconnecting to avoid log storms.
                     return
                 }
                 onDecoded(decoded)

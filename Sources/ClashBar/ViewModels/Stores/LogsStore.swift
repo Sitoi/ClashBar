@@ -1,8 +1,5 @@
 import Foundation
 
-// MARK: - LogsStore
-
-/// Owns the in-memory log entries shown in the Logs tab.
 @MainActor
 final class LogsStore {
     weak var viewModel: AppViewModel?

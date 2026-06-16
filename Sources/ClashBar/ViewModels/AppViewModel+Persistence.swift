@@ -126,8 +126,6 @@ extension AppViewModel {
         return .system
     }
 
-    // MARK: - v2 Remote Config Subscriptions
-
     func loadPersistedRemoteConfigSubscriptions() -> [String: RemoteConfigSubscription] {
         if let subscriptions = self.decodeFromDefaults(
             [String: RemoteConfigSubscription].self,
@@ -144,7 +142,6 @@ extension AppViewModel {
             return result
         }
 
-        // Migrate from v1 format: [String: String] (fileName -> urlString)
         let v1 = self.loadPersistedRemoteConfigSources()
         guard !v1.isEmpty else { return [:] }
 
@@ -173,8 +170,6 @@ extension AppViewModel {
         self.persistRemoteConfigSubscriptions()
         self.restartRemoteConfigBackgroundTasksIfNeeded()
     }
-
-    // MARK: - Legacy v1 helpers (kept for migration only)
 
     func loadPersistedRemoteConfigSources() -> [String: String] {
         guard let stored = defaults.dictionary(forKey: remoteConfigSourcesKey) as? [String: String] else {
@@ -212,8 +207,6 @@ extension AppViewModel {
         self.persistSSIDStrategyRules(nextRules)
     }
 }
-
-// MARK: - Launch At Login (from +LaunchAtLogin)
 
 extension AppViewModel {
     func refreshLaunchAtLoginStatus() {

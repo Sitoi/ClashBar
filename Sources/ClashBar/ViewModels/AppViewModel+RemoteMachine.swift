@@ -65,9 +65,6 @@ extension AppViewModel {
             await self.applySSIDStrategyForCurrentSSIDIfNeeded()
         }
 
-        // Sync statusText so isRuntimeRunning reflects the active target.
-        // Remote targets have no local process, so coreRepository.isRunning is
-        // always false; statusText is the only signal menuBarSpeedLines uses.
         switch target {
         case .remote:
             self.statusText = (self.apiStatus == .healthy || self.apiStatus == .degraded)

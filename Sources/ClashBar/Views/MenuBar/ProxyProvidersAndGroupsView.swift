@@ -58,13 +58,11 @@ extension ProxyTabView {
         let rowHorizontalPadding = T.space4
         let isUpdating = appViewModel.providerUpdating.contains(name)
         let hovered = hoveredProviderName == name
-        // Fixed width for update time — ensures vertical alignment across rows
         let updateTimeWidth: CGFloat = 44
 
         let hasSubscription = detail?.subscriptionInfo != nil
 
         return VStack(alignment: .leading, spacing: T.space6) {
-            // Row 1: icon | name + node badge | time (fixed) | refresh btn
             HStack(alignment: .center, spacing: T.space6) {
                 Image(systemName: "externaldrive.fill")
                     .font(.app(size: T.FontSize.caption, weight: .semibold))
@@ -113,7 +111,6 @@ extension ProxyTabView {
                 .accessibilityLabel(tr("ui.action.refresh"))
             }
 
-            // Row 2 (subscription only): indented to align with Row 1 center content
             if hasSubscription {
                 VStack(alignment: .leading, spacing: T.space2) {
                     HStack(spacing: 0) {
@@ -196,7 +193,6 @@ extension ProxyTabView {
     }
 
     var proxyGroupsSection: some View {
-        // Use @State filteredProxyGroups which is updated via .onChange — avoids filtering on every render
         let groups = rootViewModel.filteredProxyGroups
 
         return VStack(alignment: .leading, spacing: T.space6) {
@@ -502,8 +498,6 @@ extension ProxyTabView {
             }
         }
     }
-
-    // MARK: - Node Sorting Helpers
 
     func orderedUniqueNames(_ names: [String]) -> [String] {
         var seen: Set<String> = []

@@ -93,9 +93,7 @@ extension AppViewModel {
             let versionInfo: VersionInfo = try await self.clientOrThrow().request(.version)
             guard !Task.isCancelled else { return }
             self.version = versionInfo.version
-        } catch {
-            // Best effort only. The core may be restarting briefly after an upgrade request.
-        }
+        } catch {}
     }
 
     private func coreUpgradeState(from response: CoreUpgradeResponse) -> CoreUpgradeState {
@@ -165,8 +163,6 @@ extension AppViewModel {
         return AppSemanticVersion.normalizedDisplayVersion(from: raw)
     }
 }
-
-// MARK: - App Release (from +AppRelease)
 
 extension AppViewModel {
     var currentAppVersionText: String {

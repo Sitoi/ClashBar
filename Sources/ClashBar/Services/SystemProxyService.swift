@@ -720,10 +720,6 @@ struct SystemProxyService {
         let semaphore = DispatchSemaphore(value: 0)
 
         DispatchQueue.global(qos: .userInitiated).async { [self] in
-            // Reuse the shared connection factory instead of re-inlining the
-            // NSXPCConnection dance so both async and blocking paths stay in
-            // sync on mach service name, protocol, and activation.
-            // Caller blocks on `semaphore` below, so strong `self` is safe.
             let connection = self.makeConnection()
 
             guard let helper = connection.remoteObjectProxyWithErrorHandler({ _ in
@@ -752,8 +748,6 @@ struct SystemProxyService {
         return connection
     }
 }
-
-// MARK: - Repository
 
 @MainActor
 final class DefaultSystemProxyRepository: SystemProxyRepository {

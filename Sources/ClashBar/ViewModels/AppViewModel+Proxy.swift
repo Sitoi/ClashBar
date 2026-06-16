@@ -7,7 +7,6 @@ extension AppViewModel {
         modeSwitchInFlight = true
         defer { modeSwitchInFlight = false }
 
-        // Optimistic UI update: keep interaction snappy, polling will reconcile if server differs.
         let previous = currentMode
         currentMode = target
         persistEditableSettingsSnapshot()
@@ -16,8 +15,6 @@ extension AppViewModel {
             try await self.modeSwitchTransport()
                 .requestNoResponse(.patchConfigs(body: ["mode": .string(target.rawValue)]))
         } catch {
-            // Roll back the optimistic update so UI and state do not silently drift
-            // away from the core after a rejected PATCH.
             currentMode = previous
             persistEditableSettingsSnapshot()
             appendLog(
@@ -47,7 +44,6 @@ extension AppViewModel {
                 systemProxyActiveDisplay = nil
             }
 
-            // Keep a core-side sync call so proxy toggle and runtime config stay aligned.
             try await self.clientOrThrow()
                 .requestNoResponse(.patchConfigs(body: ["mode": .string(currentMode.rawValue)]))
 
@@ -306,8 +302,6 @@ extension AppViewModel {
     }
 }
 
-// MARK: - Clipboard (from +Clipboard)
-
 extension AppViewModel {
     func resolvedConnectionHost(for connection: ConnectionSummary) -> String? {
         let host = connection.metadata?.host?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -350,13 +344,10 @@ extension AppViewModel {
     }
 
     private func copyAndLog(_ text: String, message: String) {
-        // DRY: all copy actions share the same pasteboard + info-log behavior.
         self.copyTextToPasteboard(text)
         appendLog(level: "info", message: message)
     }
 }
-
-// MARK: - Connections (from +Connections)
 
 extension AppViewModel {
     func closeAllConnections() async {
@@ -386,7 +377,6 @@ extension AppViewModel {
     }
 
     private func runConnectionMutation(actionName: String, operation: @escaping () async throws -> Void) async {
-        // DRY: shared post-mutation refresh flow for connection operations.
         await runNoResponseAction(actionName) {
             try await operation()
             await self.refreshConnections()

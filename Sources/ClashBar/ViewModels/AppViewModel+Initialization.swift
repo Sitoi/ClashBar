@@ -2,7 +2,6 @@ import Foundation
 
 @MainActor
 extension AppViewModel {
-    /// Phase 2: configure mihomo process log/termination callbacks.
     func configureManagedProcessCallbacks() {
         self.mihomoBinaryPath = self.coreRepository.detectedBinaryPath ?? "-"
         if let managedProcess = self.processManager as? MihomoProcessManager {
@@ -33,7 +32,6 @@ extension AppViewModel {
         }
     }
 
-    /// Phase 2: bootstrap working directories and open log stores.
     func bootstrapDirectoriesAndLogs() {
         do {
             try self.workingDirectoryManager.bootstrapDirectories()
@@ -57,7 +55,6 @@ extension AppViewModel {
         }
     }
 
-    /// Phase 3: restore persisted state and launch background tasks.
     func performDeferredInitialization(startBackgroundRefresh: Bool) {
         restoreSavedConfigDirectory()
         restoreLastSuccessfulConfigIfAvailable()
@@ -66,7 +63,6 @@ extension AppViewModel {
         restartRemoteConfigBackgroundTasksIfNeeded()
         self.ssidStrategyRules = loadPersistedSSIDStrategyRules()
         self.pruneSSIDStrategyRulesIfNeeded()
-        // Always start in local mode. Remote target is session-level only.
         self.remoteMachineStore.resetActiveTarget()
         if let configPath = self.configRepository.selectedConfig?.path {
             _ = self.applyExternalControllerFromSelectedConfigFile(configPath: configPath)
@@ -114,8 +110,6 @@ extension AppViewModel {
         self.refreshMenuBarDisplaySnapshotIfNeeded()
     }
 }
-
-// MARK: - Core Setup
 
 extension AppViewModel {
     static func resolveBundledMihomoCoreFlag() -> Bool {

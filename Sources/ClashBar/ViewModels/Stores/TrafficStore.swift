@@ -1,10 +1,5 @@
 import Foundation
 
-// MARK: - TrafficStore
-
-/// Owns all traffic and memory bandwidth state.
-/// Uses willSet to forward objectWillChange to the parent AppViewModel,
-/// so Views observing AppViewModel receive updates transparently.
 @MainActor
 final class TrafficStore {
     weak var viewModel: AppViewModel?

@@ -211,10 +211,6 @@ extension AppViewModel {
         stopRemoteConfigAutoUpdateTask()
         stopRemoteConfigMenuRefreshTimer()
 
-        // Tear down remaining background work and flush buffered log entries
-        // before the process exits. Without this, WebSocket streams may keep
-        // firing callbacks into a half-deallocated app, and buffered mihomo
-        // log lines are lost on quit.
         streamCoordinator.cancelAll()
         ssidStrategyApplyTask?.cancel()
         ssidStrategyApplyTask = nil
@@ -327,7 +323,6 @@ extension AppViewModel {
             await self.refreshProxyGroupsAfterRestart()
         }
 
-        // Keep startup responsive even when helper registration or system proxy reads are slow.
         scheduleSystemProxyStartupPostflight(
             refreshStatusBeforeOverlay: options.refreshSystemProxyBeforeOverlay,
             refreshStatusAfterBootstrap: options.refreshSystemProxyAfterBootstrap)
@@ -382,7 +377,6 @@ extension AppViewModel {
         let baseRecovery: CoreFeatureRecoveryState = if capturedRecovery.shouldRecoverAnyFeature {
             capturedRecovery
         } else {
-            // Keep the pre-transition snapshot when runtime state changes race with stop/restart actions.
             fallbackRecovery
         }
 
@@ -428,7 +422,6 @@ extension AppViewModel {
         let wasSystemProxyEnabled = defaults.bool(forKey: systemProxyEnabledOnQuitKey)
         defaults.removeObject(forKey: systemProxyEnabledOnQuitKey)
         guard wasSystemProxyEnabled else { return }
-        // Only seed when no in-flight recovery is already pending (e.g. from stop/restart).
         guard pendingCoreFeatureRecoveryState == nil else { return }
         pendingCoreFeatureRecoveryState = CoreFeatureRecoveryState(
             systemProxyEnabled: true,

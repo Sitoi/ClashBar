@@ -56,8 +56,6 @@ struct AppLaunchService {
     }
 }
 
-// MARK: - Repository
-
 @MainActor
 final class DefaultLaunchAtLoginRepository: LaunchAtLoginRepository {
     private let service: AppLaunchService

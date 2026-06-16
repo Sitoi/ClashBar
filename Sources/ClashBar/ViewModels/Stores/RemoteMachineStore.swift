@@ -56,8 +56,6 @@ final class RemoteMachineStore: ObservableObject {
     }
 
     deinit {
-        // Task.cancel() is nonisolated and the last reference is releasing the
-        // store, so we can safely stop the timer without hopping to MainActor.
         connectivityTimer?.cancel()
     }
 

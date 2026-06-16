@@ -1,10 +1,5 @@
 import Foundation
 
-/// Centralized factory for ephemeral `URLSession` configurations used across
-/// services (`MihomoAPIService`, `AppReleaseService`, `ConfigService`,
-/// `RemoteMachineStore`). Every caller previously rebuilt the same boilerplate:
-/// ephemeral config, no cache/cookies/credentials, explicit timeouts. One place,
-/// parameterized.
 enum URLSessionFactory {
     struct SessionOptions {
         var timeoutIntervalForRequest: TimeInterval

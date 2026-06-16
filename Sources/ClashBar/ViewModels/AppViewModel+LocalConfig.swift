@@ -85,7 +85,6 @@ extension AppViewModel {
             let validationFailure = await self.configValidationFailureDetails(configPath: matched.path)
             let currentCanonicalPath = self.configRepository.selectedConfig?.standardizedFileURL
                 .resolvingSymlinksInPath().path
-            // Validation runs before selecting `matched`, so stale-check against the original selection.
             guard currentCanonicalPath == previousCanonicalPath else { return }
             if let validationFailure {
                 self.handleConfigValidationFailure(configPath: matched.path, details: validationFailure)

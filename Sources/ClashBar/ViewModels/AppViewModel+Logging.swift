@@ -88,7 +88,6 @@ extension AppViewModel {
     private func appendLogEntries(_ entries: [AppErrorLogEntry]) {
         guard !entries.isEmpty else { return }
 
-        // Single-allocation prepend: avoids O(n) in-place shift + separate removeLast
         let maxEntries = isPanelPresented ? maxInMemoryLogEntries : hiddenPanelMaxInMemoryLogEntries
         let combined = entries.reversed() + errorLogs
         errorLogs = Array(combined.prefix(maxEntries))

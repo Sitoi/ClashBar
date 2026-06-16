@@ -66,10 +66,6 @@ struct ConnectionSummary: Codable, Equatable, Identifiable {
 
     static func parseTimestamp(_ start: String?) -> TimeInterval? {
         guard let value = start?.trimmingCharacters(in: .whitespaces), !value.isEmpty else { return nil }
-        // Allocate per-call rather than share a static formatter: parsing only runs
-        // during connection decode (low frequency) and this avoids the data race
-        // hazard of `nonisolated(unsafe) ISO8601DateFormatter` being mutated across
-        // concurrent WS payload decoders.
         let withFractional = ISO8601DateFormatter()
         withFractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         if let date = withFractional.date(from: value) { return date.timeIntervalSince1970 }

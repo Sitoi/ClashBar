@@ -73,10 +73,6 @@ extension AppViewModel {
             guard let self else { return }
             var didLog = false
 
-            // Immediately tear down all WebSocket streams when network is lost.
-            // This prevents log storms caused by mihomo reading from invalid file
-            // descriptors ("batch read packet: bad file descriptor") while the
-            // core is still running during the stop-waiting loop below.
             self.cancelPolling()
 
             for _ in 0..<120 {

@@ -39,7 +39,6 @@ struct TunPermissionService {
             let ownerID = (attributes[.ownerAccountID] as? NSNumber)?.intValue
             let mode = (attributes[.posixPermissions] as? NSNumber)?.intValue ?? 0
 
-            // TUN mode on macOS requires root owner + setuid bit on the core binary.
             let hasRootOwner = ownerID == 0
             let hasSetuid = (mode & 0o4000) != 0
             let ownerExecutable = (mode & 0o100) != 0
@@ -131,8 +130,6 @@ struct TunPermissionService {
             .replacingOccurrences(of: "\"", with: "\\\"")
     }
 }
-
-// MARK: - Repository
 
 @MainActor
 final class DefaultTunPermissionRepository: TunPermissionRepository {

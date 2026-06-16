@@ -329,10 +329,6 @@ extension AppViewModel {
         }
     }
 
-    /// Latched logger for `/providers/proxies` availability: emits exactly one
-    /// "API unavailable" entry on the failing → failing-again transition so we
-    /// don't flood the 200-entry log buffer while the Proxy tab polls, but
-    /// still surface both the first failure and the recovery event.
     private func noteProxyProvidersAPIAvailability(error: Error?) {
         if let error {
             guard !self.proxyProvidersAPIUnavailableLogged else { return }
@@ -438,8 +434,6 @@ extension AppViewModel {
         start()
     }
 }
-
-// MARK: - API Action Helpers (from +APIActions)
 
 extension AppViewModel {
     func runRefresh(_ block: () async throws -> Void) async {

@@ -3,10 +3,6 @@ import Foundation
 struct ProxyGroupsAndProvidersSnapshot {
     let groups: ProxyGroupsResponse
     let providers: [String: ProviderDetail]
-    /// Non-nil when `/providers/proxies` failed. `groups` remains usable; the
-    /// caller decides whether to log or degrade. Older mihomo cores without
-    /// providers support surface `404` here, so this must not be treated as
-    /// fatal.
     let providersError: Error?
 }
 

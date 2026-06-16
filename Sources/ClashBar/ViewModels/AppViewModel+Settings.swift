@@ -118,8 +118,6 @@ extension AppViewModel {
 
             guard let self else { return }
             if Task.isCancelled { return }
-            // Clear the tracking reference before saving so patchConfigBody()
-            // will not cancel the currently running autosave task itself.
             self.proxyPortsAutoSaveTask = nil
             await self.applyProxyPorts(autoSaved: true)
         }

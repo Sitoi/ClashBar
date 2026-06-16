@@ -297,8 +297,6 @@ extension MenuBarRootView {
     }
 }
 
-// MARK: - Shared Runtime Status
-
 extension TranslatingView {
     var statusColor: Color {
         switch appViewModel.runtimeVisualStatus {
@@ -320,17 +318,11 @@ extension TranslatingView {
     }
 }
 
-// MARK: - Shared MenuBar View Extensions
-
 extension View {
-    // MARK: Appearance
-
     var isDarkAppearance: Bool {
         // swiftlint:disable:next implicit_return
         NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
     }
-
-    // MARK: Colors
 
     var nativeAccent: Color {
         Color(nsColor: .controlAccentColor)
@@ -407,8 +399,6 @@ extension View {
             .opacity(self.isDarkAppearance ? T.Theme.Dark.hoverFill : T.Theme.Light
                 .hoverFill)
     }
-
-    // MARK: Utility Views
 
     func nativeHoverRowBackground(
         _ hovered: Bool,

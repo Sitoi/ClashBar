@@ -1,7 +1,5 @@
 import AppKit
 
-// MARK: - Modal Window Helpers
-
 @MainActor
 extension AppViewModel {
     func prepareModalWindowPresentation() {
@@ -34,8 +32,6 @@ extension AppViewModel {
         return alert.runModal()
     }
 }
-
-// MARK: - Alert Presentation
 
 @MainActor
 extension AppViewModel {
@@ -88,9 +84,6 @@ extension AppViewModel {
         }
     }
 
-    /// Heuristic: does the mihomo `-t` output point at missing/failed base GEO
-    /// resources rather than a plain config syntax error? Drives an extra hint
-    /// line so the user knows a custom `geox-url` download address may fix it.
     private static func validationFailureLooksGeoRelated(_ details: String) -> Bool {
         let lower = details.lowercased()
         let needles = [

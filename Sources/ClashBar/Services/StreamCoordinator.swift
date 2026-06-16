@@ -1,33 +1,19 @@
 import Foundation
 
-// MARK: - StreamCoordinator
-
-/// Generic WebSocket lifecycle coordinator.
-/// Owns transport-level concerns: task management, reconnect back-off, and disconnect logging.
-/// ViewModel references handle domain-specific payload interpretation.
 @MainActor
 final class StreamCoordinator {
-    // MARK: - State
-
     var streamReceiveTasks: [String: Task<Void, Never>] = [:]
     var streamWebSocketTasks: [String: URLSessionWebSocketTask] = [:]
     var streamReconnectAttempts: [String: Int] = [:]
     var streamLastDisconnectLogAt: [String: Date] = [:]
     var streamLastDisconnectLogMessage: [String: String] = [:]
 
-    // MARK: - Config
-
     let baseDelayNanoseconds: UInt64
     let maxDelayNanoseconds: UInt64
     let disconnectLogThrottleInterval: TimeInterval
 
-    // MARK: - Callbacks
-
-    /// Returns true when reconnect should be attempted (e.g. core is running or remote target).
     var shouldReconnect: () -> Bool = { false }
-    /// Called when a stream disconnects with an error. (key, errorMessage)
     var onDisconnect: (String, String) -> Void = { _, _ in }
-    /// Called when a stream fails to start. (key, error) — never called for CancellationError.
     var onStartError: (String, Error) -> Void = { _, _ in }
 
     init(
@@ -39,8 +25,6 @@ final class StreamCoordinator {
         self.maxDelayNanoseconds = maxDelayNanoseconds
         self.disconnectLogThrottleInterval = disconnectLogThrottleInterval
     }
-
-    // MARK: - Public API
 
     func start(
         key: String,
@@ -100,8 +84,6 @@ final class StreamCoordinator {
     func webSocketTask(for key: String) -> URLSessionWebSocketTask? {
         self.streamWebSocketTasks[key]
     }
-
-    // MARK: - Private
 
     private func receiveLoop(
         key: String,

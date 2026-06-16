@@ -89,8 +89,6 @@ struct WorkingDirectoryManager {
     }
 }
 
-// MARK: -
-
 @MainActor
 final class ConfigDirectoryManager {
     private let fm = FileManager.default
@@ -173,8 +171,6 @@ final class ConfigDirectoryManager {
         return files
     }
 }
-
-// MARK: -
 
 struct ConfigImportService {
     private let maxRemoteConfigBytes = 5 * 1024 * 1024
@@ -295,8 +291,6 @@ struct ConfigImportService {
             userInfo: [NSLocalizedDescriptionKey: "Remote config exceeds size limit (\(limit) bytes)"])
     }
 }
-
-// MARK: -
 
 @MainActor
 final class DefaultConfigRepository: ConfigRepository {

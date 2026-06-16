@@ -158,7 +158,6 @@ enum Endpoint {
         }
     }
 
-    /// Keep global requests responsive, but allow heavier latency-check endpoints enough time to complete.
     var timeoutInterval: TimeInterval {
         switch self {
         case .proxyProviderHealthcheck:
@@ -174,8 +173,6 @@ enum Endpoint {
         }
     }
 
-    /// Long-running latency checks should not occupy the same URLSession connection pool as
-    /// control-plane requests like reload/restart/toggle actions.
     var usesLongRunningSession: Bool {
         switch self {
         case .groupDelay, .proxyDelay, .proxyProviderHealthcheck, .proxyProviderProxyHealthcheck:
@@ -220,7 +217,6 @@ enum APIError: Error, LocalizedError {
 }
 
 final class MihomoAPIService: MihomoAPITransporting, @unchecked Sendable {
-    // Request building reads mutable credentials; guard with lock for thread safety.
     private let lock = NSLock()
     private let controlSession: URLSession
     private let longRunningSession: URLSession
@@ -301,9 +297,6 @@ final class MihomoAPIService: MihomoAPITransporting, @unchecked Sendable {
                 return data
             } catch {
                 lastError = error
-                // Only retry transient transport failures: HTTP status errors
-                // (4xx/5xx), decoding errors, and server-rejected payloads will
-                // not become valid by trying again, so surface them immediately.
                 guard Self.shouldRetry(error: error), attempt < maxAttempts - 1 else {
                     throw error
                 }

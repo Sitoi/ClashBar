@@ -394,7 +394,6 @@ private struct SideAttachedPopoverHost<Content: View>: NSViewRepresentable {
                 let hostWindow
             else { return }
 
-            // Keep attached panel appearance in sync with host window to avoid light surfaces in Dark Mode.
             self.panel.appearance = hostWindow.effectiveAppearance
             self.hostingController.view.appearance = hostWindow.effectiveAppearance
 

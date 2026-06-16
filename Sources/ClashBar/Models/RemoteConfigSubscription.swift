@@ -21,13 +21,11 @@ struct RemoteConfigSubscription: Codable, Equatable {
         self.lastUpdateCheckAt = lastUpdateCheckAt
     }
 
-    /// When the next auto-update check should run. Returns nil if auto-update is disabled or never checked.
     func nextUpdateAt() -> Date? {
         guard self.autoUpdateEnabled, let lastCheck = lastUpdateCheckAt else { return nil }
         return self.nextUpdateDate(from: lastCheck)
     }
 
-    /// Whether this subscription is due for an auto-update check.
     func isDue(now: Date = Date()) -> Bool {
         guard self.autoUpdateEnabled else { return false }
         guard let nextUpdateAt = self.nextUpdateAt() else { return true }

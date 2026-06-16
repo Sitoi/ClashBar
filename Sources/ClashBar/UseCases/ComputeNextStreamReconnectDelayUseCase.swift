@@ -6,11 +6,6 @@ struct StreamReconnectDelayResult {
 }
 
 struct ComputeNextStreamReconnectDelayUseCase {
-    /// Pure function: given a prior attempt count, base/cap bounds, and a
-    /// precomputed jitter multiplier, returns the next delay and attempt.
-    /// Jitter is injected to keep this UseCase deterministic and testable;
-    /// callers (e.g. `StreamCoordinator`) supply `Double.random(in:)` at the
-    /// edge.
     func execute(
         currentAttempt: Int?,
         baseDelayNanoseconds: UInt64,

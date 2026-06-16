@@ -36,10 +36,6 @@ extension AppViewModel {
     }
 
     func refreshSSIDStrategyState(requestAuthorizationIfNeeded: Bool = false) {
-        // The first enable of SSID auto-switch must still reach
-        // `requestAuthorizationIfNeeded()` even when monitoring is booted up
-        // in this same call — otherwise the system permission sheet never
-        // appears and the feature looks broken on first use.
         let justStartedMonitoring = self.startSSIDStrategyMonitoringIfNeeded()
         if requestAuthorizationIfNeeded {
             self.ssidMonitorService.requestAuthorizationIfNeeded()
@@ -222,8 +218,6 @@ extension AppViewModel {
 
     private func scheduleSSIDStrategyApplication() {
         self.ssidStrategyApplyTask?.cancel()
-        // Task inherits MainActor isolation from this enclosing @MainActor
-        // extension, so an explicit `@MainActor` annotation is redundant.
         self.ssidStrategyApplyTask = Task { [weak self] in
             await self?.applySSIDStrategyForCurrentSSIDIfNeeded()
             self?.ssidStrategyApplyTask = nil

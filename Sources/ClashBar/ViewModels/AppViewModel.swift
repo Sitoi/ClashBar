@@ -262,7 +262,6 @@ final class AppViewModel: ObservableObject {
         return host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "0.0.0.0"
     }
 
-    // DRY: unify "running" checks across AppViewModel and extensions.
     var isRuntimeRunning: Bool {
         self.coreRepository.isRunning || self.statusText.caseInsensitiveCompare("running") == .orderedSame
     }
@@ -405,9 +404,7 @@ final class AppViewModel: ObservableObject {
     var pendingTrafficPayload: Data?
     var pendingMihomoLogs: [AppErrorLogEntry] = []
     var modeSwitchInFlight = false
-    /// Latches on first observed `/providers/proxies` failure (e.g. older cores
-    /// that don't expose the endpoint) so we only emit the "API unavailable"
-    /// log once per session rather than on every medium-frequency poll tick.
+
     var proxyProvidersAPIUnavailableLogged = false
     var activatedTabRefreshGeneration: Int = 0
     var configFileSignatureSnapshot: [String: String] = [:]
@@ -432,8 +429,7 @@ final class AppViewModel: ObservableObject {
     let ssidStrategyRulesKey = "clashbar.ssid.strategy.rules.v1"
     let uiLanguageKey = "clashbar.ui.language"
     let appearanceModeKey = "clashbar.ui.appearance.mode"
-    /// In-memory cap for the Logs panel viewport. The full history lives in the
-    /// rotated log files on disk, so this only bounds what the panel holds.
+
     let maxInMemoryLogEntries = 5000
     let hiddenPanelMaxInMemoryLogEntries = 20
 
@@ -446,7 +442,7 @@ final class AppViewModel: ObservableObject {
     let foregroundLowFrequencyOtherTabsIntervalNanoseconds: UInt64 = 45_000_000_000
     let backgroundLowFrequencyIntervalNanoseconds: UInt64 = 120_000_000_000
     let trafficPublishIntervalNanoseconds: UInt64 = 500_000_000
-    // DRY: shared defaults for latency/provider healthcheck endpoints.
+
     let defaultHealthcheckURL = "https://www.gstatic.com/generate_204"
     let defaultHealthcheckTimeoutMilliseconds = 5000
     var mediumFrequencyIntervalNanoseconds: UInt64 = 4_000_000_000
@@ -543,9 +539,6 @@ final class AppViewModel: ObservableObject {
         settingsFeedbackClearTask?.cancel()
         coreUpgradeFeedbackClearTask?.cancel()
 
-        // Stream coordinator owns WS receive loops; detach cleanup onto the
-        // main actor using captured references so we never touch `self` after
-        // deinit begins.
         let coordinator = streamCoordinator
         Task { @MainActor in
             coordinator.cancelAll()

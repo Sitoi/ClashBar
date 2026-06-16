@@ -21,8 +21,6 @@ protocol MihomoControlling: AnyObject, Sendable {
     func restartAsync(configPath: String, controller: String) async throws -> CoreLifecycleStatus
 }
 
-// MARK: -
-
 enum MihomoBinaryResolutionError: LocalizedError {
     case binaryNotFound(expectedDirectory: String)
 
@@ -59,12 +57,6 @@ enum MihomoConfigValidationError: LocalizedError {
     }
 }
 
-/// Buffers bytes read from a `Process` pipe and yields whitespace-trimmed,
-/// `\n`-delimited lines, preserving any trailing partial line between chunks.
-///
-/// `@unchecked Sendable` is safe here: each instance is owned by exactly one
-/// `FileHandle.readabilityHandler`, and that handler is invoked serially per
-/// handle by Foundation. There is no cross-thread access to `carry`.
 private final class LineAccumulator: @unchecked Sendable {
     private var carry = Data()
 
@@ -112,7 +104,6 @@ private final class ProcessOutputBox: @unchecked Sendable {
     }
 }
 
-/// Process callbacks run on system-managed threads. Shared mutable state is guarded by `lock`.
 final class MihomoProcessManager: MihomoControlling, @unchecked Sendable {
     private(set) var status: CoreLifecycleStatus = .stopped
     private var process: Process?
@@ -241,8 +232,6 @@ final class MihomoProcessManager: MihomoControlling, @unchecked Sendable {
         let workingDirectoryURL = Self.resolveWorkingDirectoryURL(configPath: configPath)
         proc.currentDirectoryURL = workingDirectoryURL
 
-        // `-d` pins mihomo runtime home directory to ClashBar working root.
-        // This prevents fallback to ~/.config/mihomo for provider/cache updates.
         let args = ["-d", workingDirectoryURL.path, "-f", configPath, "-ext-ctl", controller]
         proc.arguments = args
 
@@ -467,10 +456,6 @@ final class MihomoProcessManager: MihomoControlling, @unchecked Sendable {
         Self.bundledBinaryCandidates(binaryName: "mihomo.gz")
     }
 
-    /// Enumerates plausible on-disk locations of a bundled binary across the
-    /// known resource roots. `binaryName` is the last path component (e.g.
-    /// `mihomo` or `mihomo.gz`), searched under `bin/`, `Resources/bin/`, and
-    /// the root itself, then normalized and deduplicated.
     private static func bundledBinaryCandidates(binaryName: String) -> [String] {
         let resourceRoots = AppResourceBundleLocator.candidateResourceRoots()
         let relativeLayouts = ["bin/\(binaryName)", "Resources/bin/\(binaryName)", binaryName]
@@ -493,7 +478,6 @@ final class MihomoProcessManager: MihomoControlling, @unchecked Sendable {
             try self.fileManager.removeItem(atPath: managedPath)
         }
 
-        // Keep signed app bundle immutable: only copy core out to user-managed directory.
         do {
             try self.fileManager.copyItem(atPath: bundledPath, toPath: managedPath)
             self.onLog?("[mihomo binary] copied bundled core to \(managedPath)")
@@ -660,8 +644,6 @@ final class MihomoProcessManager: MihomoControlling, @unchecked Sendable {
         self.stderrHandle = nil
     }
 }
-
-// MARK: -
 
 @MainActor
 final class DefaultCoreRepository: CoreRepository {

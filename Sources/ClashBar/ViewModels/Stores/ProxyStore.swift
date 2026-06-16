@@ -1,13 +1,8 @@
 import Foundation
 
-// MARK: - ProxyStore
-
-/// Owns proxy groups, provider details, latency, and rules state.
 @MainActor
 final class ProxyStore {
     weak var viewModel: AppViewModel?
-
-    // MARK: - Proxy Groups
 
     var proxyGroups: [ProxyGroup] = [] {
         willSet { self.viewModel?.objectWillChange.send() }
@@ -37,8 +32,6 @@ final class ProxyStore {
         willSet { self.viewModel?.objectWillChange.send() }
     }
 
-    // MARK: - Providers
-
     var providerProxyCount: Int = 0 {
         willSet { self.viewModel?.objectWillChange.send() }
     }
@@ -65,8 +58,6 @@ final class ProxyStore {
     var providerRefreshStatus: ProviderRefreshStatus = .idle {
         willSet { self.viewModel?.objectWillChange.send() }
     }
-
-    // MARK: - Rules
 
     var rulesCount: Int = 0 {
         willSet { self.viewModel?.objectWillChange.send() }

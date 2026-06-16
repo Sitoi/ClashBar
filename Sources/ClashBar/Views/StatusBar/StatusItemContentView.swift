@@ -1,13 +1,11 @@
 import AppKit
 
 final class StatusItemContentView: NSView {
-    // No horizontal padding; icon and text sit flush against each other.
     private let statusItemHorizontalPadding: CGFloat = 0
     private let iconSize: CGFloat = 24
     private let brandIconRenderSize: CGFloat = 24
     private let symbolPointSize: CGFloat = 20
     private let iconTextSpacing: CGFloat = 0
-    // Keep a small buffer so values like "12.3M↑" do not clip in the menu bar.
     private let textContainerWidth: CGFloat = 38
     private let textLineHeight: CGFloat = 11
 
@@ -227,7 +225,6 @@ final class StatusItemContentView: NSView {
             .paragraphStyle: paragraph,
         ]
 
-        // Non-flipped context: y=0 is bottom.
         let upRect = CGRect(x: 0, y: textLineHeight, width: pointSize.width, height: textLineHeight)
         let downRect = CGRect(x: 0, y: 0, width: pointSize.width, height: textLineHeight)
 

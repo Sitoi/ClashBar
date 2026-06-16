@@ -12,9 +12,6 @@ struct AppLogRotationPolicy {
 struct AppLogStore {
     let logFileURL: URL
     let rotationPolicy: AppLogRotationPolicy
-    /// Reference type: struct copies share the same lock, guaranteeing mutual
-    /// exclusion even if the store is passed across actor boundaries or captured
-    /// by background tasks. Each distinct `init(logFileURL:)` gets a fresh lock.
     private let ioLock = NSLock()
 
     init(logFileURL: URL, rotationPolicy: AppLogRotationPolicy = .default) {

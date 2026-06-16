@@ -234,8 +234,6 @@ enum ValueFormatter {
         return formatter
     }
 
-    /// Returns a compact one-line status string for a remote config menu item, e.g.
-    /// "自动 1h 30m后 · 上次 14:05" or nil when there is nothing useful to show.
     static func remoteConfigMenuStatusLine(
         autoUpdateEnabled: Bool,
         nextUpdateAt: Date?,

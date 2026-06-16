@@ -31,8 +31,6 @@ extension AppViewModel {
         let existsAlready = FileManager.default.fileExists(atPath: targetURL.path)
         let existingIsRemote = self.remoteConfigSubscriptions[fileName] != nil
 
-        // Skip overwrite confirmation if the file is already a remote subscription;
-        // show it only when overwriting a local config file.
         if existsAlready, !existingIsRemote {
             guard self.confirmOverwriteConfig(named: fileName) else {
                 appendLog(level: "info", message: tr("log.config.import.cancelled", fileName))
@@ -251,8 +249,6 @@ extension AppViewModel {
         self.pruneRemoteConfigSubscriptionsIfNeeded()
         self.setRemoteConfigMenuState(for: fileName, phase: .refreshing)
         defer {
-            // Guarantee the menu state never sticks at .refreshing if any early
-            // return path bails out without setting a terminal phase.
             if self.remoteConfigMenuState(for: fileName).phase == .refreshing {
                 self.setRemoteConfigMenuState(for: fileName, phase: .idle)
             }
@@ -356,7 +352,6 @@ extension AppViewModel {
         guard let selected else {
             return nil
         }
-        // DRY: keep selected config state/defaults updates in one place.
         selectedConfigName = selected.lastPathComponent
         defaults.set(selected.lastPathComponent, forKey: selectedConfigKey)
         return selected.path
@@ -593,10 +588,6 @@ extension AppViewModel {
             nextUpdateAt: sub?.nextUpdateAt())
     }
 
-    // MARK: - Remote Config Auto-Update
-
-    // MARK: - Auto-Update Task
-
     func startRemoteConfigAutoUpdateTaskIfNeeded() {
         guard remoteConfigAutoUpdateTask == nil || remoteConfigAutoUpdateTask?.isCancelled == true else { return }
         let hasAutoUpdate = remoteConfigSubscriptions.values.contains { $0.autoUpdateEnabled }
@@ -639,8 +630,6 @@ extension AppViewModel {
             await self.refreshRemoteConfigFile(named: fileName)
         }
     }
-
-    // MARK: - Menu Refresh Timer
 
     func startRemoteConfigMenuRefreshTimerIfNeeded() {
         guard remoteConfigMenuRefreshTask == nil || remoteConfigMenuRefreshTask?.isCancelled == true else { return }
