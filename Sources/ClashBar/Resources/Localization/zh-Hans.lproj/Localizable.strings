@@ -392,10 +392,3 @@
 "app.config.delete.message" = "此操作将永久删除配置文件。如果这是远程订阅，订阅元数据也会被一并删除。";
 "log.config.delete.success" = "已删除配置：%@";
 "log.config.delete.failed" = "删除配置失败（%@）：%@";
-"ui.settings.max_log_entries" = "最大日志条目数";
-"ui.settings.log_capacity.1000" = "1,000 条";
-"ui.settings.log_capacity.5000" = "5,000 条";
-"ui.settings.log_capacity.10000" = "10,000 条";
-"ui.settings.log_capacity.20000" = "20,000 条";
-"ui.settings.log_capacity.50000" = "50,000 条";
-"ui.settings.log_capacity.unlimited" = "无限制";

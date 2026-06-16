@@ -396,14 +396,6 @@ struct SystemTabView: TranslatingView {
                     onSelect: { level in
                         Task { await self.appViewModel.applyEditableCoreSetting(.logLevel, to: level.rawValue) }
                     }))
-                self.settingsSelectionRow(.init(
-                    title: self.tr("ui.settings.max_log_entries"),
-                    symbol: "doc.text",
-                    valueText: self.logCapacityLabel(self.appViewModel.maxLogEntries),
-                    options: LogCapacity.allCases,
-                    optionTitle: { self.tr($0.displayKey) },
-                    isSelected: { self.appViewModel.maxLogEntries == $0.rawValue },
-                    onSelect: { self.appViewModel.maxLogEntries = $0.rawValue }))
                 Button {
                     self.isExceptionsExpanded.toggle()
                 } label: {
@@ -564,15 +556,5 @@ struct SystemTabView: TranslatingView {
                     symbol: feedback.symbol)
             }
         }
-    }
-
-    func logCapacityLabel(_ value: Int) -> String {
-        // Int.max 表示无限制，映射到 rawValue 0
-        let normalizedValue = (value == Int.max) ? 0 : value
-        if let capacity = LogCapacity(rawValue: normalizedValue) {
-            return self.tr(capacity.displayKey)
-        }
-        // 回退：如果不是预设值，直接显示数字
-        return "\(value)"
     }
 }

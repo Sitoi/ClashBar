@@ -52,7 +52,7 @@ extension AppViewModel {
 
     func trimInMemoryLogsForCurrentVisibility() {
         self.flushPendingMihomoLogsIfNeeded()
-        let maxEntries = isPanelPresented ? maxLogEntries : hiddenPanelMaxInMemoryLogEntries
+        let maxEntries = isPanelPresented ? maxInMemoryLogEntries : hiddenPanelMaxInMemoryLogEntries
         guard errorLogs.count > maxEntries else { return }
         errorLogs.removeLast(errorLogs.count - maxEntries)
     }
@@ -89,7 +89,7 @@ extension AppViewModel {
         guard !entries.isEmpty else { return }
 
         // Single-allocation prepend: avoids O(n) in-place shift + separate removeLast
-        let maxEntries = isPanelPresented ? maxLogEntries : hiddenPanelMaxInMemoryLogEntries
+        let maxEntries = isPanelPresented ? maxInMemoryLogEntries : hiddenPanelMaxInMemoryLogEntries
         let combined = entries.reversed() + errorLogs
         errorLogs = Array(combined.prefix(maxEntries))
     }
