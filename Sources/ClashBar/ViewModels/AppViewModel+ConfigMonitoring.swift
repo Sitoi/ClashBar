@@ -74,7 +74,6 @@ extension AppViewModel {
         guard self.isRuntimeRunning else { return }
 
         if self.isCoreActionProcessing {
-            // Skip restart chaining for in-flight TUN operations; those already include a controlled restart.
             if !self.isTunSyncing {
                 self.pendingConfigChangeRestart = true
             }
@@ -90,7 +89,8 @@ extension AppViewModel {
         var snapshot: [String: String] = [:]
 
         for fileURL in self.configRepository.availableConfigs {
-            let values = try? fileURL.resourceValues(forKeys: keys)
+            let resolved = fileURL.resolvingSymlinksInPath()
+            let values = try? resolved.resourceValues(forKeys: keys)
             let modifiedAt = values?.contentModificationDate?.timeIntervalSince1970 ?? 0
             let size = values?.fileSize ?? -1
             snapshot[fileURL.lastPathComponent] = "\(modifiedAt)-\(size)"

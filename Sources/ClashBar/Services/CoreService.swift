@@ -611,7 +611,6 @@ final class MihomoProcessManager: MihomoControlling, @unchecked Sendable {
 
         if let perm = attrs[.posixPermissions] as? NSNumber {
             let mode = perm.intValue
-            // Refuse group-writable or world-writable executables.
             if (mode & 0o022) != 0 {
                 throw NSError(
                     domain: "ClashBar.Core",
@@ -625,13 +624,11 @@ final class MihomoProcessManager: MihomoControlling, @unchecked Sendable {
         }
     }
 
-    /// Resolves the working directory to hand to mihomo. When the config lives
-    /// under a conventional `config/` subdirectory, we step one level up so the
-    /// core treats the parent as its working root. Otherwise the config's own
-    /// directory is used directly.
     private static func resolveWorkingDirectoryURL(configPath: String) -> URL {
-        let configFileURL = URL(fileURLWithPath: configPath).standardizedFileURL.resolvingSymlinksInPath()
-        let configDirectoryURL = configFileURL.deletingLastPathComponent()
+        let configDirectoryURL = URL(fileURLWithPath: configPath)
+            .standardizedFileURL
+            .deletingLastPathComponent()
+            .resolvingSymlinksInPath()
         if configDirectoryURL.lastPathComponent == "config" {
             return configDirectoryURL.deletingLastPathComponent()
         }
@@ -639,11 +636,6 @@ final class MihomoProcessManager: MihomoControlling, @unchecked Sendable {
     }
 
     private func wireLogPipe(_ handle: FileHandle) {
-        // `readabilityHandler` delivers arbitrary-sized chunks; a single line may
-        // be split across chunks or multiple lines arrive in one chunk. Accumulate
-        // bytes and emit only when a full `\n`-terminated line is seen, flushing
-        // any tail on EOF. One accumulator per pipe, and readabilityHandler is
-        // invoked serially per handle.
         let accumulator = LineAccumulator()
         handle.readabilityHandler = { [weak self] readable in
             let data = readable.availableData
