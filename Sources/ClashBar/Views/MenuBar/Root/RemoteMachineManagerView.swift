@@ -135,7 +135,7 @@ struct RemoteMachineManagerView: TranslatingView {
         VStack(spacing: 0) {
             HStack(spacing: T.space6) {
                 Label(self.headerTitle, systemImage: "network")
-                    .font(.app(size: T.FontSize.title, weight: .semibold))
+                    .font(.app(size: T.FontSize.title3, weight: .semibold))
                     .foregroundStyle(self.palette.primaryLabel)
 
                 Spacer()
@@ -148,7 +148,7 @@ struct RemoteMachineManagerView: TranslatingView {
                     }
                 } label: {
                     Image(systemName: self.editorMode != nil ? "chevron.left.circle.fill" : "xmark.circle.fill")
-                        .font(.app(size: T.FontSize.title, weight: .semibold))
+                        .font(.app(size: T.FontSize.title3, weight: .semibold))
                         .foregroundStyle(self.palette.tertiaryLabel)
                         .contentShape(Circle())
                 }
@@ -210,7 +210,7 @@ struct RemoteMachineManagerView: TranslatingView {
                 self.editorMode = .add
             } label: {
                 Label(self.tr("ui.machine.add"), systemImage: "plus")
-                    .font(.app(size: T.FontSize.subhead, weight: .medium))
+                    .font(.app(size: T.FontSize.body, weight: .medium))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, T.space8)
             }
@@ -231,13 +231,13 @@ struct RemoteMachineManagerView: TranslatingView {
         } label: {
             HStack(spacing: RemoteMachineManagerTokens.rowContentSpacing) {
                 Image(systemName: "desktopcomputer")
-                    .font(.app(size: T.FontSize.subhead, weight: .semibold))
+                    .font(.app(size: T.FontSize.body, weight: .semibold))
                     .foregroundStyle(self.palette.accent)
                     .frame(width: RemoteMachineManagerTokens.rowIconSize)
 
                 VStack(alignment: .leading, spacing: T.space4) {
                     Text(self.tr("ui.machine.local"))
-                        .font(.app(size: T.FontSize.subhead, weight: .semibold))
+                        .font(.app(size: T.FontSize.body, weight: .semibold))
                         .foregroundStyle(self.palette.primaryLabel)
 
                     Text(self.localControllerDisplay)
@@ -299,13 +299,13 @@ private struct RemoteMachineRowView: View {
             } label: {
                 HStack(spacing: RemoteMachineManagerTokens.rowContentSpacing) {
                     Image(systemName: "network")
-                        .font(.app(size: T.FontSize.subhead, weight: .semibold))
+                        .font(.app(size: T.FontSize.body, weight: .semibold))
                         .foregroundStyle(self.statusTint(status))
                         .frame(width: RemoteMachineManagerTokens.rowIconSize)
 
                     VStack(alignment: .leading, spacing: T.space4) {
                         Text(self.machine.name)
-                            .font(.app(size: T.FontSize.subhead, weight: .semibold))
+                            .font(.app(size: T.FontSize.body, weight: .semibold))
                             .foregroundStyle(self.palette.primaryLabel)
 
                         HStack(spacing: T.space4) {
@@ -442,7 +442,7 @@ private struct RemoteMachineEditorView: TranslatingView {
             VStack(alignment: .leading, spacing: T.space4) {
                 Text(self.name.trimmingCharacters(in: .whitespaces).isEmpty ? self.tr("ui.machine.field.name") : self
                     .name)
-                    .font(.app(size: T.FontSize.subhead, weight: .semibold))
+                    .font(.app(size: T.FontSize.body, weight: .semibold))
                     .foregroundStyle(self.palette.primaryLabel)
 
                 Text(self.connectionPreview)
@@ -481,7 +481,7 @@ private struct RemoteMachineEditorView: TranslatingView {
 
             Button(action: self.save) {
                 Text(self.tr("ui.machine.save"))
-                    .font(.app(size: T.FontSize.subhead, weight: .medium))
+                    .font(.app(size: T.FontSize.body, weight: .medium))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, T.space8)
             }
@@ -513,7 +513,7 @@ private struct RemoteMachineEditorView: TranslatingView {
             TextField("", text: self.$name)
                 .textFieldStyle(.roundedBorder)
                 .controlSize(.large)
-                .font(.app(size: T.FontSize.subhead, weight: .regular))
+                .font(.app(size: T.FontSize.body, weight: .regular))
                 .focused(self.$isNameFocused)
         }
     }
@@ -533,7 +533,7 @@ private struct RemoteMachineEditorView: TranslatingView {
             }
             .textFieldStyle(.roundedBorder)
             .controlSize(.large)
-            .font(.app(size: T.FontSize.subhead, weight: .regular))
+            .font(.app(size: T.FontSize.body, weight: .regular))
         }
     }
 

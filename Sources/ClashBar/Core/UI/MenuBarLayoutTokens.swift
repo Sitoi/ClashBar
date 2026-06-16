@@ -73,10 +73,13 @@ enum MenuBarLayoutTokens {
     // MARK: - Font Sizes
 
     enum FontSize {
-        static let caption: CGFloat = 10
-        static let body: CGFloat = 12
-        static let subhead: CGFloat = 14
-        static let title: CGFloat = 16
+        static let statusBar: CGFloat = 10
+        static let caption: CGFloat = 10 // Caption 1 / Footnote
+        static let subheadline: CGFloat = 11 // Subheadline
+        static let callout: CGFloat = 12 // Callout (secondary info)
+        static let body: CGFloat = 13 // Body (standard text)
+        static let title3: CGFloat = 15 // Title 3
+        static let title2: CGFloat = 17 // Title 2
     }
 }
 

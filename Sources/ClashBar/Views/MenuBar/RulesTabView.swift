@@ -123,7 +123,7 @@ struct RulesTabView: TranslatingView {
 
         return HStack(spacing: 0) {
             Image(systemName: iconSpec.symbol)
-                .font(.app(size: MenuBarLayoutTokens.FontSize.subhead, weight: .medium))
+                .font(.app(size: MenuBarLayoutTokens.FontSize.body, weight: .medium))
                 .foregroundStyle(iconSpec.color)
                 .frame(width: 24, alignment: .leading)
 

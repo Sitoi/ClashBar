@@ -47,7 +47,7 @@ struct MenuBarHeaderView: TranslatingView {
 
                 VStack(alignment: .leading, spacing: MenuBarLayoutTokens.space2) {
                     Text("ClashBar")
-                        .font(.app(size: MenuBarLayoutTokens.FontSize.title, weight: .semibold))
+                        .font(.app(size: MenuBarLayoutTokens.FontSize.title3, weight: .semibold))
                         .foregroundStyle(nativePrimaryLabel)
 
                     HStack(spacing: MenuBarLayoutTokens.space6) {

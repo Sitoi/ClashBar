@@ -152,7 +152,7 @@ private struct StatusItemBannerRootView: View {
                 }
                 .overlay {
                     Image(systemName: self.banner.symbolName)
-                        .font(.app(size: MenuBarLayoutTokens.FontSize.subhead, weight: .semibold))
+                        .font(.app(size: MenuBarLayoutTokens.FontSize.body, weight: .semibold))
                         .foregroundStyle(self.iconForeground)
                 }
                 .frame(width: 34, height: 34)
