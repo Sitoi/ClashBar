@@ -24,6 +24,12 @@ enum MenuBarLayoutTokens {
     enum Opacity {
         static let solid: CGFloat = 0.92
         static let tint: CGFloat = 0.18
+        static let selection: CGFloat = 0.10
+    }
+
+    enum AnimationDuration {
+        static let quick: CGFloat = 0.15
+        static let standard: CGFloat = 0.35
     }
 
     enum Shadow {

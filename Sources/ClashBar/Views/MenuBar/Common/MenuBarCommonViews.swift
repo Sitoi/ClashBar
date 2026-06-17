@@ -92,14 +92,7 @@ extension MenuBarRootView {
     }
 
     var footerSurfaceBackground: some View {
-        RoundedRectangle(cornerRadius: T.cornerRadius, style: .continuous)
-            .fill(self.nativeControlFill.opacity(self.isDarkAppearance ? 0.54 : 0.38))
-            .overlay {
-                RoundedRectangle(cornerRadius: T.cornerRadius, style: .continuous)
-                    .stroke(
-                        self.nativeControlBorder.opacity(self.isDarkAppearance ? 0.40 : 0.12),
-                        lineWidth: T.stroke)
-            }
+        self.nativeControlSurface()
     }
 
     var footerMihomoVersionText: String {
@@ -398,6 +391,39 @@ extension View {
 
     func nativeBadgeCapsule() -> some View {
         Capsule(style: .continuous).fill(self.nativeBadgeFill)
+    }
+
+    func nativeRowFill(active: Bool, hovered: Bool) -> Color {
+        if active {
+            return self.nativeAccent.opacity(T.Opacity.selection)
+        }
+        if hovered {
+            return self.nativeHoverFill
+        }
+        return self.nativeControlFill
+    }
+
+    func nativeActionBackground(hovered: Bool, destructive: Bool = false) -> Color {
+        guard hovered else { return .clear }
+        return destructive ? self.nativeCritical.opacity(T.Opacity.tint) : self.nativeHoverFill
+    }
+
+    func nativeActionForeground(hovered: Bool, destructive: Bool = false) -> Color {
+        if destructive {
+            return hovered ? self.nativeCritical : self.nativeSecondaryLabel
+        }
+        return hovered ? self.nativePrimaryLabel : self.nativeSecondaryLabel
+    }
+
+    func nativeControlSurface(cornerRadius: CGFloat = T.cornerRadius) -> some View {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .fill(self.nativeControlFill.opacity(self.isDarkAppearance ? 0.54 : 0.38))
+            .overlay {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(
+                        self.nativeControlBorder.opacity(self.isDarkAppearance ? 0.40 : 0.12),
+                        lineWidth: T.stroke)
+            }
     }
 
     func emptyCard(_ text: String) -> some View {

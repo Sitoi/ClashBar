@@ -15,88 +15,19 @@ private enum EditorMode: Hashable {
     }
 }
 
-private enum RemoteMachineManagerTokens {
-    static let panelHeight: CGFloat = 500
-    static let contentPadding: CGFloat = T.space8 * 2
-    static let headerBottomPadding: CGFloat = T.space6 * 2
-    static let rowSpacing: CGFloat = T.space8
-    static let rowContentSpacing: CGFloat = 12
-    static let rowPadding: CGFloat = 10
-    static let rowCornerRadius: CGFloat = T.panelCornerRadius
-    static let rowIconSize: CGFloat = T.rowHeight
-    static let rowActionSize: CGFloat = 26
-    static let editorSpacing: CGFloat = 20
-    static let formSpacing: CGFloat = T.space8 * 2
-    static let fieldSpacing: CGFloat = T.space6
-    static let portFieldWidth: CGFloat = 100
-    static let switchAnimationDuration: CGFloat = 0.15
-    static let editorAnimationResponse: CGFloat = 0.35
-    static let selectionFillOpacity: CGFloat = 0.10
-}
-
-private struct RemoteMachineManagerPalette {
-    var panelBackground: Color {
-        Color(nsColor: .windowBackgroundColor)
-    }
-
-    var primaryLabel: Color {
-        Color(nsColor: .labelColor)
-    }
-
-    var secondaryLabel: Color {
-        Color(nsColor: .secondaryLabelColor)
-    }
-
-    var tertiaryLabel: Color {
-        Color(nsColor: .tertiaryLabelColor)
-    }
-
-    var accent: Color {
-        Color(nsColor: .controlAccentColor).opacity(T.Opacity.solid)
-    }
-
-    var positive: Color {
-        Color(nsColor: .systemGreen).opacity(T.Opacity.solid)
-    }
-
-    var warning: Color {
-        Color(nsColor: .systemOrange).opacity(T.Opacity.solid)
-    }
-
-    var critical: Color {
-        Color(nsColor: .systemRed).opacity(T.Opacity.solid)
-    }
-
-    var controlFill: Color {
-        Color(nsColor: .windowBackgroundColor)
-    }
-
-    var hoverFill: Color {
-        Color(nsColor: .selectedContentBackgroundColor)
-    }
-
-    func rowFill(active: Bool, hovered: Bool) -> Color {
-        if active {
-            return Color(nsColor: .controlAccentColor).opacity(RemoteMachineManagerTokens.selectionFillOpacity)
-        }
-        if hovered {
-            return self.hoverFill
-        }
-        return self.controlFill
-    }
-
-    func actionBackground(hovered: Bool, destructive: Bool = false) -> Color {
-        guard hovered else { return .clear }
-        return destructive ? self.critical.opacity(T.Opacity.tint) : self.hoverFill
-    }
-
-    func actionForeground(hovered: Bool, destructive: Bool = false) -> Color {
-        if destructive {
-            return hovered ? self.critical : self.secondaryLabel
-        }
-        return hovered ? self.primaryLabel : self.secondaryLabel
-    }
-}
+private let panelHeight: CGFloat = 500
+private let contentPadding: CGFloat = T.space8 * 2
+private let headerBottomPadding: CGFloat = T.space6 * 2
+private let rowSpacing: CGFloat = T.space8
+private let rowContentSpacing: CGFloat = 12
+private let rowPadding: CGFloat = 10
+private let rowCornerRadius: CGFloat = T.panelCornerRadius
+private let rowIconSize: CGFloat = T.rowHeight
+private let rowActionSize: CGFloat = 26
+private let editorSpacing: CGFloat = 20
+private let formSpacing: CGFloat = T.space8 * 2
+private let fieldSpacing: CGFloat = T.space6
+private let portFieldWidth: CGFloat = 100
 
 struct RemoteMachineManagerView: TranslatingView {
     @EnvironmentObject var appViewModel: AppViewModel
@@ -108,10 +39,6 @@ struct RemoteMachineManagerView: TranslatingView {
 
     @State private var editorMode: EditorMode?
     @State private var isHoveringLocalRow = false
-
-    private var palette: RemoteMachineManagerPalette {
-        .init()
-    }
 
     private var headerTitle: String {
         if let editorMode {
@@ -125,7 +52,7 @@ struct RemoteMachineManagerView: TranslatingView {
             HStack(spacing: T.space6) {
                 Label(self.headerTitle, systemImage: "network")
                     .font(.app(size: T.FontSize.title3, weight: .semibold))
-                    .foregroundStyle(self.palette.primaryLabel)
+                    .foregroundStyle(self.nativePrimaryLabel)
 
                 Spacer()
 
@@ -138,14 +65,14 @@ struct RemoteMachineManagerView: TranslatingView {
                 } label: {
                     Image(systemName: self.editorMode != nil ? "chevron.left.circle.fill" : "xmark.circle.fill")
                         .font(.app(size: T.FontSize.title3, weight: .semibold))
-                        .foregroundStyle(self.palette.tertiaryLabel)
+                        .foregroundStyle(self.nativeTertiaryLabel)
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
                 .help(self.editorMode != nil ? self.tr("ui.action.cancel") : self.tr("ui.action.close"))
             }
-            .padding([.horizontal, .top], RemoteMachineManagerTokens.contentPadding)
-            .padding(.bottom, RemoteMachineManagerTokens.headerBottomPadding)
+            .padding([.horizontal, .top], contentPadding)
+            .padding(.bottom, headerBottomPadding)
 
             ZStack(alignment: .topLeading) {
                 if let mode = self.editorMode {
@@ -164,10 +91,10 @@ struct RemoteMachineManagerView: TranslatingView {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(self.palette.panelBackground)
-        .frame(width: T.panelWidth, height: RemoteMachineManagerTokens.panelHeight)
+        .background(self.nativeControlFill)
+        .frame(width: T.panelWidth, height: panelHeight)
         .animation(
-            .spring(response: RemoteMachineManagerTokens.editorAnimationResponse, dampingFraction: 1),
+            .spring(response: T.AnimationDuration.standard, dampingFraction: 1),
             value: self.editorMode)
         .onAppear { self.store.startPeriodicConnectivityChecks() }
         .onDisappear { self.store.stopPeriodicConnectivityChecks() }
@@ -176,7 +103,7 @@ struct RemoteMachineManagerView: TranslatingView {
     private var machineList: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(spacing: RemoteMachineManagerTokens.rowSpacing) {
+                VStack(spacing: rowSpacing) {
                     self.localMachineRow
 
                     ForEach(self.store.machines) { machine in
@@ -190,8 +117,8 @@ struct RemoteMachineManagerView: TranslatingView {
                             dismiss: self.dismiss)
                     }
                 }
-                .padding(.horizontal, RemoteMachineManagerTokens.contentPadding)
-                .padding(.bottom, RemoteMachineManagerTokens.contentPadding)
+                .padding(.horizontal, contentPadding)
+                .padding(.bottom, contentPadding)
             }
             .scrollIndicators(.hidden)
 
@@ -205,8 +132,8 @@ struct RemoteMachineManagerView: TranslatingView {
             }
             .appBorderedButtonStyle(prominent: true)
             .controlSize(.large)
-            .padding(.horizontal, RemoteMachineManagerTokens.contentPadding)
-            .padding(.bottom, RemoteMachineManagerTokens.contentPadding)
+            .padding(.horizontal, contentPadding)
+            .padding(.bottom, contentPadding)
         }
     }
 
@@ -218,38 +145,38 @@ struct RemoteMachineManagerView: TranslatingView {
             self.onSwitchTarget(.local)
             self.dismiss()
         } label: {
-            HStack(spacing: RemoteMachineManagerTokens.rowContentSpacing) {
+            HStack(spacing: rowContentSpacing) {
                 Image(systemName: "desktopcomputer")
                     .font(.app(size: T.FontSize.body, weight: .semibold))
-                    .foregroundStyle(self.palette.accent)
-                    .frame(width: RemoteMachineManagerTokens.rowIconSize)
+                    .foregroundStyle(self.nativeAccent.opacity(T.Opacity.solid))
+                    .frame(width: rowIconSize)
 
                 VStack(alignment: .leading, spacing: T.space4) {
                     Text(self.tr("ui.machine.local"))
                         .font(.app(size: T.FontSize.body, weight: .semibold))
-                        .foregroundStyle(self.palette.primaryLabel)
+                        .foregroundStyle(self.nativePrimaryLabel)
 
                     Text(self.localControllerDisplay)
                         .font(.app(size: T.FontSize.caption, weight: .regular))
-                        .foregroundStyle(self.palette.secondaryLabel)
+                        .foregroundStyle(self.nativeSecondaryLabel)
                 }
 
                 Spacer()
 
                 if isActive {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(self.palette.positive)
+                        .foregroundStyle(self.nativePositive.opacity(T.Opacity.solid))
                 }
             }
-            .padding(RemoteMachineManagerTokens.rowPadding)
+            .padding(rowPadding)
             .background(
-                self.palette.rowFill(active: isActive, hovered: self.isHoveringLocalRow && !isActive),
-                in: .rect(cornerRadius: RemoteMachineManagerTokens.rowCornerRadius))
+                self.nativeRowFill(active: isActive, hovered: self.isHoveringLocalRow && !isActive),
+                in: .rect(cornerRadius: rowCornerRadius))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            withAnimation(.easeOut(duration: RemoteMachineManagerTokens.switchAnimationDuration)) {
+            withAnimation(.easeOut(duration: T.AnimationDuration.quick)) {
                 self.isHoveringLocalRow = hovering
             }
         }
@@ -269,10 +196,6 @@ private struct RemoteMachineRowView: View {
     @State private var isHoveringEdit = false
     @State private var isHoveringDelete = false
 
-    private var palette: RemoteMachineManagerPalette {
-        .init()
-    }
-
     var body: some View {
         let status = self.store.statusFor(self.machine.id)
         let isActive = self.store.activeTargetID == self.machine.id
@@ -284,23 +207,23 @@ private struct RemoteMachineRowView: View {
                 self.onSwitchTarget(.remote(self.machine))
                 self.dismiss()
             } label: {
-                HStack(spacing: RemoteMachineManagerTokens.rowContentSpacing) {
+                HStack(spacing: rowContentSpacing) {
                     Image(systemName: "network")
                         .font(.app(size: T.FontSize.body, weight: .semibold))
                         .foregroundStyle(self.statusTint(status))
-                        .frame(width: RemoteMachineManagerTokens.rowIconSize)
+                        .frame(width: rowIconSize)
 
                     VStack(alignment: .leading, spacing: T.space4) {
                         Text(self.machine.name)
                             .font(.app(size: T.FontSize.body, weight: .semibold))
-                            .foregroundStyle(self.palette.primaryLabel)
+                            .foregroundStyle(self.nativePrimaryLabel)
 
                         HStack(spacing: T.space4) {
                             self.statusDot(status)
 
                             Text(self.machine.displayAddress)
                                 .font(.app(size: T.FontSize.caption, weight: .regular))
-                                .foregroundStyle(self.palette.secondaryLabel)
+                                .foregroundStyle(self.nativeSecondaryLabel)
                         }
                     }
 
@@ -315,7 +238,7 @@ private struct RemoteMachineRowView: View {
             HStack(spacing: T.space6) {
                 if isActive {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(self.palette.positive)
+                        .foregroundStyle(self.nativePositive.opacity(T.Opacity.solid))
                 }
 
                 self.rowActionButton(
@@ -339,13 +262,13 @@ private struct RemoteMachineRowView: View {
                 .onHover { self.isHoveringDelete = $0 }
             }
         }
-        .padding(RemoteMachineManagerTokens.rowPadding)
+        .padding(rowPadding)
         .background(
-            self.palette.rowFill(active: isActive, hovered: self.isHoveringRow && !isActive),
-            in: .rect(cornerRadius: RemoteMachineManagerTokens.rowCornerRadius))
+            self.nativeRowFill(active: isActive, hovered: self.isHoveringRow && !isActive),
+            in: .rect(cornerRadius: rowCornerRadius))
         .contentShape(Rectangle())
         .onHover { hovering in
-            withAnimation(.easeOut(duration: RemoteMachineManagerTokens.switchAnimationDuration)) {
+            withAnimation(.easeOut(duration: T.AnimationDuration.quick)) {
                 self.isHoveringRow = hovering
             }
         }
@@ -361,14 +284,14 @@ private struct RemoteMachineRowView: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .frame(
-                    width: RemoteMachineManagerTokens.rowActionSize,
-                    height: RemoteMachineManagerTokens.rowActionSize)
+                    width: rowActionSize,
+                    height: rowActionSize)
                 .background(
-                    self.palette.actionBackground(hovered: hovered, destructive: destructive),
+                    self.nativeActionBackground(hovered: hovered, destructive: destructive),
                     in: .rect(cornerRadius: T.cornerRadius))
         }
         .buttonStyle(.borderless)
-        .foregroundStyle(self.palette.actionForeground(hovered: hovered, destructive: destructive))
+        .foregroundStyle(self.nativeActionForeground(hovered: hovered, destructive: destructive))
         .accessibilityLabel(accessibilityLabel)
     }
 
@@ -387,13 +310,13 @@ private struct RemoteMachineRowView: View {
     private func statusTint(_ status: MachineConnectionStatus) -> Color {
         switch status {
         case .unknown:
-            self.palette.secondaryLabel
+            self.nativeSecondaryLabel
         case .checking:
-            self.palette.warning
+            self.nativeWarning.opacity(T.Opacity.solid)
         case .connected:
-            self.palette.positive
+            self.nativePositive.opacity(T.Opacity.solid)
         case .failed:
-            self.palette.critical
+            self.nativeCritical.opacity(T.Opacity.solid)
         }
     }
 }
@@ -412,10 +335,6 @@ private struct RemoteMachineEditorView: TranslatingView {
 
     @FocusState private var isNameFocused: Bool
 
-    private var palette: RemoteMachineManagerPalette {
-        .init()
-    }
-
     private var isFormValid: Bool {
         !self.name.trimmingCharacters(in: .whitespaces).isEmpty &&
             !self.host.trimmingCharacters(in: .whitespaces).isEmpty &&
@@ -423,27 +342,27 @@ private struct RemoteMachineEditorView: TranslatingView {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: RemoteMachineManagerTokens.editorSpacing) {
+        VStack(alignment: .leading, spacing: editorSpacing) {
             VStack(alignment: .leading, spacing: T.space4) {
                 Text(self.name.trimmingCharacters(in: .whitespaces).isEmpty ? self.tr("ui.machine.field.name") : self
                     .name)
                     .font(.app(size: T.FontSize.body, weight: .semibold))
-                    .foregroundStyle(self.palette.primaryLabel)
+                    .foregroundStyle(self.nativePrimaryLabel)
 
                 Text(self.connectionPreview)
                     .font(.app(size: T.FontSize.caption, weight: .regular))
-                    .foregroundStyle(self.palette.secondaryLabel)
+                    .foregroundStyle(self.nativeSecondaryLabel)
             }
             .padding(.bottom, T.space8)
 
-            VStack(alignment: .leading, spacing: RemoteMachineManagerTokens.formSpacing) {
+            VStack(alignment: .leading, spacing: formSpacing) {
                 self.nameField
 
-                HStack(spacing: RemoteMachineManagerTokens.formSpacing) {
+                HStack(spacing: formSpacing) {
                     self.inputField(title: self.tr("ui.machine.field.host"), text: self.$host, isSecure: false)
 
                     self.inputField(title: self.tr("ui.machine.field.port"), text: self.$port, isSecure: false)
-                        .frame(maxWidth: RemoteMachineManagerTokens.portFieldWidth)
+                        .frame(maxWidth: portFieldWidth)
                 }
 
                 self.inputField(title: self.tr("ui.machine.field.secret"), text: self.$secret, isSecure: true)
@@ -451,7 +370,7 @@ private struct RemoteMachineEditorView: TranslatingView {
                 HStack {
                     Text("HTTPS")
                         .font(.app(size: T.FontSize.body, weight: .medium))
-                        .foregroundStyle(self.palette.secondaryLabel)
+                        .foregroundStyle(self.nativeSecondaryLabel)
 
                     Spacer()
 
@@ -474,8 +393,8 @@ private struct RemoteMachineEditorView: TranslatingView {
             .controlSize(.large)
             .disabled(!self.isFormValid)
         }
-        .padding(.horizontal, RemoteMachineManagerTokens.contentPadding)
-        .padding(.bottom, RemoteMachineManagerTokens.contentPadding)
+        .padding(.horizontal, contentPadding)
+        .padding(.bottom, contentPadding)
         .onAppear {
             if let machine = self.mode.machine {
                 self.name = machine.name
@@ -490,10 +409,10 @@ private struct RemoteMachineEditorView: TranslatingView {
     }
 
     private var nameField: some View {
-        VStack(alignment: .leading, spacing: RemoteMachineManagerTokens.fieldSpacing) {
+        VStack(alignment: .leading, spacing: fieldSpacing) {
             Text(self.tr("ui.machine.field.name"))
                 .font(.app(size: T.FontSize.body, weight: .medium))
-                .foregroundStyle(self.palette.secondaryLabel)
+                .foregroundStyle(self.nativeSecondaryLabel)
 
             TextField("", text: self.$name)
                 .textFieldStyle(.roundedBorder)
@@ -504,10 +423,10 @@ private struct RemoteMachineEditorView: TranslatingView {
     }
 
     private func inputField(title: String, text: Binding<String>, isSecure: Bool) -> some View {
-        VStack(alignment: .leading, spacing: RemoteMachineManagerTokens.fieldSpacing) {
+        VStack(alignment: .leading, spacing: fieldSpacing) {
             Text(title)
                 .font(.app(size: T.FontSize.body, weight: .medium))
-                .foregroundStyle(self.palette.secondaryLabel)
+                .foregroundStyle(self.nativeSecondaryLabel)
 
             Group {
                 if isSecure {

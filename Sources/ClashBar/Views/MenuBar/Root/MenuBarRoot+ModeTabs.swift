@@ -174,11 +174,7 @@ extension MenuBarRootView {
         }
         .padding(T.space1)
         .frame(width: contentWidth)
-        .background(
-            AppMaterialSurface(
-                cornerRadius: SegmentedControlStyle.mode.cornerRadius,
-                fallbackStyle: .color(self.modeSwitcherBackgroundFill),
-                stroke: self.modeSwitcherBorderColor))
+        .background(self.nativeControlSurface(cornerRadius: SegmentedControlStyle.mode.cornerRadius))
     }
 
     func modeSegmentButton(title: String, mode: CoreMode, symbol: String) -> some View {
@@ -324,15 +320,6 @@ extension MenuBarRootView {
         isDarkAppearance
             ? (style.isMode ? Color(red: 0.56, green: 0.77, blue: 0.98) : Color(red: 0.50, green: 0.72, blue: 0.95))
             : (style.isMode ? Color(red: 0.16, green: 0.36, blue: 0.67) : Color(red: 0.20, green: 0.40, blue: 0.71))
-    }
-
-    private var modeSwitcherBackgroundFill: Color {
-        Color(nsColor: self.isDarkAppearance ? .controlBackgroundColor : .windowBackgroundColor)
-            .opacity(self.isDarkAppearance ? 0.54 : 0.38)
-    }
-
-    private var modeSwitcherBorderColor: Color {
-        self.nativeControlBorder.opacity(self.isDarkAppearance ? 0.40 : 0.12)
     }
 
     private func segmentedSelectionFill(style: SegmentedControlStyle) -> Color {
