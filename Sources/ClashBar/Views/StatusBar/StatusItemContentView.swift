@@ -220,7 +220,7 @@ final class StatusItemContentView: NSView {
         paragraph.alignment = .right
         paragraph.lineBreakMode = .byTruncatingHead
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: MenuBarLayoutTokens.FontSize.statusBar, weight: .medium),
+            .font: NSFont.monospacedDigitSystemFont(ofSize: MenuBarLayoutTokens.FontSize.statusBar, weight: .semibold),
             .foregroundColor: NSColor.black,
             .paragraphStyle: paragraph,
         ]

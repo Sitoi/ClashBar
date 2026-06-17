@@ -365,39 +365,27 @@ extension View {
     }
 
     var nativeSecondaryLabel: Color {
-        Color(nsColor: .labelColor)
-            .opacity(self.isDarkAppearance ? T.Theme.Dark.labelSecondary : T.Theme
-                .Light.labelSecondary)
+        Color(nsColor: .secondaryLabelColor)
     }
 
     var nativeTertiaryLabel: Color {
-        Color(nsColor: .labelColor)
-            .opacity(self.isDarkAppearance ? T.Theme.Dark.labelTertiary : T.Theme
-                .Light.labelTertiary)
+        Color(nsColor: .tertiaryLabelColor)
     }
 
     var nativeSeparator: Color {
         Color(nsColor: .separatorColor)
-            .opacity(self.isDarkAppearance ? T.Theme.Dark.separator : T.Theme.Light
-                .separator)
     }
 
     var nativeControlFill: Color {
-        Color(nsColor: self.isDarkAppearance ? .controlBackgroundColor : .windowBackgroundColor)
-            .opacity(self.isDarkAppearance ? T.Theme.Dark.controlFill : T.Theme
-                .Light.controlFill)
+        Color(nsColor: .windowBackgroundColor)
     }
 
     var nativeControlBorder: Color {
         Color(nsColor: .separatorColor)
-            .opacity(self.isDarkAppearance ? T.Theme.Dark.controlBorder : T.Theme
-                .Light.controlBorder)
     }
 
     var nativeHoverFill: Color {
         Color(nsColor: .selectedContentBackgroundColor)
-            .opacity(self.isDarkAppearance ? T.Theme.Dark.hoverFill : T.Theme.Light
-                .hoverFill)
     }
 
     func nativeHoverRowBackground(

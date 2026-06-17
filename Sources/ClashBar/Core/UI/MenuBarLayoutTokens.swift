@@ -26,28 +26,6 @@ enum MenuBarLayoutTokens {
         static let tint: CGFloat = 0.18
     }
 
-    enum Theme {
-        enum Dark {
-            static let labelSecondary: CGFloat = 0.75
-            static let labelTertiary: CGFloat = 0.52
-            static let separator: CGFloat = 0.70
-            static let controlFill: CGFloat = 0.78
-            static let controlBorder: CGFloat = 0.60
-            static let hoverFill: CGFloat = 0.28
-            static let borderEmphasis: CGFloat = 0.82
-        }
-
-        enum Light {
-            static let labelSecondary: CGFloat = 0.62
-            static let labelTertiary: CGFloat = 0.42
-            static let separator: CGFloat = 0.55
-            static let controlFill: CGFloat = 0.92
-            static let controlBorder: CGFloat = 0.42
-            static let hoverFill: CGFloat = 0.18
-            static let borderEmphasis: CGFloat = 0.82
-        }
-    }
-
     enum Shadow {
         static let standard = (opacity: 0.20, radius: 12.0, x: 0.0, y: 6.0)
     }

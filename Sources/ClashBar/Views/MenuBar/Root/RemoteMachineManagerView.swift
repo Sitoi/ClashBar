@@ -35,12 +35,6 @@ private enum RemoteMachineManagerTokens {
 }
 
 private struct RemoteMachineManagerPalette {
-    let colorScheme: ColorScheme
-
-    private var isDarkAppearance: Bool {
-        self.colorScheme == .dark
-    }
-
     var panelBackground: Color {
         Color(nsColor: .windowBackgroundColor)
     }
@@ -50,13 +44,11 @@ private struct RemoteMachineManagerPalette {
     }
 
     var secondaryLabel: Color {
-        Color(nsColor: .labelColor)
-            .opacity(self.isDarkAppearance ? T.Theme.Dark.labelSecondary : T.Theme.Light.labelSecondary)
+        Color(nsColor: .secondaryLabelColor)
     }
 
     var tertiaryLabel: Color {
-        Color(nsColor: .labelColor)
-            .opacity(self.isDarkAppearance ? T.Theme.Dark.labelTertiary : T.Theme.Light.labelTertiary)
+        Color(nsColor: .tertiaryLabelColor)
     }
 
     var accent: Color {
@@ -76,13 +68,11 @@ private struct RemoteMachineManagerPalette {
     }
 
     var controlFill: Color {
-        Color(nsColor: self.isDarkAppearance ? .controlBackgroundColor : .windowBackgroundColor)
-            .opacity(self.isDarkAppearance ? T.Theme.Dark.controlFill : T.Theme.Light.controlFill)
+        Color(nsColor: .windowBackgroundColor)
     }
 
     var hoverFill: Color {
         Color(nsColor: .selectedContentBackgroundColor)
-            .opacity(self.isDarkAppearance ? T.Theme.Dark.hoverFill : T.Theme.Light.hoverFill)
     }
 
     func rowFill(active: Bool, hovered: Bool) -> Color {
@@ -115,13 +105,12 @@ struct RemoteMachineManagerView: TranslatingView {
     let onSwitchTarget: (MachineTarget) -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) private var colorScheme
 
     @State private var editorMode: EditorMode?
     @State private var isHoveringLocalRow = false
 
     private var palette: RemoteMachineManagerPalette {
-        .init(colorScheme: self.colorScheme)
+        .init()
     }
 
     private var headerTitle: String {
@@ -276,14 +265,12 @@ private struct RemoteMachineRowView: View {
     let onSwitchTarget: (MachineTarget) -> Void
     let dismiss: DismissAction
 
-    @Environment(\.colorScheme) private var colorScheme
-
     @State private var isHoveringRow = false
     @State private var isHoveringEdit = false
     @State private var isHoveringDelete = false
 
     private var palette: RemoteMachineManagerPalette {
-        .init(colorScheme: self.colorScheme)
+        .init()
     }
 
     var body: some View {
@@ -417,8 +404,6 @@ private struct RemoteMachineEditorView: TranslatingView {
     let mode: EditorMode
     let onComplete: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
-
     @State private var name: String = ""
     @State private var host: String = ""
     @State private var port: String = "9090"
@@ -428,7 +413,7 @@ private struct RemoteMachineEditorView: TranslatingView {
     @FocusState private var isNameFocused: Bool
 
     private var palette: RemoteMachineManagerPalette {
-        .init(colorScheme: self.colorScheme)
+        .init()
     }
 
     private var isFormValid: Bool {
