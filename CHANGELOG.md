@@ -1,3 +1,27 @@
+## v0.2.8
+
+![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.2.8-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
+
+> 本次更新集中在 **日志文件体积治理、软链接配置的完整支持、配置校验报错体验与 UI 主题统一**：磁盘日志改为基于大小的滚动归档（单文件 10MB、保留 5 份），彻底告别无限膨胀；软链接配置现在能正确出现在列表中、用自身目录作为内核工作目录并参与外部改动检测；配置校验失败弹窗支持滚动查看长报错、一键复制详情，并针对 GEO 相关错误给出排查提示；同时把全局 UI 收敛到统一主题常量与系统原生配色。
+
+### 📝 更新日志 (Changelog)
+
+**✨ 新增功能 (New Features)**
+
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **配置校验错误可滚动查看与复制**：配置校验失败弹窗改为可滚动视图，支持完整查看超长错误信息并一键“复制详情”，便于反馈问题；同时针对 GEO 数据库等常见配置错误补充了智能排查提示。
+
+**🚀 优化改进 (Improvements)**
+
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **日志策略简化**：移除可配置的“最大日志条目数”设置，应用内 Logs 面板改用固定 5,000 条视窗；磁盘日志体积统一交由基于大小的滚动归档管理，配置项更精简。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **UI 主题统一**：将菜单栏界面收敛到统一的主题常量与布局 token，使用系统原生配色替代自定义主题色，字号对齐 macOS HIG，整体观感更一致、维护成本更低。
+
+**🐞 修复问题 (Bug Fixes)**
+
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **日志文件无限膨胀** (#78)：修复磁盘日志文件持续增长无上限的问题；现在采用基于大小的滚动归档（单文件超过 10MB 即滚动，最多保留 5 份历史），避免日志占满磁盘。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **软链接配置处理修正**：修复软链接配置文件不出现在配置列表、内核工作目录被错误指向链接目标父目录、以及外部编辑无法触发变更检测的问题；现在按解析后的目标类型列出配置，并以配置自身所在目录作为工作目录。
+
+---
+
 ## v0.2.7
 
 ![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.2.7-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
