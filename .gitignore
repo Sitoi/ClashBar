@@ -17,3 +17,6 @@ CLAUDE.md
 docs/
 Sources/ClashBar/Resources/bin/mihomo
 Fix*.md
+.mcp.json
+.codegraph
+.cursor
