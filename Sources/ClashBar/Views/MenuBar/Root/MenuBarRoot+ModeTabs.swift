@@ -110,7 +110,7 @@ extension MenuBarRootView {
     }
 
     func machineSwitcherStatusBadge(_ status: MachineConnectionStatus) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: T.space6) {
             switch status {
             case .checking:
                 ProgressView()
@@ -122,11 +122,11 @@ extension MenuBarRootView {
             }
 
             Text(self.machineStatusText(status))
-                .font(.app(size: 10, weight: .semibold))
+                .font(.app(size: T.FontSize.caption, weight: .semibold))
                 .foregroundStyle(self.machineStatusTint(status))
                 .lineLimit(1)
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, T.space8)
         .padding(.vertical, 5)
         .background(self.machineStatusTint(status).opacity(0.12), in: Capsule())
     }

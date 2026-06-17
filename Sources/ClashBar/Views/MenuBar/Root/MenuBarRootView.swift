@@ -233,7 +233,7 @@ struct MenuBarRootView: TranslatingView {
             fallbackStyle: .material(.regularMaterial),
             stroke: nativeSeparator)
             .shadow(
-                color: Color(nsColor: .shadowColor).opacity(
+                color: self.nativeShadow.opacity(
                     T.Shadow.standard.opacity),
                 radius: T.Shadow.standard.radius,
                 x: T.Shadow.standard.x,

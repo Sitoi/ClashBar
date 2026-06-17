@@ -32,15 +32,15 @@ struct TrafficSparklineView: View {
             ZStack {
                 self.axisPath(width: geo.size.width, axisY: axisY)
                     .stroke(
-                        Color(nsColor: .separatorColor).opacity(0.55),
+                        self.nativeSeparator.opacity(0.55),
                         style: StrokeStyle(lineWidth: T.stroke, lineCap: .round))
 
                 self.lineAreaPath(for: self.upValues, context: upContext)
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(nsColor: .controlAccentColor).opacity(0.30),
-                                Color(nsColor: .controlAccentColor).opacity(0.02),
+                                self.nativeAccent.opacity(0.30),
+                                self.nativeAccent.opacity(0.02),
                             ],
                             startPoint: .top,
                             endPoint: .bottom))
@@ -49,20 +49,20 @@ struct TrafficSparklineView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(nsColor: .systemGreen).opacity(0.32),
-                                Color(nsColor: .systemGreen).opacity(0.0),
+                                self.nativePositive.opacity(0.32),
+                                self.nativePositive.opacity(0.0),
                             ],
                             startPoint: .top,
                             endPoint: .bottom))
 
                 self.linePath(for: self.upValues, context: upContext)
                     .stroke(
-                        Color(nsColor: .controlAccentColor).opacity(0.9),
+                        self.nativeAccent.opacity(0.9),
                         style: StrokeStyle(lineWidth: 1.2, lineCap: .round, lineJoin: .round))
 
                 self.linePath(for: self.downValues, context: downContext)
                     .stroke(
-                        Color(nsColor: .systemGreen).opacity(0.9),
+                        self.nativePositive.opacity(0.9),
                         style: StrokeStyle(lineWidth: 1.2, lineCap: .round, lineJoin: .round))
             }
         }

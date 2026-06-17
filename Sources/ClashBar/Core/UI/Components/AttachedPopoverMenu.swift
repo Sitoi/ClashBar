@@ -110,11 +110,11 @@ struct AttachedPopoverMenu<Label: View, Content: View>: View {
                 AppMaterialSurface(
                     cornerRadius: T.panelCornerRadius,
                     fallbackStyle: .material(.regularMaterial),
-                    stroke: Color(nsColor: .separatorColor).opacity(0.46),
+                    stroke: self.nativeSeparator.opacity(0.46),
                     lineWidth: T.stroke)
             }
             .shadow(
-                color: Color(nsColor: .shadowColor).opacity(T.Shadow.standard.opacity),
+                color: self.nativeShadow.opacity(T.Shadow.standard.opacity),
                 radius: T.Shadow.standard.radius,
                 x: T.Shadow.standard.x,
                 y: T.Shadow.standard.y)
@@ -190,7 +190,7 @@ struct AttachedPopoverMenuItem: View {
                     Color.clear
                         .frame(width: 12, height: 12)
                 }
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .leading, spacing: T.space1) {
                     Text(self.title)
                         .font(.app(size: T.FontSize.body, weight: .medium))
                         .lineLimit(1)
@@ -200,8 +200,8 @@ struct AttachedPopoverMenuItem: View {
                             .font(.app(size: T.FontSize.caption, weight: .regular))
                             .lineLimit(1)
                             .truncationMode(.middle)
-                            .foregroundStyle(self.isHovered ? Color(nsColor: .selectedMenuItemTextColor)
-                                .opacity(0.9) : .secondary)
+                            .foregroundStyle(self.isHovered ? self.nativeSelectedMenuText
+                                .opacity(0.9) : self.nativeSecondaryLabel)
                     }
                 }
                 Spacer(minLength: 0)
@@ -233,27 +233,27 @@ struct AttachedPopoverMenuItem: View {
 
     private var itemForeground: Color {
         if self.isHovered {
-            return Color(nsColor: .selectedMenuItemTextColor)
+            return self.nativeSelectedMenuText
         }
-        return self.destructive ? .red : .primary
+        return self.destructive ? .red : self.nativePrimaryLabel
     }
 
     private var itemBackground: Color {
-        self.isHovered ? Color(nsColor: .selectedContentBackgroundColor) : .clear
+        self.isHovered ? self.nativeHoverFill : .clear
     }
 
     private var trailingSelectionForeground: Color {
         if self.isHovered {
-            return Color(nsColor: .selectedMenuItemTextColor)
+            return self.nativeSelectedMenuText
         }
-        return Color(nsColor: .controlAccentColor)
+        return self.nativeAccent
     }
 
     private var trailingStatusForeground: Color {
         if self.isHovered {
-            return Color(nsColor: .selectedMenuItemTextColor).opacity(0.96)
+            return self.nativeSelectedMenuText.opacity(0.96)
         }
-        return self.trailingStatusTextColor ?? .secondary
+        return self.trailingStatusTextColor ?? self.nativeSecondaryLabel
     }
 }
 

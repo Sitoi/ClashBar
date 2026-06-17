@@ -218,7 +218,7 @@ struct SystemTabView: TranslatingView {
                         .stroke(color.opacity(0.26), lineWidth: T.stroke)
                 }
                 .shadow(
-                    color: Color(nsColor: .shadowColor).opacity(T.Shadow.standard.opacity),
+                    color: self.nativeShadow.opacity(T.Shadow.standard.opacity),
                     radius: T.Shadow.standard.radius,
                     x: T.Shadow.standard.x,
                     y: T.Shadow.standard.y)

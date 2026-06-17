@@ -495,7 +495,7 @@ struct ProxyTabView: TranslatingView {
                 foreground: nativeWarning,
                 trailingFitsContent: true)
             {
-                HStack(spacing: 2) {
+                HStack(spacing: T.space2) {
                     self.proxyCommandActionButton(
                         title: self.appViewModel.localProxyCommandHostDisplay(),
                         target: .local,
@@ -834,7 +834,7 @@ private struct ConfigMenuItemView: View {
                         .frame(width: 12, alignment: .center)
                 }
 
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .leading, spacing: T.space1) {
                     HStack(spacing: T.space4) {
                         Text(self.title)
                             .font(.app(size: T.FontSize.body, weight: self.selected ? .semibold : .medium))
@@ -875,7 +875,7 @@ private struct ConfigMenuItemView: View {
         phase: RemoteConfigRefreshPhase,
         onRefresh: @escaping () -> Void) -> some View
     {
-        let failureTint = Color(nsColor: .systemRed)
+        let failureTint = self.nativeCritical
         let helpText: String
         let tint: Color
         let baseTint: Color
@@ -884,7 +884,7 @@ private struct ConfigMenuItemView: View {
         switch phase {
         case .idle:
             helpText = self.refreshHelpText
-            tint = Color(nsColor: .controlAccentColor)
+            tint = self.nativeAccent
             baseTint = self.secondaryTextColor
         case .refreshing:
             helpText = self.refreshingAccessibilityLabel
@@ -912,31 +912,31 @@ private struct ConfigMenuItemView: View {
 
     private var primaryTextColor: Color {
         if self.isHovered {
-            return Color(nsColor: .selectedMenuItemTextColor)
+            return self.nativeSelectedMenuText
         }
-        return .primary
+        return self.nativePrimaryLabel
     }
 
     private var secondaryTextColor: Color {
         if self.isHovered {
-            return Color(nsColor: .selectedMenuItemTextColor).opacity(0.88)
+            return self.nativeSelectedMenuText.opacity(0.88)
         }
-        return self.selected ? .primary.opacity(0.72) : .secondary
+        return self.selected ? self.nativePrimaryLabel.opacity(0.72) : self.nativeSecondaryLabel
     }
 
     private var leadingSymbolForeground: Color {
         if self.isHovered {
-            return Color(nsColor: .selectedMenuItemTextColor)
+            return self.nativeSelectedMenuText
         }
         return self.leadingTint
     }
 
     private var rowBackground: Color {
         if self.isHovered {
-            return Color(nsColor: .selectedContentBackgroundColor)
+            return self.nativeHoverFill
         }
         if self.selected {
-            return Color(nsColor: .selectedContentBackgroundColor).opacity(0.34)
+            return self.nativeHoverFill.opacity(0.34)
         }
         return .clear
     }
@@ -967,21 +967,21 @@ private struct ConfigSSIDBadge: View {
 
     private var foreground: Color {
         if self.isHovered {
-            return Color(nsColor: .selectedMenuItemTextColor).opacity(0.96)
+            return self.nativeSelectedMenuText.opacity(0.96)
         }
         return self.tint
     }
 
     private var background: Color {
         if self.isHovered {
-            return Color(nsColor: .selectedMenuItemTextColor).opacity(0.14)
+            return self.nativeSelectedMenuText.opacity(0.14)
         }
         return self.tint.opacity(0.12)
     }
 
     private var border: Color {
         if self.isHovered {
-            return Color(nsColor: .selectedMenuItemTextColor).opacity(0.18)
+            return self.nativeSelectedMenuText.opacity(0.18)
         }
         return self.tint.opacity(0.18)
     }

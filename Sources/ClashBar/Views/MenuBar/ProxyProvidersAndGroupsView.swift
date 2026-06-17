@@ -549,7 +549,7 @@ private struct FrozenPopoverNodesList<Row: View>: View {
         if self.frozenNodes.isEmpty {
             Text(self.emptyText)
                 .font(.app(size: T.FontSize.caption, weight: .regular))
-                .foregroundStyle(Color(nsColor: .secondaryLabelColor))
+                .foregroundStyle(self.nativeSecondaryLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, T.space6)
                 .padding(.vertical, T.space4)
@@ -585,12 +585,12 @@ private struct ProxyGroupPopoverNodeItem: View {
                     Image(systemName: self.selected ? "checkmark.circle.fill" : "circle")
                         .font(.app(size: T.FontSize.caption, weight: .semibold))
                         .foregroundStyle(self
-                            .selected ? Color(nsColor: .controlAccentColor) : Color(nsColor: .tertiaryLabelColor))
+                            .selected ? self.nativeAccent : self.nativeTertiaryLabel)
                         .frame(width: 11, alignment: .center)
 
                     Text(self.title)
                         .font(.app(size: T.FontSize.body, weight: self.selected ? .semibold : .medium))
-                        .foregroundStyle(self.selected ? Color.primary : Color.secondary)
+                        .foregroundStyle(self.selected ? self.nativePrimaryLabel : self.nativeSecondaryLabel)
                         .lineLimit(1)
                         .truncationMode(.middle)
                         .minimumScaleFactor(T.minimumScale)
@@ -600,7 +600,8 @@ private struct ProxyGroupPopoverNodeItem: View {
                     if let typeText = self.typeText {
                         Text(typeText)
                             .font(.app(size: T.FontSize.caption, weight: .medium))
-                            .foregroundStyle(self.selected ? Color.primary.opacity(0.72) : Color.secondary
+                            .foregroundStyle(self.selected ? self.nativePrimaryLabel.opacity(0.72) : self
+                                .nativeSecondaryLabel
                                 .opacity(0.82))
                             .lineLimit(1)
                             .truncationMode(.tail)
@@ -661,20 +662,20 @@ private struct ProxyGroupPopoverNodeItem: View {
 
     var rowBackground: Color {
         if self.selected {
-            return Color(nsColor: .controlAccentColor).opacity(T.Opacity.tint)
+            return self.nativeAccent.opacity(T.Opacity.tint)
         }
         if self.isHovered {
-            return Color(nsColor: .selectedContentBackgroundColor).opacity(0.22)
+            return self.nativeHoverFill.opacity(0.22)
         }
         return .clear
     }
 
     var testButtonTint: Color {
-        Color(nsColor: .systemTeal).opacity(T.Opacity.solid)
+        self.nativeTeal.opacity(T.Opacity.solid)
     }
 
     var testButtonBaseTint: Color {
-        Color(nsColor: .secondaryLabelColor)
+        self.nativeSecondaryLabel
     }
 
     @ViewBuilder

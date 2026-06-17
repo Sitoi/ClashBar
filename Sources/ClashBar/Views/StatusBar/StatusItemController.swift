@@ -60,9 +60,9 @@ private struct StatusItemBannerRootView: View {
                     .frame(width: 48, alignment: .trailing)
             }
 
-            VStack(spacing: 4) {
+            VStack(spacing: T.space4) {
                 Text(self.banner.title)
-                    .font(.app(size: 11, weight: .semibold))
+                    .font(.app(size: T.FontSize.subheadline, weight: .semibold))
                     .foregroundStyle(self.nativeSecondaryLabel)
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -91,7 +91,7 @@ private struct StatusItemBannerRootView: View {
                 .stroke(self.nativeControlBorder.opacity(0.78), lineWidth: 0.8)
         }
         .shadow(
-            color: Color(nsColor: .shadowColor).opacity(T.Shadow.standard.opacity * 1.12),
+            color: self.nativeShadow.opacity(T.Shadow.standard.opacity * 1.12),
             radius: 14,
             x: 0,
             y: 7)
@@ -104,7 +104,7 @@ private struct StatusItemBannerRootView: View {
     private var detailLine: some View {
         HStack(spacing: 7) {
             Text(self.banner.primaryDetail)
-                .font(.app(size: 13, weight: .semibold))
+                .font(.app(size: T.FontSize.body, weight: .semibold))
                 .foregroundStyle(self.nativePrimaryLabel)
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -115,7 +115,7 @@ private struct StatusItemBannerRootView: View {
                     .frame(width: 3, height: 3)
 
                 Text(secondaryDetail)
-                    .font(.app(size: 12, weight: .medium))
+                    .font(.app(size: T.FontSize.callout, weight: .medium))
                     .foregroundStyle(self.nativeSecondaryLabel)
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -168,7 +168,7 @@ private struct StatusItemBannerRootView: View {
                         .fill(self.nativePositive.opacity(0.12)))
 
             Image(systemName: "checkmark")
-                .font(.app(size: 11, weight: .bold))
+                .font(.app(size: T.FontSize.subheadline, weight: .bold))
                 .foregroundStyle(self.nativePositive.opacity(T.Opacity.solid))
         }
         .frame(width: 26, height: 26)

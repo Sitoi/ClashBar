@@ -357,6 +357,14 @@ extension View {
         Color(nsColor: .quaternaryLabelColor).opacity(T.Opacity.tint)
     }
 
+    var nativeSelectedMenuText: Color {
+        Color(nsColor: .selectedMenuItemTextColor)
+    }
+
+    var nativeShadow: Color {
+        Color(nsColor: .shadowColor)
+    }
+
     var nativeSecondaryLabel: Color {
         Color(nsColor: .secondaryLabelColor)
     }
