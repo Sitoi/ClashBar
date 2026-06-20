@@ -6,11 +6,15 @@ private typealias T = MenuBarLayoutTokens
 struct RulesTabView: TranslatingView {
     @EnvironmentObject var appViewModel: AppViewModel
     @StateObject private var viewModel = RulesViewModel()
-    @State private var hoveredRuleIndex: Int?
+    @AppStorage("clashbar.rules.group_by_policy.v1") private var storedGroupByPolicy = false
+    @State private var hoveredRuleKey: String?
+    @State private var hoveredGroupPolicy: String?
+    @State private var expandedPolicies: Set<String> = []
 
     var body: some View {
-        let visibleRules = self.viewModel.visibleRules
-        let providerLookup = self.viewModel.providerLookup
+        let output = self.viewModel.output
+        let visibleRules = output.rules
+        let providerLookup = output.providerLookup
 
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 0) {
@@ -22,14 +26,16 @@ struct RulesTabView: TranslatingView {
                 }
 
                 Spacer(minLength: 0)
-                self.rulesRefreshButton
+                HStack(spacing: T.space4) {
+                    self.rulesGroupToggle
+                    self.rulesRefreshButton
+                }
             }
             .padding(.vertical, T.space6)
-            .overlay(alignment: .bottom) {
-                Rectangle()
-                    .fill(nativeSeparator)
-                    .frame(height: T.stroke)
-            }
+            .overlay(alignment: .bottom) { self.hairline }
+
+            self.rulesControlCard
+                .overlay(alignment: .bottom) { self.hairline }
 
             HStack(spacing: 0) {
                 Color.clear.frame(width: 24)
@@ -51,42 +57,188 @@ struct RulesTabView: TranslatingView {
             .textCase(.uppercase)
             .padding(.horizontal, T.space4)
             .padding(.vertical, T.space6)
-            .overlay(alignment: .bottom) {
-                Rectangle()
-                    .fill(nativeSeparator)
-                    .frame(height: T.stroke)
-            }
+            .overlay(alignment: .bottom) { self.hairline }
 
             if visibleRules.isEmpty {
-                Text(self.tr("ui.empty.rules"))
-                    .font(.app(size: T.FontSize.body, weight: .regular))
-                    .foregroundStyle(nativeSecondaryLabel)
-                    .padding(.horizontal, T.space4)
-                    .padding(.vertical, T.space8)
-                    .frame(maxWidth: .infinity, minHeight: 52, alignment: .topLeading)
+                self.rulesEmptyState
+            } else if self.viewModel.groupByPolicy {
+                self.groupedRulesList(groups: output.groups, providerLookup: providerLookup)
             } else {
-                VStack(spacing: 0) {
-                    ForEach(Array(visibleRules.enumerated()), id: \.offset) { index, rule in
-                        self.rulesRow(rule: rule, index: index, providerLookup: providerLookup)
-
-                        if index < visibleRules.count - 1 {
-                            Rectangle()
-                                .fill(nativeSeparator)
-                                .frame(height: T.stroke)
-                        }
-                    }
-                }
+                self.flatRulesList(visibleRules: visibleRules, providerLookup: providerLookup)
             }
         }
-        .onAppear { self.refreshData() }
+        .onAppear {
+            self.viewModel.groupByPolicy = self.storedGroupByPolicy
+            self.refreshData()
+        }
         .onChange(of: self.appViewModel.ruleItems) { _ in self.refreshData() }
         .onChange(of: self.appViewModel.ruleProviders) { _ in self.refreshData() }
+        .onChange(of: self.viewModel.filterText) { _ in self.refreshData() }
+        .onChange(of: self.viewModel.typeFilter) { _ in self.refreshData() }
+        .onChange(of: self.viewModel.policyFilter) { _ in self.refreshData() }
+        .onChange(of: self.viewModel.groupByPolicy) { _ in self.refreshData() }
+    }
+
+    private var hairline: some View {
+        Rectangle()
+            .fill(nativeSeparator)
+            .frame(height: T.stroke)
     }
 
     private func refreshData() {
         self.viewModel.updateVisibleRules(
             items: self.appViewModel.ruleItems,
             providers: self.appViewModel.ruleProviders)
+    }
+
+    var rulesControlCard: some View {
+        VStack(alignment: .leading, spacing: T.space4) {
+            HStack(spacing: T.space4) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: T.space4) {
+                        ForEach(RulesTypeFilter.allCases) { filter in
+                            self.ruleTypeChip(filter)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                self.fractionSummaryBadge(
+                    current: self.viewModel.output.rules.count,
+                    total: self.appViewModel.rulesCount)
+            }
+
+            HStack(spacing: T.space6) {
+                TextField(self.tr("ui.placeholder.filter_rule"), text: self.$viewModel.filterText)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.app(size: T.FontSize.body, weight: .regular))
+                    .foregroundStyle(nativePrimaryLabel)
+
+                self.rulesPolicyMenu
+            }
+        }
+        .menuRowPadding(vertical: T.space4)
+    }
+
+    func ruleTypeChip(_ filter: RulesTypeFilter) -> some View {
+        self.filterChip(
+            title: self.tr(filter.titleKey),
+            count: self.viewModel.output.typeCounts[filter] ?? 0,
+            selected: self.viewModel.typeFilter == filter)
+        {
+            self.viewModel.typeFilter = filter
+        }
+    }
+
+    var rulesPolicyMenu: some View {
+        self.compactSelectionMenu(.init(
+            selection: self.viewModel.policyFilter,
+            options: self.viewModel.output.policyOptions,
+            symbol: "arrow.triangle.branch",
+            helpText: self.tr("ui.rules.filter.policy"),
+            optionTitle: { $0.isAll ? self.tr("ui.rules.policy.all") : $0.name },
+            onSelect: { self.viewModel.policyFilter = $0 }))
+    }
+
+    var rulesGroupToggle: some View {
+        let grouped = self.viewModel.groupByPolicy
+        return self.compactTopIcon(
+            grouped ? "rectangle.3.group.fill" : "list.bullet",
+            label: self.tr("ui.rules.group.toggle"),
+            toneOverride: grouped ? nativeInfo : nil)
+        {
+            self.viewModel.groupByPolicy.toggle()
+            self.storedGroupByPolicy = self.viewModel.groupByPolicy
+        }
+        .help(self.tr("ui.rules.group.toggle"))
+    }
+
+    var rulesEmptyState: some View {
+        let key = self.appViewModel.ruleItems.isEmpty ? "ui.empty.rules" : "ui.empty.rules.no_match"
+        return Text(self.tr(key))
+            .font(.app(size: T.FontSize.body, weight: .regular))
+            .foregroundStyle(nativeSecondaryLabel)
+            .padding(.horizontal, T.space4)
+            .padding(.vertical, T.space8)
+            .frame(maxWidth: .infinity, minHeight: 52, alignment: .topLeading)
+    }
+
+    func flatRulesList(visibleRules: [RuleItem], providerLookup: [String: ProviderDetail]) -> some View {
+        MeasurementAwareVStack(spacing: 0) {
+            ForEach(Array(visibleRules.enumerated()), id: \.offset) { index, rule in
+                self.rulesRow(rule: rule, rowKey: "\(index)", providerLookup: providerLookup)
+
+                if index < visibleRules.count - 1 {
+                    self.hairline
+                }
+            }
+        }
+    }
+
+    func groupedRulesList(groups: [RuleGroup], providerLookup: [String: ProviderDetail]) -> some View {
+        MeasurementAwareVStack(spacing: 0) {
+            ForEach(groups) { group in
+                self.policyGroupHeader(group)
+
+                self.hairline
+
+                if self.expandedPolicies.contains(group.policy) {
+                    ForEach(Array(group.rules.enumerated()), id: \.offset) { index, rule in
+                        self.rulesRow(
+                            rule: rule,
+                            rowKey: "\(group.policy)#\(index)",
+                            providerLookup: providerLookup,
+                            showsPolicy: false)
+
+                        self.hairline
+                    }
+                }
+            }
+        }
+    }
+
+    func policyGroupHeader(_ group: RuleGroup) -> some View {
+        let expanded = self.expandedPolicies.contains(group.policy)
+        let hovered = self.hoveredGroupPolicy == group.policy
+        let name = group.policy.trimmedNonEmpty ?? self.tr("ui.common.na")
+
+        return Button {
+            self.toggleGroup(group.policy)
+        } label: {
+            HStack(spacing: 0) {
+                Image(systemName: expanded ? "chevron.down" : "chevron.right")
+                    .font(.app(size: T.FontSize.caption, weight: .bold))
+                    .foregroundStyle(hovered ? nativePrimaryLabel : nativeSecondaryLabel)
+                    .frame(width: 24, alignment: .leading)
+
+                Text(name)
+                    .font(.app(size: T.FontSize.body, weight: .semibold))
+                    .foregroundStyle(nativePrimaryLabel)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+
+                Spacer(minLength: T.space4)
+
+                Text("\(group.rules.count)")
+                    .font(.app(size: T.FontSize.caption, weight: .bold))
+                    .foregroundStyle(nativeSecondaryLabel)
+                    .padding(.horizontal, T.space6)
+                    .padding(.vertical, T.space1)
+                    .background(nativeBadgeCapsule())
+            }
+            .padding(.horizontal, T.space4)
+            .frame(height: T.rowHeight)
+            .background(nativeHoverRowBackground(hovered))
+        }
+        .buttonStyle(.plain)
+        .onHover { self.hoveredGroupPolicy = self.nextHovered(
+            current: self.hoveredGroupPolicy, target: group.policy, isHovering: $0) }
+    }
+
+    private func toggleGroup(_ policy: String) {
+        if !self.expandedPolicies.insert(policy).inserted {
+            self.expandedPolicies.remove(policy)
+        }
     }
 
     func rulesStatChip(title: String, value: String) -> some View {
@@ -115,8 +267,13 @@ struct RulesTabView: TranslatingView {
         .opacity(self.appViewModel.isRuleProvidersRefreshing ? 0.6 : 1)
     }
 
-    func rulesRow(rule: RuleItem, index: Int, providerLookup: [String: ProviderDetail]) -> some View {
-        let hovered = self.hoveredRuleIndex == index
+    func rulesRow(
+        rule: RuleItem,
+        rowKey: String,
+        providerLookup: [String: ProviderDetail],
+        showsPolicy: Bool = true) -> some View
+    {
+        let hovered = self.hoveredRuleKey == rowKey
         let typeText = (rule.type.trimmedNonEmpty ?? self.tr("ui.common.na")).uppercased()
         let targetText = rule.payload.trimmedNonEmpty ?? self.tr("ui.common.na")
         let policyText = rule.proxy.trimmedNonEmpty ?? self.tr("ui.common.na")
@@ -141,22 +298,24 @@ struct RulesTabView: TranslatingView {
                     .foregroundStyle(nativeTertiaryLabel)
                     .lineLimit(1)
             }
-            .frame(width: 120, alignment: .leading)
+            .frame(width: showsPolicy ? 120 : 120 + 90 + T.space6, alignment: .leading)
             .padding(.trailing, T.space6)
 
-            HStack(spacing: T.space1) {
-                if let symbol = badge.symbol {
-                    Image(systemName: symbol)
-                        .font(.app(size: T.FontSize.caption, weight: .semibold))
+            if showsPolicy {
+                HStack(spacing: T.space1) {
+                    if let symbol = badge.symbol {
+                        Image(systemName: symbol)
+                            .font(.app(size: T.FontSize.caption, weight: .semibold))
+                            .foregroundStyle(badge.color)
+                    }
+                    Text(policyText)
+                        .font(.app(size: T.FontSize.caption, weight: .medium))
                         .foregroundStyle(badge.color)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                 }
-                Text(policyText)
-                    .font(.app(size: T.FontSize.caption, weight: .medium))
-                    .foregroundStyle(badge.color)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                .frame(width: 90, alignment: .leading)
             }
-            .frame(width: 90, alignment: .leading)
 
             VStack(alignment: .trailing, spacing: T.space1) {
                 Text("\(stats.count)")
@@ -174,8 +333,8 @@ struct RulesTabView: TranslatingView {
         .padding(.horizontal, T.space4)
         .frame(height: T.rowHeight)
         .background(nativeHoverRowBackground(hovered))
-        .onHover { self.hoveredRuleIndex = self.nextHovered(
-            current: self.hoveredRuleIndex, target: index, isHovering: $0) }
+        .onHover { self.hoveredRuleKey = self.nextHovered(
+            current: self.hoveredRuleKey, target: rowKey, isHovering: $0) }
     }
 
     func ruleTypeIcon(for type: String) -> (symbol: String, color: Color) {

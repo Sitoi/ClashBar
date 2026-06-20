@@ -6,7 +6,9 @@ final class StatusItemContentView: NSView {
     private let brandIconRenderSize: CGFloat = 24
     private let symbolPointSize: CGFloat = 20
     private let iconTextSpacing: CGFloat = 0
-    private let textContainerWidth: CGFloat = 38
+    // 需容纳最宽速率文本（如 "12.3M↑"，10pt semibold 等宽数字下实测约 40.65pt），
+    // 否则 M/s 量级数值会被 .byTruncatingHead 截断隐藏。
+    private let textContainerWidth: CGFloat = 43
     private let textLineHeight: CGFloat = 11
 
     private let iconView: NSImageView = {

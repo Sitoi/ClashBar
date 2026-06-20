@@ -401,6 +401,40 @@ extension View {
         Capsule(style: .continuous).fill(self.nativeBadgeFill)
     }
 
+    /// 统一的筛选 chip：选中为实心强调色 + 白字，未选为浅底胶囊 + 次级文字。可选尾随计数。
+    func filterChip(
+        title: String,
+        count: Int? = nil,
+        selected: Bool,
+        action: @escaping () -> Void) -> some View
+    {
+        Button(action: action) {
+            HStack(spacing: T.space2) {
+                Text(title)
+                    .font(.app(size: T.FontSize.caption, weight: .medium))
+                if let count {
+                    Text("\(count)")
+                        .font(.app(size: T.FontSize.caption, weight: selected ? .bold : .medium))
+                        .foregroundStyle(selected ? Color.white.opacity(0.75) : self.nativeTertiaryLabel)
+                }
+            }
+            .foregroundStyle(selected ? Color.white : self.nativeSecondaryLabel)
+            .lineLimit(1)
+            .fixedSize()
+            .padding(.horizontal, T.space6)
+            .padding(.vertical, T.space2)
+            .background {
+                if selected {
+                    Capsule(style: .continuous).fill(self.nativeInfo.opacity(T.Opacity.solid))
+                } else {
+                    self.nativeBadgeCapsule()
+                }
+            }
+            .contentShape(Capsule(style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
     func nativeRowFill(active: Bool, hovered: Bool) -> Color {
         if active {
             return self.nativeAccent.opacity(T.Opacity.selection)

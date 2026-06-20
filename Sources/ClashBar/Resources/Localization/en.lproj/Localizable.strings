@@ -112,14 +112,26 @@
 "ui.rules.column.stats" = "Stats";
 "ui.rule.stats.rules" = "Rules";
 "ui.rule.stats.sets" = "Sets";
+"ui.rules.type.all" = "All";
+"ui.rules.type.domain" = "Domain";
+"ui.rules.type.ip" = "IP";
+"ui.rules.type.ruleset" = "Rule-Set";
+"ui.rules.type.other" = "Other";
+"ui.rules.filter.policy" = "Filter by policy";
+"ui.rules.policy.all" = "All policies";
+"ui.rules.group.toggle" = "Group by policy";
+"ui.rules.group.on" = "Grouped";
+"ui.rules.group.off" = "List";
 
 "ui.empty.proxy_providers" = "No proxy providers";
 "ui.empty.proxy_groups" = "No proxy groups loaded";
 "ui.empty.rules" = "No rules data";
+"ui.empty.rules.no_match" = "No matching rules";
 "ui.empty.connections" = "No active connections";
 "ui.empty.logs" = "No logs";
 
 "ui.placeholder.filter_connection" = "Filter domain, IP...";
+"ui.placeholder.filter_rule" = "Filter target, type, policy...";
 "ui.placeholder.search_logs" = "Search logs...";
 "ui.placeholder.port" = "0";
 "ui.placeholder.system_proxy_exception" = "Host, domain, CIDR, or <local>";

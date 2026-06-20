@@ -114,14 +114,26 @@
 "ui.rules.column.stats" = "统计";
 "ui.rule.stats.rules" = "规则";
 "ui.rule.stats.sets" = "规则集";
+"ui.rules.type.all" = "全部";
+"ui.rules.type.domain" = "域名";
+"ui.rules.type.ip" = "IP";
+"ui.rules.type.ruleset" = "规则集";
+"ui.rules.type.other" = "其他";
+"ui.rules.filter.policy" = "按策略过滤";
+"ui.rules.policy.all" = "全部策略";
+"ui.rules.group.toggle" = "按策略分组";
+"ui.rules.group.on" = "分组";
+"ui.rules.group.off" = "列表";
 
 "ui.empty.proxy_providers" = "暂无代理提供者";
 "ui.empty.proxy_groups" = "暂无代理组";
 "ui.empty.rules" = "暂无规则数据";
+"ui.empty.rules.no_match" = "无匹配规则";
 "ui.empty.connections" = "暂无活动连接";
 "ui.empty.logs" = "暂无日志";
 
 "ui.placeholder.filter_connection" = "过滤域名、IP...";
+"ui.placeholder.filter_rule" = "搜索目标、类型、策略...";
 "ui.placeholder.search_logs" = "搜索日志...";
 "ui.placeholder.port" = "0";
 "ui.placeholder.system_proxy_exception" = "主机、域名、CIDR 或 <local>";

@@ -3,45 +3,6 @@ import SwiftUI
 // swiftlint:disable:next type_name
 private typealias T = MenuBarLayoutTokens
 
-private struct LogsFilterChipButton: View {
-    let title: String
-    let selected: Bool
-    let selectedFill: Color
-    let selectedBorder: Color
-    let selectedText: Color
-    let normalText: Color
-    let hoverFill: Color
-    let action: () -> Void
-
-    @State private var isHovered = false
-
-    var body: some View {
-        Button(action: self.action) {
-            Text(self.title)
-                .font(.app(size: T.FontSize.caption, weight: .semibold))
-                .lineLimit(1)
-                .padding(.horizontal, T.space6)
-                .padding(.vertical, T.space2)
-                .foregroundStyle(self.selected ? self.selectedText : self.normalText)
-                .background {
-                    Capsule(style: .continuous)
-                        .fill(self.selected ? self.selectedFill : (self.isHovered ? self.hoverFill : .clear))
-                        .overlay {
-                            if self.selected {
-                                Capsule(style: .continuous)
-                                    .stroke(self.selectedBorder, lineWidth: T.stroke)
-                            }
-                        }
-                }
-                .contentShape(Capsule(style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .onHover { self.isHovered = $0 }
-        .animation(.easeOut(duration: 0.12), value: self.isHovered)
-        .animation(.snappy(duration: 0.16), value: self.selected)
-    }
-}
-
 private struct LogFilterGroupConfiguration<Item: Hashable> {
     let symbol: String
     let allTitle: String
@@ -171,38 +132,18 @@ struct LogsTabView: TranslatingView {
                 .font(.app(size: T.FontSize.caption, weight: .semibold))
                 .foregroundStyle(nativeTertiaryLabel)
 
-            self.logFilterToggleButton(
+            self.filterChip(
                 title: configuration.allTitle,
                 selected: configuration.allSelected,
                 action: configuration.selectAll)
 
             ForEach(configuration.items, id: \.self) { item in
-                self.logFilterToggleButton(
+                self.filterChip(
                     title: configuration.itemTitle(item),
                     selected: configuration.itemSelected(item),
                     action: { configuration.toggleItem(item) })
             }
         }
-    }
-
-    func logFilterToggleButton(
-        title: String,
-        selected: Bool,
-        action: @escaping () -> Void) -> some View
-    {
-        LogsFilterChipButton(
-            title: title,
-            selected: selected,
-            selectedFill: self.nativeAccent
-                .opacity(self.isDarkAppearance ? 0.10 : 0.045),
-            selectedBorder: self.nativeAccent
-                .opacity(self.isDarkAppearance ? 0.14 : 0.08),
-            selectedText: self.nativePrimaryLabel
-                .opacity(self.isDarkAppearance ? 0.96 : 0.88),
-            normalText: self.nativeSecondaryLabel,
-            hoverFill: self.nativeHoverFill
-                .opacity(self.isDarkAppearance ? 0.06 : 0.035),
-            action: action)
     }
 
     func logEntryRow(_ log: AppErrorLogEntry) -> some View {
