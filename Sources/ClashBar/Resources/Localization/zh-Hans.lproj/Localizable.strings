@@ -1,4 +1,5 @@
 "ui.tab.proxy" = "节点";
+"ui.menu.quick" = "快捷操作";
 "ui.tab.rules" = "分流";
 "ui.tab.connections" = "连接";
 "ui.tab.logs" = "日志";
@@ -49,6 +50,7 @@
 "ui.action.open_core_directory" = "打开内核目录";
 "ui.action.enable_tun" = "开启 TUN 模式";
 "ui.action.disable_tun" = "关闭 TUN 模式";
+"ui.action.reload_config" = "重新加载配置";
 "ui.action.upgrade_core" = "升级 Core";
 
 "ui.mode.rule" = "规则";

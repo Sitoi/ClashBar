@@ -1,4 +1,5 @@
 "ui.tab.proxy" = "Node";
+"ui.menu.quick" = "Quick Actions";
 "ui.tab.rules" = "Rule";
 "ui.tab.connections" = "Connection";
 "ui.tab.logs" = "Log";
@@ -47,6 +48,7 @@
 "ui.action.open_core_directory" = "Open Core Directory";
 "ui.action.enable_tun" = "Enable TUN Mode";
 "ui.action.disable_tun" = "Disable TUN Mode";
+"ui.action.reload_config" = "Reload Config";
 "ui.action.upgrade_core" = "Upgrade Core";
 
 "ui.mode.rule" = "Rule";

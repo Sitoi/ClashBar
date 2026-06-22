@@ -19,7 +19,40 @@ struct ClashBarApp: App {
                     .keyboardShortcut(",", modifiers: .command)
                 }
 
-                CommandMenu("Core") {
+                CommandMenu(self.tr("ui.menu.quick")) {
+                    Button(self.tr("ui.quick.system_proxy")) {
+                        Task { await self.session.toggleSystemProxy(!self.session.isSystemProxyEnabled) }
+                    }
+                    .keyboardShortcut("S", modifiers: .command)
+
+                    Button(self.session.isTunEnabled ? self.tr("ui.action.disable_tun") : self
+                        .tr("ui.action.enable_tun"))
+                    {
+                        Task { await self.session.toggleTunMode(!self.session.isTunEnabled) }
+                    }
+                    .keyboardShortcut("E", modifiers: .command)
+                    .disabled(!self.session.isTunToggleEnabled)
+
+                    Divider()
+
+                    // ponytail: ⌘C shadows Edit > Copy while the app is frontmost; ⌘⇧C if that bites
+                    Button(self.tr("ui.quick.copy_terminal")) { self.session.copyLocalProxyCommand() }
+                        .keyboardShortcut("C", modifiers: .command)
+
+                    Button(self.tr("ui.quick.copy_terminal_current_endpoint")) {
+                        self.session.copyManagedEndpointProxyCommand()
+                    }
+                    .keyboardShortcut("C", modifiers: [.command, .option])
+
+                    Divider()
+
+                    Button(self.tr("ui.action.reload_config")) {
+                        Task { await self.session.reloadConfig() }
+                    }
+                    .keyboardShortcut("R", modifiers: .command)
+
+                    Divider()
+
                     Button(self.session.primaryCoreActionLabel) {
                         Task { await self.session.performPrimaryCoreAction() }
                     }
@@ -31,16 +64,6 @@ struct ClashBarApp: App {
                     }
                     .keyboardShortcut(".", modifiers: [.command, .shift])
                     .disabled(self.session.isRemoteTarget || self.session.isCoreActionProcessing)
-
-                    Divider()
-
-                    Button(self.session.isTunEnabled ? self.tr("ui.action.disable_tun") : self
-                        .tr("ui.action.enable_tun"))
-                    {
-                        Task { await self.session.toggleTunMode(!self.session.isTunEnabled) }
-                    }
-                    .keyboardShortcut("T", modifiers: [.command, .option])
-                    .disabled(!self.session.isTunToggleEnabled)
                 }
 
                 CommandMenu("Panel") {
@@ -50,23 +73,6 @@ struct ClashBarApp: App {
                     }
                     Button(self.tr("ui.tab.system")) { self.session.setActiveMenuTab(.system) }
                         .keyboardShortcut("5", modifiers: [.command, .option])
-                }
-
-                CommandMenu("Actions") {
-                    Button(self.tr("ui.action.refresh")) {
-                        Task { await self.session.refreshActiveTab() }
-                    }
-                    .keyboardShortcut("K", modifiers: [.command, .shift])
-
-                    Button(self.tr("ui.quick.copy_terminal")) { self.session.copyProxyCommand() }
-                        .keyboardShortcut("C", modifiers: [.command, .option, .shift])
-
-                    Button(self.tr("ui.action.copy_all_logs")) { self.session.copyAllLogs() }
-                        .keyboardShortcut("L", modifiers: [.command, .option, .shift])
-
-                    Button(self.tr("ui.action.clear_all_logs")) { self.session.clearAllLogs() }
-                        .keyboardShortcut(.delete, modifiers: [.command, .option, .shift])
-                        .disabled(self.session.errorLogs.isEmpty)
                 }
             }
     }
