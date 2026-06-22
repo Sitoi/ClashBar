@@ -1,3 +1,27 @@
+## v0.2.9
+
+![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.2.9-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
+
+> 本次更新集中在 **规则页面的筛选检索体验与菜单栏快捷键重构**：分流（Rules）页面新增按类型 / 策略筛选、关键字搜索与按策略分组折叠展示，分组状态本地持久化，规则数量再多也能快速定位；菜单栏命令菜单整合为统一的「快捷操作」菜单，把系统代理、TUN、复制代理命令、重载配置等常用动作集中并补齐快捷键。同时把规则保留上限大幅提升以适配大型规则集，并修复状态栏 M/s 量级速率文本被截断的问题。
+
+### 📝 更新日志 (Changelog)
+
+**✨ 新增功能 (New Features)**
+
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **规则筛选、搜索与分组**：分流页面新增类型（域名 / IP / 规则集 / 其他）与策略 chip 筛选、关键字搜索，类型 chip 实时显示命中计数；支持按策略分组折叠展示，分组开关状态本地持久化，规则较多时能更快定位目标规则。
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **菜单栏快捷操作菜单**：将原有 Core / Actions 命令菜单整合为统一的「快捷操作」菜单，集中系统代理开关、TUN 模式开关、复制本地 / 当前控制端代理命令、重新加载配置等常用动作，并补齐 `⌘S` / `⌘E` / `⌘C` / `⌘⌥C` / `⌘R` 等快捷键。
+
+**🚀 优化改进 (Improvements)**
+
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **规则保留上限提升**：规则保留上限从 100 条提升至 20,000 条（等效无限制），适配大型规则集；该上限仅用于防止异常配置撑爆内存。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **筛选组件复用**：提取共享的筛选 chip 组件，日志页改为复用同一实现，筛选交互在规则页与日志页保持一致。
+
+**🐞 修复问题 (Bug Fixes)**
+
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **状态栏速率文本截断**：修复状态栏在 M/s 量级速率下文本被截断的问题，将速率显示宽度从 38 调整为 43。
+
+---
+
 ## v0.2.8
 
 ![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.2.8-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
