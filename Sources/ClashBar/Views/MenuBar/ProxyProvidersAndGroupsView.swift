@@ -302,12 +302,18 @@ extension ProxyTabView {
                         .background(nativeBadgeCapsule())
                         .frame(width: columns.current, alignment: .leading)
 
-                    Text(delayText)
-                        .font(.app(size: T.FontSize.caption, weight: .regular))
-                        .foregroundStyle(latencyColor(delayValue))
-                        .lineLimit(1)
-                        .minimumScaleFactor(T.minimumScale)
-                        .frame(width: columns.delay, alignment: .trailing)
+                    Group {
+                        if let delayValue {
+                            delayBadge(delayValue, fallbackText: delayText, barColor: latencyColor(delayValue))
+                        } else {
+                            Text(delayText)
+                                .font(.app(size: T.FontSize.caption, weight: .regular))
+                                .foregroundStyle(latencyColor(delayValue))
+                                .lineLimit(1)
+                                .minimumScaleFactor(T.minimumScale)
+                        }
+                    }
+                    .frame(width: columns.delay, alignment: .trailing)
 
                     self.providerActionButton(
                         .healthcheck,
@@ -316,11 +322,6 @@ extension ProxyTabView {
                         await appViewModel.refreshGroupLatency(group)
                     }
                     .frame(width: 18, alignment: .center)
-
-                    Image(systemName: "chevron.right")
-                        .font(.app(size: T.FontSize.caption, weight: .semibold))
-                        .foregroundStyle(nativeTertiaryLabel)
-                        .frame(width: T.space8, alignment: .trailing)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             }
@@ -373,12 +374,11 @@ extension ProxyTabView {
     {
         let iconWidth: CGFloat = hasLeadingIcon ? T.rowLeadingIcon : 0
         let actionWidth: CGFloat = 18
-        let chevronWidth: CGFloat = 8
-        let spacingCount: CGFloat = hasLeadingIcon ? 5 : 4
+        let spacingCount: CGFloat = hasLeadingIcon ? 4 : 3
         let spacing = T.space1 * spacingCount
-        let available = max(0, totalWidth - iconWidth - actionWidth - chevronWidth - spacing)
+        let available = max(0, totalWidth - iconWidth - actionWidth - spacing)
         let name = floor(available * 0.34)
-        let delay = floor(available * 0.17)
+        let delay = floor(available * 0.20)
         let current = max(0, available - name - delay)
         return (name, current, delay)
     }
@@ -680,17 +680,30 @@ private struct ProxyGroupPopoverNodeItem: View {
 
     @ViewBuilder
     var delayMetricView: some View {
-        if self.delayValue != nil {
-            Text(self.delayText)
-                .font(.app(size: T.FontSize.caption, weight: .semibold))
-                .foregroundStyle(self.delayColor.opacity(self.selected ? 1 : 0.94))
-                .lineLimit(1)
+        if let delayValue = self.delayValue {
+            self.delayBadge(delayValue, fallbackText: self.delayText, barColor: self.delayColor)
         } else {
             Text(self.delayText)
                 .font(.app(size: T.FontSize.caption, weight: .regular))
-                .foregroundStyle(self.delayColor.opacity(self.selected ? 1 : 0.85))
+                .foregroundStyle(self.delayColor)
                 .lineLimit(1)
                 .minimumScaleFactor(T.minimumScale)
+        }
+    }
+}
+
+extension View {
+    /// 迷你色块 + 等宽延迟数字，组路由行与弹窗节点共用。
+    /// 超时(value == 0)回落到 fallbackText（已本地化的 delayText，即「超时」/「Timeout」），不显示 0。
+    fileprivate func delayBadge(_ value: Int, fallbackText: String, barColor: Color) -> some View {
+        HStack(alignment: .center, spacing: 6) {
+            RoundedRectangle(cornerRadius: 1, style: .continuous)
+                .fill(barColor)
+                .frame(width: 3, height: 12)
+            Text(value == 0 ? fallbackText : "\(value)")
+                .font(.system(size: T.FontSize.caption, weight: .medium, design: .monospaced))
+                .foregroundStyle(self.nativePrimaryLabel)
+                .lineLimit(1)
         }
     }
 }
