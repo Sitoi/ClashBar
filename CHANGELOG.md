@@ -1,3 +1,23 @@
+## v0.3.0
+
+![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.3.0-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
+
+> 本次更新集中在 **Geo 数据库一键更新与延迟显示、菜单栏交互细节打磨**：System 维护区新增「更新 Geo 数据库」按钮，内核运行时可直接调用 mihomo `/upgrade/geo` 接口刷新 GeoIP / GeoSite 数据，并带进行中 / 成功 / 失败状态反馈与日志，无需重启内核或手动替换数据库文件；代理组路由行与节点弹窗的延迟徽章改为「迷你色块 + 等宽数字」呈现，纵向对比更整齐、可读性更好，超时节点直接显示「超时」文案而不再展示无意义的 0；顶部品牌图标也变为可点击入口，一键打开项目主页。
+
+### 📝 更新日志 (Changelog)
+
+**✨ 新增功能 (New Features)**
+
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **Geo 数据库一键更新**：在 System 设置页「系统维护」区域新增「更新 Geo 数据库」按钮，内核运行时可直接触发 mihomo `/upgrade/geo` 接口刷新 GeoIP / GeoSite 数据库；更新过程中按钮展示进行中状态，完成后给出成功 / 失败反馈并写入日志，约 4 秒后自动恢复，无需重启内核或手动替换数据库文件。
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **点击顶部图标访问项目主页**：菜单栏顶部的 ClashBar 品牌图标改为可点击入口，单击即可在浏览器打开项目 GitHub 主页，并补齐悬停提示与无障碍标签。
+
+**🚀 优化改进 (Improvements)**
+
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **延迟徽章视觉重做**：代理组路由行与代理组节点弹窗的延迟显示统一改为「迷你色块 + 等宽数字」徽章，色块按延迟高低着色、数字使用等宽字体，多节点纵向对比时更整齐易读；同时移除组路由行末尾冗余的箭头图标并微调列宽，为延迟列留出更多空间。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **超时延迟显示文案而非 0**：延迟徽章在节点超时（延迟为 0）时直接显示「超时 / Timeout」文案，不再展示无意义的「0」，节点状态更直观。
+
+---
+
 ## v0.2.9
 
 ![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.2.9-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
