@@ -78,6 +78,7 @@ enum Endpoint {
     case flushFakeIPCache
     case flushDNSCache
     case upgradeCore
+    case upgradeGeo
 
     var method: HTTPMethod {
         switch self {
@@ -91,7 +92,7 @@ enum Endpoint {
             .patch
         case .closeAllConnections, .closeConnection:
             .delete
-        case .flushFakeIPCache, .flushDNSCache, .upgradeCore:
+        case .flushFakeIPCache, .flushDNSCache, .upgradeCore, .upgradeGeo:
             .post
         }
     }
@@ -125,6 +126,7 @@ enum Endpoint {
         case .flushFakeIPCache: "/cache/fakeip/flush"
         case .flushDNSCache: "/cache/dns/flush"
         case .upgradeCore: "/upgrade"
+        case .upgradeGeo: "/upgrade/geo"
         }
     }
 
@@ -151,7 +153,7 @@ enum Endpoint {
             try? JSONSerialization.data(withJSONObject: body.mapValues(\.foundationObject))
         case let .switchProxy(_, target):
             try? JSONSerialization.data(withJSONObject: ["name": target])
-        case .upgradeCore:
+        case .upgradeCore, .upgradeGeo:
             try? JSONSerialization.data(withJSONObject: Self.coreUpgradeRequestBody)
         default:
             nil
@@ -166,7 +168,7 @@ enum Endpoint {
              let .proxyDelay(_, _, timeout),
              let .proxyProviderProxyHealthcheck(_, _, _, timeout):
             max(5, TimeInterval(timeout) / 1000.0 + 2)
-        case .upgradeCore:
+        case .upgradeCore, .upgradeGeo:
             60
         default:
             2

@@ -261,6 +261,32 @@ struct SystemTabView: TranslatingView {
         SystemTabViewModel.maintenanceActionEnabled(session: self.appViewModel)
     }
 
+    var geoUpdateActionEnabled: Bool {
+        self.appViewModel.isRuntimeRunning && !self.appViewModel.isGeoUpdateInFlight
+    }
+
+    var geoUpdateFeedbackSymbol: String? {
+        switch self.appViewModel.geoUpdateState {
+        case .idle, .updating:
+            nil
+        case .succeeded:
+            "checkmark.circle"
+        case .failed:
+            "exclamationmark.triangle"
+        }
+    }
+
+    var geoUpdateFeedbackColor: Color {
+        switch self.appViewModel.geoUpdateState {
+        case .succeeded:
+            nativePositive.opacity(T.Opacity.solid)
+        case .failed:
+            nativeCritical.opacity(T.Opacity.solid)
+        default:
+            nativeSecondaryLabel
+        }
+    }
+
     var isSystemProxyExceptionsSyncing: Bool {
         self.appViewModel.settingsSyncingKey == "system-proxy-exceptions"
     }
@@ -535,6 +561,31 @@ struct SystemTabView: TranslatingView {
                     }
 
                     HStack(spacing: T.space6) {
+                        Button {
+                            Task { await self.appViewModel.upgradeGeo() }
+                        } label: {
+                            HStack(spacing: T.space4) {
+                                Group {
+                                    if self.appViewModel.isGeoUpdateInFlight {
+                                        ProgressView()
+                                            .controlSize(.mini)
+                                    } else if let symbol = self.geoUpdateFeedbackSymbol {
+                                        Image(systemName: symbol)
+                                            .foregroundStyle(self.geoUpdateFeedbackColor)
+                                    } else {
+                                        Image(systemName: "arrow.down.circle")
+                                    }
+                                }
+                                .frame(width: 16, height: 16) // 固定图标位，切换 spinner 时按钮不变高
+                                Text(self.tr("ui.action.update_geo_database"))
+                            }
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        }
+                        .appBorderedButtonStyle()
+                        .controlSize(.small)
+                        .disabled(!self.geoUpdateActionEnabled)
+                        .opacity(self.geoUpdateActionEnabled ? 1 : 0.62)
+
                         Button {
                             self.appViewModel.showCoreDirectoryInFinder()
                         } label: {

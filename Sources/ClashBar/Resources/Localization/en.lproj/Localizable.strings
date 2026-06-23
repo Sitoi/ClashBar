@@ -108,6 +108,7 @@
 "ui.section.proxy_ports" = "Proxy Ports";
 "ui.section.system_proxy_exceptions" = "Proxy Bypass";
 "ui.section.maintenance" = "Maintenance";
+"ui.action.update_geo_database" = "Update Geo Database";
 
 "ui.rules.column.target_type" = "Target / Type";
 "ui.rules.column.policy" = "Policy";
@@ -335,6 +336,9 @@
 "log.core_upgrade.latest" = "Core is already on the latest version";
 "log.core_upgrade.latest_version" = "Core is already on the latest version (%@)";
 "log.core_upgrade.failed" = "Core upgrade failed: %@";
+
+"log.geo_update.updated" = "Geo database updated successfully";
+"log.geo_update.failed" = "Geo database update failed: %@";
 "log.config.validate_failed" = "Config validation failed (%@): %@";
 "log.system_proxy.toggled" = "System proxy %@";
 "log.system_proxy.enabled" = "enabled";

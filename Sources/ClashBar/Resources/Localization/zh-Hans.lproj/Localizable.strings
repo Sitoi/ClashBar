@@ -110,6 +110,7 @@
 "ui.section.proxy_ports" = "代理端口";
 "ui.section.system_proxy_exceptions" = "代理绕过";
 "ui.section.maintenance" = "系统维护";
+"ui.action.update_geo_database" = "更新 Geo 数据库";
 
 "ui.rules.column.target_type" = "目标 / 类型";
 "ui.rules.column.policy" = "策略";
@@ -337,6 +338,9 @@
 "log.core_upgrade.latest" = "内核已是最新版本";
 "log.core_upgrade.latest_version" = "内核已是最新版本（%@）";
 "log.core_upgrade.failed" = "内核更新失败: %@";
+
+"log.geo_update.updated" = "Geo 数据库更新成功";
+"log.geo_update.failed" = "Geo 数据库更新失败: %@";
 "log.config.validate_failed" = "配置校验失败（%@）: %@";
 "log.system_proxy.toggled" = "系统代理%@";
 "log.system_proxy.enabled" = "已开启";

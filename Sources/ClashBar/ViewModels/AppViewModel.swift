@@ -193,6 +193,7 @@ final class AppViewModel: ObservableObject {
 
     @Published var coreActionState: CoreActionState = .idle
     @Published var coreUpgradeState: CoreUpgradeState = .idle
+    @Published var geoUpdateState: GeoUpdateState = .idle
     var providerRefreshStatus: ProviderRefreshStatus {
         get { self.proxyStore.providerRefreshStatus }
         set { self.proxyStore.providerRefreshStatus = newValue }
@@ -394,6 +395,7 @@ final class AppViewModel: ObservableObject {
     var networkAutoStartTask: Task<Void, Never>?
     var deferredEditableSettingsOverlayTask: Task<Void, Never>?
     var coreUpgradeFeedbackClearTask: Task<Void, Never>?
+    var geoUpdateFeedbackClearTask: Task<Void, Never>?
     var configDirectoryMonitorTask: Task<Void, Never>?
     var trafficDecodeTask: Task<Void, Never>?
     var mihomoLogFlushTask: Task<Void, Never>?
@@ -538,6 +540,7 @@ final class AppViewModel: ObservableObject {
         proxyPortsAutoSaveTask?.cancel()
         settingsFeedbackClearTask?.cancel()
         coreUpgradeFeedbackClearTask?.cancel()
+        geoUpdateFeedbackClearTask?.cancel()
 
         let coordinator = streamCoordinator
         Task { @MainActor in

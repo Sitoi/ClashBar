@@ -17,6 +17,21 @@ extension AppViewModel {
         }
     }
 
+    func upgradeGeo() async {
+        guard !self.isGeoUpdateInFlight else { return }
+
+        self.geoUpdateFeedbackClearTask?.cancel()
+        self.geoUpdateFeedbackClearTask = nil
+        self.geoUpdateState = .updating
+
+        do {
+            try await self.clientOrThrow().requestNoResponse(.upgradeGeo)
+            self.applyGeoUpdateState(.succeeded)
+        } catch {
+            self.applyGeoUpdateState(.failed(message: self.geoUpdateFailureMessage(from: error)))
+        }
+    }
+
     func flushFakeIPCache() async {
         await runNoResponseAction(tr("log.action_name.flush_fakeip_cache")) {
             try await self.clientOrThrow().requestNoResponse(.flushFakeIPCache)
@@ -35,6 +50,13 @@ extension AppViewModel {
 
     var isCoreUpgradeInFlight: Bool {
         if case .running = self.coreUpgradeState {
+            return true
+        }
+        return false
+    }
+
+    var isGeoUpdateInFlight: Bool {
+        if case .updating = self.geoUpdateState {
             return true
         }
         return false
@@ -65,6 +87,21 @@ extension AppViewModel {
         self.scheduleCoreUpgradeFeedbackAutoClear()
     }
 
+    private func applyGeoUpdateState(_ state: GeoUpdateState) {
+        self.geoUpdateState = state
+
+        switch state {
+        case .idle, .updating:
+            return
+        case .succeeded:
+            self.appendLog(level: "info", message: tr("log.geo_update.updated"))
+        case let .failed(message):
+            self.appendLog(level: "error", message: tr("log.geo_update.failed", message))
+        }
+
+        self.scheduleGeoUpdateFeedbackAutoClear()
+    }
+
     private func scheduleCoreUpgradeFeedbackAutoClear() {
         self.coreUpgradeFeedbackClearTask?.cancel()
         self.coreUpgradeFeedbackClearTask = Task { [weak self] in
@@ -77,6 +114,21 @@ extension AppViewModel {
             guard let self else { return }
             guard !self.isCoreUpgradeInFlight else { return }
             self.coreUpgradeState = .idle
+        }
+    }
+
+    private func scheduleGeoUpdateFeedbackAutoClear() {
+        self.geoUpdateFeedbackClearTask?.cancel()
+        self.geoUpdateFeedbackClearTask = Task { [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: 4_000_000_000)
+            } catch {
+                return
+            }
+
+            guard let self else { return }
+            guard !self.isGeoUpdateInFlight else { return }
+            self.geoUpdateState = .idle
         }
     }
 
@@ -128,6 +180,19 @@ extension AppViewModel {
         }
 
         return self.coreUpgradeState(fromMessage: error.localizedDescription)
+    }
+
+    private func geoUpdateFailureMessage(from error: Error) -> String {
+        let raw: String = if let apiError = error as? APIError,
+                             case let .statusCode(_, responseBody) = apiError
+        {
+            responseBody
+        } else {
+            error.localizedDescription
+        }
+
+        let trimmed = raw.trimmed
+        return trimmed.isEmpty ? tr("ui.common.unknown") : trimmed
     }
 
     private func coreUpgradeState(fromMessage message: String) -> CoreUpgradeState {
