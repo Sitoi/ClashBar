@@ -111,6 +111,7 @@
 "ui.section.system_proxy_exceptions" = "代理绕过";
 "ui.section.maintenance" = "系统维护";
 "ui.action.update_geo_database" = "更新 Geo 数据库";
+"ui.action.open_project_homepage" = "访问项目主页";
 
 "ui.rules.column.target_type" = "目标 / 类型";
 "ui.rules.column.policy" = "策略";

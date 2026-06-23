@@ -109,6 +109,7 @@
 "ui.section.system_proxy_exceptions" = "Proxy Bypass";
 "ui.section.maintenance" = "Maintenance";
 "ui.action.update_geo_database" = "Update Geo Database";
+"ui.action.open_project_homepage" = "Open Project Homepage";
 
 "ui.rules.column.target_type" = "Target / Type";
 "ui.rules.column.policy" = "Policy";

@@ -8,6 +8,7 @@ struct MenuBarHeaderView: TranslatingView {
     @EnvironmentObject var remoteMachineStore: RemoteMachineStore
     @Binding var showRemoteMachineManager: Bool
     @Binding var isSwitchingMachine: Bool
+    @Environment(\.openURL) private var openURL
 
     var headerLogoSize: CGFloat {
         40
@@ -20,33 +21,41 @@ struct MenuBarHeaderView: TranslatingView {
     var topHeader: some View {
         HStack(alignment: .center, spacing: T.space8) {
             HStack(alignment: .top, spacing: T.space8) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: T.cornerRadius, style: .continuous)
-                        .fill(nativeControlFill.opacity(T.Opacity.solid))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: T.cornerRadius, style: .continuous)
-                                .stroke(
-                                    nativeControlBorder.opacity(T.Opacity.solid),
-                                    lineWidth: T.stroke)
-                        }
+                Button {
+                    guard let url = URL(string: "https://github.com/Sitoi/ClashBar") else { return }
+                    self.openURL(url)
+                } label: {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: T.cornerRadius, style: .continuous)
+                            .fill(nativeControlFill.opacity(T.Opacity.solid))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: T.cornerRadius, style: .continuous)
+                                    .stroke(
+                                        nativeControlBorder.opacity(T.Opacity.solid),
+                                        lineWidth: T.stroke)
+                            }
 
-                    if let brandImage = BrandIcon.image {
-                        Image(nsImage: brandImage)
-                            .resizable()
-                            .interpolation(.high)
-                            .scaledToFit()
-                            .frame(width: self.headerLogoSize, height: self.headerLogoSize)
-                    } else {
-                        Image(systemName: "paperplane.fill")
-                            .renderingMode(.template)
-                            .symbolRenderingMode(.monochrome)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: self.headerLogoSize, height: self.headerLogoSize)
-                            .foregroundStyle(nativeAccent)
+                        if let brandImage = BrandIcon.image {
+                            Image(nsImage: brandImage)
+                                .resizable()
+                                .interpolation(.high)
+                                .scaledToFit()
+                                .frame(width: self.headerLogoSize, height: self.headerLogoSize)
+                        } else {
+                            Image(systemName: "paperplane.fill")
+                                .renderingMode(.template)
+                                .symbolRenderingMode(.monochrome)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: self.headerLogoSize, height: self.headerLogoSize)
+                                .foregroundStyle(nativeAccent)
+                        }
                     }
+                    .frame(width: self.headerLogoSize, height: self.headerLogoSize)
                 }
-                .frame(width: self.headerLogoSize, height: self.headerLogoSize)
+                .buttonStyle(.plain)
+                .help(self.tr("ui.action.open_project_homepage"))
+                .accessibilityLabel(self.tr("ui.action.open_project_homepage"))
 
                 VStack(alignment: .leading, spacing: T.space2) {
                     Text("ClashBar")
