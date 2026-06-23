@@ -9,8 +9,73 @@ log-level: info
 ipv6: false
 external-controller: 127.0.0.1:9090
 
-pr:
-  &a3 {
+unified-delay: true
+tcp-concurrent: true
+find-process-mode: always
+keep-alive-interval: 15
+keep-alive-idle: 600
+
+geox-url:
+  geoip: https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat
+  geosite: https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat
+  mmdb: https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb
+  asn: https://github.com/xishang0128/geoip/releases/download/latest/GeoLite2-ASN.mmdb
+
+sniffer:
+  enable: true
+  sniff:
+    HTTP:
+      ports: [80, 8080-8880]
+      override-destination: true
+    TLS:
+      ports: [443, 8443]
+    QUIC:
+      ports: [443, 8443]
+  skip-domain:
+    - 'Mijia Cloud'
+    - '+.push.apple.com'
+
+tun:
+  enable: false
+  stack: mixed
+  dns-hijack:
+    - 'any:53'
+    - 'tcp://any:53'
+  auto-route: true
+  auto-redirect: true
+  auto-detect-interface: true
+
+dns:
+  enable: true
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  default-nameserver:
+    - 119.29.29.29
+    - 180.184.1.1
+    - 223.5.5.5
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+  fake-ip-filter:
+    - rule-set:Direct
+    - rule-set:Download
+    - rule-set:Lan
+    - rule-set:TencentVideo
+    - rule-set:China
+    - '*.lan'
+    - '*.local'
+    - +.miwifi.com
+    - +.docker.io
+    - +.market.xiaomi.com
+    - +.push.apple.com
+
+BaseDomain: &BaseDomain { type: http, behavior: domain, interval: 86400 }
+BaseClassical:
+  &BaseClassical { type: http, behavior: classical, interval: 86400 }
+
+BaseSelect:
+  &BaseSelect {
     type: select,
     proxies:
       [
@@ -20,28 +85,43 @@ pr:
         🇨🇳 台湾节点,
         🇺🇸 美国节点,
         🇯🇵 日本节点,
-        🇪🇺 其他节点,
+        🇸🇬 狮城节点,
+        🇪🇺 欧洲节点,
         DIRECT,
       ],
     interval: 300,
   }
-oa:
-  &a8 {
+
+BaseGroupSelect:
+  &BaseGroupSelect {
     type: select,
-    proxies: [🇨🇳 台湾节点, 🇺🇸 美国节点, 🇯🇵 日本节点],
+    proxies:
+      [
+        ♻️ 自动选择,
+        🚀 手动切换,
+        🧩 分组选择,
+        🇭🇰 香港节点,
+        🇨🇳 台湾节点,
+        🇺🇸 美国节点,
+        🇯🇵 日本节点,
+        🇸🇬 狮城节点,
+        🇪🇺 欧洲节点,
+        DIRECT,
+      ],
     interval: 300,
   }
-go:
-  &a9 {
+BaseAI:
+  &BaseAI {
     type: select,
-    proxies: [DIRECT, 🇭🇰 香港节点, 🇨🇳 台湾节点],
+    proxies: [🇺🇸 美国节点, 🇪🇺 欧洲节点, 🇯🇵 日本节点],
     interval: 300,
   }
-re: &a10 { type: select, proxies: [REJECT], interval: 300 }
-p:
-  &a1 {
+
+BaseREJECT: &BaseReject { type: select, proxies: [REJECT], interval: 300 }
+BaseProvider:
+  &BaseProvider {
     type: http,
-    interval: 21600,
+    interval: 3600,
     health-check:
       {
         enable: true,
@@ -49,227 +129,248 @@ p:
         interval: 300,
       },
   }
-auto: &a4 {
+BaseUrlTest:
+  &BaseUrlTest {
     type: url-test,
-    # lazy: true,
-    url: http://cp.cloudflare.com,
+    lazy: true,
+    hidden: true,
+    url: https://cp.cloudflare.com/generate_204,
     interval: 300,
-    timeout: 3,
-    # tolerance: 100,
+    timeout: 3000,
+    tolerance: 100,
     use: [proxy],
   }
-use: &a2 { type: select, use: [proxy] }
-d: &a5 { type: http, behavior: domain, interval: 86400 }
-c: &a6 { type: http, behavior: classical, interval: 86400 }
-i: &a7 { type: http, behavior: ipcidr, interval: 86400 }
 
-geox-url:
-  geoip: 'https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat'
-  geosite: 'https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat'
-  mmdb: 'https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb'
-  asn: 'https://github.com/xishang0128/geoip/releases/download/latest/GeoLite2-ASN.mmdb'
+BaseSelectProxy: &BaseSelectProxy { type: select, use: [proxy] }
 
 proxy-providers:
   proxy:
-    <<: *a1
+    <<: *BaseProvider
     url:
     path: ./proxy/proxy.yaml
 
 proxy-groups:
-  - { name: 🚀 手动切换, <<: *a2 }
-  - { name: 🆎 AdBlock, <<: *a10 }
-  - { name: 🍎 苹果服务, <<: *a3 }
-  - { name: 💬 OpenAI, <<: *a8 }
-  - { name: 🤖 Cloudflare, <<: *a3 }
-  - { name: 🌌 谷歌服务, <<: *a3 }
-  - { name: Ⓜ️ 微软服务, <<: *a3 }
-  - { name: 👨🏻‍💻 GitHub, <<: *a3 }
-  - { name: 📟 国外社交, <<: *a3 }
-  - { name: 🎥 国外视频, <<: *a3 }
-  - { name: 🐟 漏网之鱼, <<: *a3 }
+  - { name: 🆎 广告拦截, <<: *BaseReject }
+  - { name: 🚀 手动切换, <<: *BaseSelectProxy }
+  - { name: 🍎 苹果服务, <<: *BaseGroupSelect }
+  - { name: 🧩 分组选择, <<: *BaseSelect }
+  - { name: 🤖 人工智能, <<: *BaseAI }
+  - { name: ✨ Gemini, <<: *BaseAI }
+  - { name: 🧠 Claude, <<: *BaseAI }
+  - { name: 👨🏻‍💻 GitHub, <<: *BaseGroupSelect }
+  - { name: ☁️ Cloudflare, <<: *BaseGroupSelect }
+  - { name: 🌌 谷歌服务, <<: *BaseGroupSelect }
+  - { name: Ⓜ️ 微软服务, <<: *BaseGroupSelect }
+  - { name: 📟 国外社交, <<: *BaseGroupSelect }
+  - { name: 🎥 国外视频, <<: *BaseGroupSelect }
+  - { name: 🐟 漏网之鱼, <<: *BaseGroupSelect }
 
-  - { name: ♻️ 自动选择, <<: *a4 }
-  - { name: 🇭🇰 香港节点, <<: *a4, filter: '🇭🇰|HK|香港' }
-  - { name: 🇨🇳 台湾节点, <<: *a4, filter: '🇨🇳|TW|台湾' }
-  - { name: 🇺🇸 美国节点, <<: *a4, filter: '🇺🇸|US|美国' }
-  - { name: 🇯🇵 日本节点, <<: *a4, filter: '🇯🇵|JP|日本' }
+  - { name: ♻️ 自动选择, <<: *BaseUrlTest }
+  - { name: 🇭🇰 香港节点, <<: *BaseUrlTest, filter: '🇭🇰|HK|香港' }
+  - { name: 🇨🇳 台湾节点, <<: *BaseUrlTest, filter: '🇨🇳|TW|台湾' }
+  - { name: 🇺🇸 美国节点, <<: *BaseUrlTest, filter: '🇺🇸|US|美国' }
+  - { name: 🇯🇵 日本节点, <<: *BaseUrlTest, filter: '🇯🇵|JP|日本' }
+  - { name: 🇸🇬 狮城节点, <<: *BaseUrlTest, filter: '🇸🇬|SG|新加' }
   - {
-      name: 🇪🇺 其他节点,
-      <<: *a4,
-      filter: '🇫🇷|FR|法国|🇩🇪|DE|德国|🇬🇧|UK|英国|🇸🇬|SG|新加',
+      name: 🇪🇺 欧洲节点,
+      <<: *BaseUrlTest,
+      filter: '🇫🇷|FR|法国|🇩🇪|DE|德国|🇬🇧|UK|英国',
     }
 
 rule-providers:
   Download:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Download/Download.yaml,
       path: ./rule/Download.yaml,
     }
   Direct:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Direct/Direct.yaml,
       path: ./rule/Direct.yaml,
     }
   Advertising:
     {
-      <<: *a5,
+      <<: *BaseDomain,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/AdvertisingLite/AdvertisingLite.yaml,
       path: ./rule/AdvertisingLite.yaml,
     }
   OpenAI:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/OpenAI/OpenAI.yaml,
       path: ./rule/OpenAI.yaml,
     }
   BingAI:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Bing/Bing.yaml,
       path: ./rule/BingAI.yaml,
     }
   BardAI:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/BardAI/BardAI.yaml,
       path: ./rule/BardAI.yaml,
     }
   Gemini:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Gemini/Gemini.yaml,
       path: ./rule/Gemini.yaml,
     }
+  Claude:
+    {
+      <<: *BaseClassical,
+      url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Claude/Claude.yaml,
+      path: ./rule/Claude.yaml,
+    }
   Apple:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Apple/Apple.yaml,
       path: ./rule/Apple.yaml,
     }
   Cloudflare:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Cloudflare/Cloudflare.yaml,
       path: ./rule/Cloudflare.yaml,
     }
   Discord:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Discord/Discord.yaml,
       path: ./rule/Discord.yaml,
     }
-  Github:
+  GitHub:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/GitHub/GitHub.yaml,
-      path: ./rule/Github.yaml,
+      path: ./rule/GitHub.yaml,
     }
   Microsoft:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Microsoft/Microsoft.yaml,
       path: ./rule/Microsoft.yaml,
     }
   Google:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Google/Google.yaml,
       path: ./rule/Google.yaml,
     }
   Telegram:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Telegram/Telegram.yaml,
       path: ./rule/Telegram.yaml,
     }
   Twitter:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Twitter/Twitter.yaml,
       path: ./rule/Twitter.yaml,
     }
   Instagram:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Instagram/Instagram.yaml,
       path: ./rule/Instagram.yaml,
     }
+  LinkedIn:
+    {
+      <<: *BaseClassical,
+      url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/LinkedIn/LinkedIn.yaml,
+      path: ./rule/LinkedIn.yaml,
+    }
   YouTube:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/YouTube/YouTube.yaml,
       path: ./rule/YouTube.yaml,
     }
   Netflix:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Netflix/Netflix.yaml,
       path: ./rule/Netflix.yaml,
     }
+  Docker:
+    {
+      <<: *BaseClassical,
+      url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Docker/Docker.yaml,
+      path: ./rule/Docker.yaml,
+    }
   TencentVideo:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/TencentVideo/TencentVideo.yaml,
       path: ./rule/TencentVideo.yaml,
     }
   ByteDance:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/ByteDance/ByteDance.yaml,
       path: ./rule/ByteDance.yaml,
     }
   Lan:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Lan/Lan.yaml,
       path: ./rule/Lan.yaml,
     }
   Proxy:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Proxy/Proxy.yaml,
       path: ./rule/Proxy.yaml,
     }
   China:
     {
-      <<: *a6,
+      <<: *BaseClassical,
       url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/China/China.yaml,
       path: ./rule/China.yaml,
     }
 
 rules:
+  - RULE-SET,Advertising,🆎 广告拦截
+
   - IP-CIDR,116.172.96.0/8,DIRECT
   - IP-CIDR,121.37.69.0/8,DIRECT
-  - DOMAIN-SUFFIX,k8s.local,DIRECT
-  - DOMAIN-SUFFIX,lab.io,DIRECT
-  - DOMAIN-SUFFIX,acemap.cn,DIRECT
-  - DOMAIN-SUFFIX,oai.sitoi.cn,🐟 漏网之鱼
 
+  - GEOSITE,private,DIRECT
   - RULE-SET,Download,DIRECT
   - RULE-SET,Direct,DIRECT
   - RULE-SET,Lan,DIRECT
   - RULE-SET,TencentVideo,DIRECT
+  - RULE-SET,China,DIRECT
 
-  - RULE-SET,OpenAI,💬 OpenAI
-  - RULE-SET,ByteDance,💬 OpenAI
-  - RULE-SET,BingAI,💬 OpenAI
-  - RULE-SET,BardAI,💬 OpenAI
-  - RULE-SET,Gemini,💬 OpenAI
-  - RULE-SET,Advertising,🆎 AdBlock
-  - RULE-SET,Cloudflare,🤖 Cloudflare
+  - RULE-SET,OpenAI,🤖 人工智能
+  - RULE-SET,ByteDance,🤖 人工智能
+  - RULE-SET,BingAI,🤖 人工智能
+  - RULE-SET,BardAI,🤖 人工智能
+  - RULE-SET,Gemini,✨ Gemini
+  - RULE-SET,Claude,🧠 Claude
+
+  - RULE-SET,Cloudflare,☁️ Cloudflare
   - RULE-SET,Apple,🍎 苹果服务
-  - RULE-SET,Github,👨🏻‍💻 GitHub
+  - RULE-SET,GitHub,👨🏻‍💻 GitHub
   - RULE-SET,Microsoft, Ⓜ️ 微软服务
   - RULE-SET,Google,🌌 谷歌服务
   - RULE-SET,Telegram,📟 国外社交
   - RULE-SET,Discord,📟 国外社交
   - RULE-SET,Twitter,📟 国外社交
+  - RULE-SET,LinkedIn,📟 国外社交
   - RULE-SET,Instagram,📟 国外社交
   - RULE-SET,YouTube,🎥 国外视频
   - RULE-SET,Netflix,🎥 国外视频
+  - RULE-SET,Docker,🐟 漏网之鱼
   - RULE-SET,Proxy,🐟 漏网之鱼
-  - RULE-SET,China,DIRECT
+
+  - GEOSITE,cn,DIRECT
   - GEOIP,CN,DIRECT
+
   - MATCH,🐟 漏网之鱼
