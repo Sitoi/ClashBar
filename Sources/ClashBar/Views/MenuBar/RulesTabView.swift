@@ -176,7 +176,7 @@ struct RulesTabView: TranslatingView {
     }
 
     func groupedRulesList(groups: [RuleGroup], providerLookup: [String: ProviderDetail]) -> some View {
-        MeasurementAwareVStack(spacing: 0) {
+        VStack(spacing: 0) {
             ForEach(groups) { group in
                 self.policyGroupHeader(group)
 

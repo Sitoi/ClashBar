@@ -479,6 +479,8 @@ extension AppViewModel {
         try await configRepository.downloadRemoteConfigData(from: remoteURL, userAgent: userAgent)
     }
 
+    private static let defaultMihomoVersionForUserAgent = "v1.19.27"
+
     private func remoteSubscriptionUserAgent() async -> String {
         let version = await resolvedMihomoVersionForSubscriptionUserAgent()
         return "clash.meta/\(version)"
@@ -490,15 +492,15 @@ extension AppViewModel {
         }
 
         guard let client = try? clientOrThrow() else {
-            return "unknown"
+            return Self.defaultMihomoVersionForUserAgent
         }
 
         guard let fetched: VersionInfo = try? await client.request(.version) else {
-            return "unknown"
+            return Self.defaultMihomoVersionForUserAgent
         }
 
-        let normalized = self.normalizedMihomoVersionForUserAgent(fetched.version) ?? "unknown"
-        if normalized != "unknown" {
+        let normalized = self.normalizedMihomoVersionForUserAgent(fetched.version) ?? Self.defaultMihomoVersionForUserAgent
+        if normalized != Self.defaultMihomoVersionForUserAgent {
             self.version = normalized
         }
         return normalized
