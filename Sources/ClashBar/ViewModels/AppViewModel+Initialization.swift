@@ -35,6 +35,7 @@ extension AppViewModel {
     func bootstrapDirectoriesAndLogs() {
         do {
             try self.workingDirectoryManager.bootstrapDirectories()
+            ProxyGroupIconCache.configure(iconDirectory: workingDirectoryManager.iconDirectoryURL)
             clashbarLogFileURL = self.workingDirectoryManager.logsDirectoryURL.appendingPathComponent(
                 "clashbar.log",
                 isDirectory: false)

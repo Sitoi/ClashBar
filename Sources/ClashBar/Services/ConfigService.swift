@@ -23,6 +23,10 @@ struct WorkingDirectoryManager {
         self.rootDirectoryURL.appendingPathComponent("state", isDirectory: true)
     }
 
+    var iconDirectoryURL: URL {
+        self.rootDirectoryURL.appendingPathComponent("icon", isDirectory: true)
+    }
+
     var coreDirectoryURL: URL {
         self.rootDirectoryURL.appendingPathComponent("core", isDirectory: true)
     }
@@ -36,6 +40,7 @@ struct WorkingDirectoryManager {
         try self.createDirectoryIfNeeded(self.configDirectoryURL, fileManager: fileManager)
         try self.createDirectoryIfNeeded(self.logsDirectoryURL, fileManager: fileManager)
         try self.createDirectoryIfNeeded(self.stateDirectoryURL, fileManager: fileManager)
+        try self.createDirectoryIfNeeded(self.iconDirectoryURL, fileManager: fileManager)
         try self.createDirectoryIfNeeded(self.coreDirectoryURL, fileManager: fileManager)
     }
 

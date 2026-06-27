@@ -384,22 +384,11 @@ extension ProxyTabView {
     }
 
     func proxyGroupLeadingIcon(_ iconURL: URL) -> some View {
-        AsyncImage(url: iconURL) { phase in
-            if case let .success(image) = phase {
-                image
-                    .resizable()
-                    .interpolation(.high)
-                    .antialiased(true)
-                    .aspectRatio(contentMode: .fit)
-                    .frame(
-                        maxWidth: T.rowLeadingIcon,
-                        maxHeight: T.rowLeadingIcon)
-            }
-        }
-        .frame(
-            width: T.rowLeadingIcon,
-            height: T.rowLeadingIcon,
-            alignment: .center)
+        ProxyGroupIconView(url: iconURL)
+            .frame(
+                width: T.rowLeadingIcon,
+                height: T.rowLeadingIcon,
+                alignment: .center)
     }
 
     func proxyGroupIconURL(_ group: ProxyGroup) -> URL? {

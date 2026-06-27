@@ -499,7 +499,8 @@ extension AppViewModel {
             return Self.defaultMihomoVersionForUserAgent
         }
 
-        let normalized = self.normalizedMihomoVersionForUserAgent(fetched.version) ?? Self.defaultMihomoVersionForUserAgent
+        let normalized = self.normalizedMihomoVersionForUserAgent(fetched.version) ?? Self
+            .defaultMihomoVersionForUserAgent
         if normalized != Self.defaultMihomoVersionForUserAgent {
             self.version = normalized
         }
