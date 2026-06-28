@@ -344,15 +344,6 @@ final class AppViewModel: ObservableObject {
         set { self.autoStartCore = newValue }
     }
 
-    var autoManageCoreOnNetworkChangeEnabled: Bool {
-        get { self.autoCoreControlOnNetworkChange }
-        set {
-            guard self.autoCoreControlOnNetworkChange != newValue else { return }
-            self.autoCoreControlOnNetworkChange = newValue
-            self.updateNetworkReachabilityMonitoringState()
-        }
-    }
-
     var isCoreActionProcessing: Bool {
         self.coreActionState != .idle
     }
@@ -415,7 +406,6 @@ final class AppViewModel: ObservableObject {
 
     let defaults = UserDefaults.standard
     @AppStorage("clashbar.auto.start.core") var autoStartCore: Bool = false
-    @AppStorage("clashbar.auto.core.network.recovery") private var autoCoreControlOnNetworkChange: Bool = true
     @AppStorage("clashbar.ssid.strategy.enabled") var ssidStrategyEnabledStorage: Bool = false
     @AppStorage("clashbar.statusbar.display.mode") private var statusBarDisplayModeRaw: String = StatusBarDisplayMode
         .iconOnly.rawValue

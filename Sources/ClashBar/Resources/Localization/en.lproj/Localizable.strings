@@ -154,7 +154,6 @@
 "ui.network.sort.total_desc" = "Total Traffic High to Low";
 
 "ui.settings.auto_start_core" = "Auto Start Core";
-"ui.settings.auto_core_network_recovery" = "Stop Offline & Restart on Recovery";
 "ui.settings.launch_at_login" = "Start at Login";
 "ui.settings.menu_bar_style" = "Menu Bar Style";
 "ui.settings.language" = "UI Language";

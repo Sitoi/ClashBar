@@ -336,13 +336,6 @@ struct SystemTabView: TranslatingView {
                 Binding(
                     get: { self.appViewModel.autoStartCoreEnabled },
                     set: { self.appViewModel.autoStartCoreEnabled = $0 })),
-            (
-                "auto-core-network-recovery",
-                tr("ui.settings.auto_core_network_recovery"),
-                "network.badge.shield.half.filled",
-                Binding(
-                    get: { self.appViewModel.autoManageCoreOnNetworkChangeEnabled },
-                    set: { self.appViewModel.autoManageCoreOnNetworkChangeEnabled = $0 })),
         ]
         let coreToggleItems: [(id: String, title: String, symbol: String, isOn: Binding<Bool>)] = [
             (

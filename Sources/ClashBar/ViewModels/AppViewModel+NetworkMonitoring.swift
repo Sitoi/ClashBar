@@ -3,19 +3,14 @@ import Foundation
 @MainActor
 extension AppViewModel {
     func enforceNetworkManagedCorePolicyIfNeeded() {
-        guard self.autoManageCoreOnNetworkChangeEnabled else { return }
         if self.networkReachabilityStatus == .offline {
             self.scheduleAutoStopForNetworkLossIfNeeded()
         }
     }
 
     func updateNetworkReachabilityMonitoringState() {
-        if self.autoManageCoreOnNetworkChangeEnabled {
-            self.startNetworkReachabilityMonitoringIfNeeded()
-            self.enforceNetworkManagedCorePolicyIfNeeded()
-        } else {
-            self.stopNetworkReachabilityMonitoring(resetState: true)
-        }
+        self.startNetworkReachabilityMonitoringIfNeeded()
+        self.enforceNetworkManagedCorePolicyIfNeeded()
     }
 
     private func startNetworkReachabilityMonitoringIfNeeded() {
@@ -29,7 +24,7 @@ extension AppViewModel {
         }
     }
 
-    func stopNetworkReachabilityMonitoring(resetState: Bool) {
+    func stopNetworkReachabilityMonitoring() {
         self.networkAutoStopTask?.cancel()
         self.networkAutoStopTask = nil
         self.networkAutoStartTask?.cancel()
@@ -40,17 +35,14 @@ extension AppViewModel {
             self.isNetworkReachabilityMonitoring = false
         }
 
-        if resetState {
-            self.networkReachabilityStatus = .unknown
-            self.shouldResumeCoreAfterNetworkRecovery = false
-        }
+        self.networkReachabilityStatus = .unknown
+        self.shouldResumeCoreAfterNetworkRecovery = false
     }
 
     private func handleNetworkReachabilityStatus(_ status: NetworkReachabilityStatus) {
         let previous = self.networkReachabilityStatus
         self.networkReachabilityStatus = status
 
-        guard self.autoManageCoreOnNetworkChangeEnabled else { return }
         guard previous != status else { return }
 
         switch status {
@@ -77,7 +69,6 @@ extension AppViewModel {
 
             for _ in 0..<120 {
                 if Task.isCancelled { return }
-                guard self.autoManageCoreOnNetworkChangeEnabled else { return }
                 guard self.networkReachabilityStatus == .offline else { return }
                 guard self.isRuntimeRunning else { return }
 
@@ -119,7 +110,6 @@ extension AppViewModel {
 
             for _ in 0..<120 {
                 if Task.isCancelled { return }
-                guard self.autoManageCoreOnNetworkChangeEnabled else { return }
                 guard self.networkReachabilityStatus == .online else { return }
                 guard self.shouldResumeCoreAfterNetworkRecovery else { return }
 

@@ -156,7 +156,6 @@
 "ui.network.sort.total_desc" = "总流量高到低";
 
 "ui.settings.auto_start_core" = "内核自启";
-"ui.settings.auto_core_network_recovery" = "断网停核";
 "ui.settings.launch_at_login" = "开机自启";
 "ui.settings.menu_bar_style" = "状态栏样式";
 "ui.settings.language" = "界面语言";

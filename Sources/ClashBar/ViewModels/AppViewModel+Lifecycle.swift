@@ -203,7 +203,7 @@ extension AppViewModel {
     private func prepareForTermination() {
         defaults.set(isSystemProxyEnabled, forKey: systemProxyEnabledOnQuitKey)
         shouldResumeCoreAfterNetworkRecovery = false
-        stopNetworkReachabilityMonitoring(resetState: true)
+        stopNetworkReachabilityMonitoring()
         stopConfigDirectoryMonitoring()
         self.cancelDeferredEditableSettingsOverlaySync()
         cancelProviderRefresh(reason: "quit requested")
@@ -436,7 +436,7 @@ extension AppViewModel {
         }
         guard self.isRuntimeRunning else { return }
 
-        if self.autoManageCoreOnNetworkChangeEnabled, self.networkReachabilityStatus == .offline {
+        if self.networkReachabilityStatus == .offline {
             return
         }
 
