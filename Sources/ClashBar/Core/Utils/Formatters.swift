@@ -107,23 +107,6 @@ enum ValueFormatter {
         "\(self.speed(rate)) · \(self.bytesOrDash(total))"
     }
 
-    static func subscriptionUsed(upload: Int64?, download: Int64?) -> Int64? {
-        guard let upload, let download else { return nil }
-        return upload + download
-    }
-
-    static func subscriptionRemaining(total: Int64?, upload: Int64?, download: Int64?) -> Int64? {
-        guard let total, let used = subscriptionUsed(upload: upload, download: download) else { return nil }
-        return max(total - used, 0)
-    }
-
-    static func subscriptionRemainingRatio(total: Int64?, upload: Int64?, download: Int64?) -> Double? {
-        guard let total, total > 0 else { return nil }
-        guard let remaining = subscriptionRemaining(total: total, upload: upload, download: download)
-        else { return nil }
-        return min(max(Double(remaining) / Double(total), 0), 1)
-    }
-
     static func dateTime(_ date: Date) -> String {
         let second = Int64(date.timeIntervalSince1970.rounded(.down))
         if let cached = self.timestampCache.value(for: second) {
