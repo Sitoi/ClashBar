@@ -200,32 +200,44 @@ extension AppViewModel {
         }
     }
 
-    private func prepareForTermination() {
-        defaults.set(isSystemProxyEnabled, forKey: systemProxyEnabledOnQuitKey)
-        shouldResumeCoreAfterNetworkRecovery = false
-        stopNetworkReachabilityMonitoring()
-        stopConfigDirectoryMonitoring()
+    func cancelOwnedTasks() {
+        self.shouldResumeCoreAfterNetworkRecovery = false
+        self.stopNetworkReachabilityMonitoring()
+        self.stopConfigDirectoryMonitoring()
         self.cancelDeferredEditableSettingsOverlaySync()
-        cancelProviderRefresh(reason: "quit requested")
-        cancelPolling()
-        stopRemoteConfigAutoUpdateTask()
-        stopRemoteConfigMenuRefreshTimer()
+        self.cancelProviderRefresh(reason: "quit requested")
+        self.cancelPolling()
+        self.stopRemoteConfigAutoUpdateTask()
+        self.stopRemoteConfigMenuRefreshTimer()
+        self.streamCoordinator.cancelAll()
+        self.remoteMachineStore.stopPeriodicConnectivityChecks()
+        self.ssidStrategyApplyTask?.cancel()
+        self.ssidStrategyApplyTask = nil
+        self.ssidMonitorService.stop()
+        self.trafficDecodeTask?.cancel()
+        self.trafficDecodeTask = nil
+        self.mihomoLogFlushTask?.cancel()
+        self.mihomoLogFlushTask = nil
+        self.startupRefreshTask?.cancel()
+        self.startupRefreshTask = nil
+        self.autoStartTask?.cancel()
+        self.autoStartTask = nil
+        self.proxyPortsAutoSaveTask?.cancel()
+        self.proxyPortsAutoSaveTask = nil
+        self.settingsFeedbackClearTask?.cancel()
+        self.settingsFeedbackClearTask = nil
+        self.coreUpgradeFeedbackClearTask?.cancel()
+        self.coreUpgradeFeedbackClearTask = nil
+        self.geoUpdateFeedbackClearTask?.cancel()
+        self.geoUpdateFeedbackClearTask = nil
+    }
 
-        streamCoordinator.cancelAll()
-        ssidStrategyApplyTask?.cancel()
-        ssidStrategyApplyTask = nil
-        ssidMonitorService.stop()
-        trafficDecodeTask?.cancel()
-        trafficDecodeTask = nil
-        mihomoLogFlushTask?.cancel()
-        mihomoLogFlushTask = nil
-        proxyPortsAutoSaveTask?.cancel()
-        proxyPortsAutoSaveTask = nil
-        settingsFeedbackClearTask?.cancel()
-        settingsFeedbackClearTask = nil
-        coreUpgradeFeedbackClearTask?.cancel()
-        coreUpgradeFeedbackClearTask = nil
-        flushPendingMihomoLogsIfNeeded()
+    private func prepareForTermination() {
+        self.defaults.set(self.isSystemProxyEnabled, forKey: self.systemProxyEnabledOnQuitKey)
+        self.cancelOwnedTasks()
+        self.flushPendingMihomoLogsIfNeeded()
+        self.clashbarLogStore?.flush()
+        self.mihomoLogStore?.flush()
     }
 
     func applyAppAppearance() {
@@ -288,13 +300,17 @@ extension AppViewModel {
     func refreshProxyGroupsAfterRestart() async {
         for _ in 0..<8 {
             await refreshProxyGroups()
-            if apiStatus == .healthy { return }
+            if apiStatus == .healthy {
+                return
+            }
             try? await Task.sleep(nanoseconds: 400_000_000)
         }
     }
 
     func attemptAutoStartIfNeeded() async {
-        if didAttemptAutoStart { return }
+        if didAttemptAutoStart {
+            return
+        }
         didAttemptAutoStart = true
         await self.startCore(trigger: .auto)
     }

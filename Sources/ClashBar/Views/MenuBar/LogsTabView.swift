@@ -16,6 +16,7 @@ private struct LogFilterGroupConfiguration<Item: Hashable> {
 
 struct LogsTabView: TranslatingView {
     @EnvironmentObject var appViewModel: AppViewModel
+    @EnvironmentObject var logsStore: LogsStore
     @StateObject private var viewModel = LogsViewModel()
 
     var body: some View {
@@ -37,7 +38,7 @@ struct LogsTabView: TranslatingView {
             }
         }
         .onAppear { self.refreshData() }
-        .onChange(of: self.appViewModel.errorLogs) { _ in self.refreshData() }
+        .onChange(of: self.logsStore.errorLogs) { _ in self.refreshData() }
         .onChange(of: self.viewModel.selectedSources) { _ in self.refreshData() }
         .onChange(of: self.viewModel.selectedLevels) { _ in self.refreshData() }
         .onChange(of: self.viewModel.searchText) { _ in self.refreshData() }
@@ -45,7 +46,7 @@ struct LogsTabView: TranslatingView {
 
     private func refreshData() {
         self.viewModel.updateVisibleLogs(
-            from: self.appViewModel.errorLogs,
+            from: self.logsStore.errorLogs,
             searchTextContent: { log in self.logSearchTextContent(for: log) },
             normalizedLevel: { level in self.normalizedLogLevel(level) },
             levelFilter: { level in self.logLevelFilter(level) })
@@ -58,7 +59,7 @@ struct LogsTabView: TranslatingView {
 
                 Spacer(minLength: 0)
 
-                self.fractionSummaryBadge(current: filteredCount, total: self.appViewModel.errorLogs.count)
+                self.fractionSummaryBadge(current: filteredCount, total: self.logsStore.errorLogs.count)
             }
             self.logsSecondaryControlRow
             TextField(self.tr("ui.placeholder.search_logs"), text: self.$viewModel.searchText)
@@ -83,7 +84,7 @@ struct LogsTabView: TranslatingView {
                 self.appViewModel.copyAllLogs()
             }
             .help(self.tr("ui.action.copy_all_logs"))
-            .disabled(self.appViewModel.errorLogs.isEmpty)
+            .disabled(self.logsStore.errorLogs.isEmpty)
 
             self.compactTopIcon(
                 "trash",
@@ -94,7 +95,7 @@ struct LogsTabView: TranslatingView {
                 self.appViewModel.clearAllLogs()
             }
             .help(self.tr("ui.action.clear_all_logs"))
-            .disabled(self.appViewModel.errorLogs.isEmpty)
+            .disabled(self.logsStore.errorLogs.isEmpty)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -302,9 +303,15 @@ struct LogsTabView: TranslatingView {
             message = message.replacingOccurrences(of: tag, with: "").trimmed
 
             let upper = tag.uppercased()
-            if upper.contains("UDP") { protocolColor = nativeWarning.opacity(T.Opacity.solid) }
-            if upper.contains("DNS") { protocolColor = nativePositive.opacity(T.Opacity.solid) }
-            if upper.contains("HTTP") { protocolColor = nativeAccent.opacity(T.Opacity.solid) }
+            if upper.contains("UDP") {
+                protocolColor = nativeWarning.opacity(T.Opacity.solid)
+            }
+            if upper.contains("DNS") {
+                protocolColor = nativePositive.opacity(T.Opacity.solid)
+            }
+            if upper.contains("HTTP") {
+                protocolColor = nativeAccent.opacity(T.Opacity.solid)
+            }
         }
 
         if message.isEmpty {

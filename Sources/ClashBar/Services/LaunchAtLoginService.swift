@@ -32,7 +32,9 @@ struct AppLaunchService {
             }
 
             let status = self.service.status
-            if status == .enabled { return }
+            if status == .enabled {
+                return
+            }
             if status == .requiresApproval {
                 SMAppService.openSystemSettingsLoginItems()
                 throw AppLaunchServiceError.requiresApproval

@@ -39,9 +39,13 @@ private struct StatusItemPopoverRootView: View {
     var body: some View {
         MenuBarRootView()
             .environmentObject(self.appViewModel)
+            .environmentObject(self.appViewModel.proxyStore)
+            .environmentObject(self.appViewModel.trafficStore)
+            .environmentObject(self.appViewModel.logsStore)
             .environmentObject(self.appViewModel.connectionsStore)
             .environmentObject(self.appViewModel.remoteMachineStore)
             .environmentObject(self.popoverLayoutModel)
+            .environment(\.proxyGroupIconCache, self.appViewModel.proxyGroupIconCache)
     }
 }
 

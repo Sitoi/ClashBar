@@ -147,7 +147,7 @@ struct RemoteConfigMenuState: Equatable {
         nextUpdateAt: nil)
 }
 
-struct ProviderRefreshStatus {
+struct ProviderRefreshStatus: Equatable {
     let phase: ProviderRefreshPhase
     let trigger: ProviderRefreshTrigger?
     let progressDone: Int

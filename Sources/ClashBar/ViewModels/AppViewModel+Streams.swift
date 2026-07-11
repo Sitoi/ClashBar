@@ -64,9 +64,15 @@ extension AppViewModel {
         makeWebSocket: @escaping (MihomoAPIService) throws -> URLSessionWebSocketTask,
         onPayload: @escaping (Data) -> Void)
     {
-        if kind == .connections { currentConnectionsStreamIntervalMilliseconds = nil }
-        if kind == .logs { currentLogsStreamLevel = nil }
-        if kind == .traffic { self.resetPendingTrafficSnapshotState() }
+        if kind == .connections {
+            currentConnectionsStreamIntervalMilliseconds = nil
+        }
+        if kind == .logs {
+            currentLogsStreamLevel = nil
+        }
+        if kind == .traffic {
+            self.resetPendingTrafficSnapshotState()
+        }
 
         if !preserveReconnectState {
             streamCoordinator.clearReconnectState(for: kind.key)
@@ -87,9 +93,15 @@ extension AppViewModel {
 
     func cancelStream(_ kind: StreamKind, resetReconnectState: Bool = true) {
         streamCoordinator.cancel(key: kind.key, resetReconnectState: resetReconnectState)
-        if kind == .connections { currentConnectionsStreamIntervalMilliseconds = nil }
-        if kind == .logs { currentLogsStreamLevel = nil }
-        if kind == .traffic { self.resetPendingTrafficSnapshotState() }
+        if kind == .connections {
+            currentConnectionsStreamIntervalMilliseconds = nil
+        }
+        if kind == .logs {
+            currentLogsStreamLevel = nil
+        }
+        if kind == .traffic {
+            self.resetPendingTrafficSnapshotState()
+        }
     }
 
     func webSocketTask(for kind: StreamKind) -> URLSessionWebSocketTask? {

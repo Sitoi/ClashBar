@@ -98,7 +98,9 @@ final class StreamCoordinator {
             do {
                 message = try await ws.receive()
             } catch {
-                if Task.isCancelled { return }
+                if Task.isCancelled {
+                    return
+                }
 
                 let errorMessage = error.localizedDescription
                 if self.shouldLogDisconnect(key: key, message: errorMessage) {
@@ -113,7 +115,9 @@ final class StreamCoordinator {
                 } catch {
                     return
                 }
-                if Task.isCancelled { return }
+                if Task.isCancelled {
+                    return
+                }
                 guard self.shouldReconnect() else { return }
                 restart()
                 return

@@ -484,10 +484,14 @@ private struct SideAttachedPopoverHost<Content: View>: NSViewRepresentable {
                 self.closeWorkItem = nil
 
                 guard self.panel.isVisible else { return }
-                if self.panelHovering { return }
+                if self.panelHovering {
+                    return
+                }
 
                 let mouse = NSEvent.mouseLocation
-                if self.isMouseInActiveArea(mouse) { return }
+                if self.isMouseInActiveArea(mouse) {
+                    return
+                }
 
                 self.closeNow()
             }

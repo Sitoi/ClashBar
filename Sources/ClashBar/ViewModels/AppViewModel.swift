@@ -237,8 +237,12 @@ final class AppViewModel: ObservableObject {
 
     var runtimeVisualStatus: RuntimeVisualStatus {
         let normalized = self.statusText.lowercased()
-        if normalized == "starting" { return .starting }
-        if normalized == "failed" { return .failed }
+        if normalized == "starting" {
+            return .starting
+        }
+        if normalized == "failed" {
+            return .failed
+        }
         guard self.coreRepository.isRunning || normalized == "running" else { return .stopped }
         switch self.apiStatus {
         case .healthy: return .runningHealthy
@@ -349,12 +353,16 @@ final class AppViewModel: ObservableObject {
     }
 
     var primaryCoreActionLabel: String {
-        if self.isCoreActionProcessing { return tr("app.primary.processing") }
+        if self.isCoreActionProcessing {
+            return tr("app.primary.processing")
+        }
         return self.isRuntimeRunning ? tr("app.primary.restart") : tr("app.primary.start")
     }
 
     var primaryCoreActionIconName: String {
-        if self.isCoreActionProcessing { return "hourglass" }
+        if self.isCoreActionProcessing {
+            return "hourglass"
+        }
         return self.isRuntimeRunning ? "arrow.clockwise" : "play.fill"
     }
 
@@ -372,6 +380,7 @@ final class AppViewModel: ObservableObject {
     let networkReachabilityMonitor: NetworkReachabilityMonitor
     let ssidMonitorService: SSIDMonitorService
     let remoteMachineStore: RemoteMachineStore
+    let proxyGroupIconCache: ProxyGroupIconCache
     var apiClient: MihomoAPIService?
 
     var mediumFrequencyTask: Task<Void, Never>?
@@ -385,9 +394,12 @@ final class AppViewModel: ObservableObject {
     var deferredEditableSettingsOverlayTask: Task<Void, Never>?
     var coreUpgradeFeedbackClearTask: Task<Void, Never>?
     var geoUpdateFeedbackClearTask: Task<Void, Never>?
-    var configDirectoryMonitorTask: Task<Void, Never>?
+    var configDirectoryMonitor: ConfigDirectoryMonitor?
     var trafficDecodeTask: Task<Void, Never>?
     var mihomoLogFlushTask: Task<Void, Never>?
+    var startupRefreshTask: Task<Void, Never>?
+    var autoStartTask: Task<Void, Never>?
+    var configDirectoryDebounceTask: Task<Void, Never>?
     var providerRefreshGeneration: Int = 0
     var lastTrafficSampleAt: Date?
     var lastTrafficDecodeAt: Date = .distantPast
@@ -397,6 +409,8 @@ final class AppViewModel: ObservableObject {
     var modeSwitchInFlight = false
 
     var proxyProvidersAPIUnavailableLogged = false
+    var lastAPIRefreshErrorFingerprint: String?
+    var didStart = false
     var activatedTabRefreshGeneration: Int = 0
     var configFileSignatureSnapshot: [String: String] = [:]
     var pendingConfigChangeRestart = false
@@ -466,72 +480,32 @@ final class AppViewModel: ObservableObject {
     let bundlesMihomoCore: Bool
     var didPresentInitialNoCoreSetupGuide = false
 
-    init(
-        processManager: (any MihomoControlling)? = nil,
-        configManager: ConfigDirectoryManager? = nil,
-        workingDirectoryManager: WorkingDirectoryManager = WorkingDirectoryManager(),
-        systemProxyService: SystemProxyService = SystemProxyService(),
-        tunPermissionService: TunPermissionService = TunPermissionService(),
-        configImportService: ConfigImportService = ConfigImportService(),
-        appLaunchService: AppLaunchService = AppLaunchService(),
-        networkReachabilityMonitor: NetworkReachabilityMonitor = NetworkReachabilityMonitor(),
-        ssidMonitorService: SSIDMonitorService = SSIDMonitorService(),
-        remoteMachineStore: RemoteMachineStore = RemoteMachineStore(),
-        clashbarLogStore: AppLogStore? = nil,
-        mihomoLogStore: AppLogStore? = nil)
-    {
-        self.processManager = processManager ?? MihomoProcessManager(workingDirectoryManager: workingDirectoryManager)
-        self.coreRepository = DefaultCoreRepository(processManager: self.processManager)
-        self.workingDirectoryManager = workingDirectoryManager
-        self.systemProxyRepository = DefaultSystemProxyRepository(service: systemProxyService)
-        self.tunPermissionRepository = DefaultTunPermissionRepository(service: tunPermissionService)
-        self.launchAtLoginRepository = DefaultLaunchAtLoginRepository(service: appLaunchService)
-        self.networkReachabilityMonitor = networkReachabilityMonitor
-        self.ssidMonitorService = ssidMonitorService
-        self.remoteMachineStore = remoteMachineStore
-        self.clashbarLogStore = clashbarLogStore
-        self.mihomoLogStore = mihomoLogStore
-        let resolvedConfigManager = configManager ?? ConfigDirectoryManager(
-            workingDirectoryManager: workingDirectoryManager)
-        self.configRepository = DefaultConfigRepository(
-            configManager: resolvedConfigManager,
-            configImportService: configImportService)
+    init(dependencies: AppDependencies) {
+        self.processManager = dependencies.processManager
+        self.coreRepository = dependencies.coreRepository
+        self.configRepository = dependencies.configRepository
+        self.systemProxyRepository = dependencies.systemProxyRepository
+        self.tunPermissionRepository = dependencies.tunPermissionRepository
+        self.launchAtLoginRepository = dependencies.launchAtLoginRepository
+        self.workingDirectoryManager = dependencies.workingDirectoryManager
+        self.networkReachabilityMonitor = dependencies.networkReachabilityMonitor
+        self.ssidMonitorService = dependencies.ssidMonitorService
+        self.remoteMachineStore = dependencies.remoteMachineStore
+        self.proxyGroupIconCache = dependencies.proxyGroupIconCache
+        self.clashbarLogStore = dependencies.clashbarLogStore
+        self.mihomoLogStore = dependencies.mihomoLogStore
+        self.clashbarLogFileURL = dependencies.clashbarLogStore.logFileURL
+        self.mihomoLogFileURL = dependencies.mihomoLogStore.logFileURL
         self.bundlesMihomoCore = Self.resolveBundledMihomoCoreFlag()
         self.uiLanguage = loadPersistedUILanguage()
         self.appearanceMode = loadPersistedAppearanceMode()
         applyAppAppearance()
-        self.trafficStore.viewModel = self
-        self.proxyStore.viewModel = self
-        self.logsStore.viewModel = self
         configureStreamCoordinator()
         refreshLaunchAtLoginStatus()
-
         self.configureManagedProcessCallbacks()
-        self.bootstrapDirectoriesAndLogs()
-        self.performDeferredInitialization()
     }
 
-    deinit {
-        networkAutoStopTask?.cancel()
-        networkAutoStartTask?.cancel()
-        deferredEditableSettingsOverlayTask?.cancel()
-        configDirectoryMonitorTask?.cancel()
-        trafficDecodeTask?.cancel()
-        mihomoLogFlushTask?.cancel()
-        mediumFrequencyTask?.cancel()
-        lowFrequencyTask?.cancel()
-        providerRefreshTask?.cancel()
-        ssidStrategyApplyTask?.cancel()
-        remoteConfigAutoUpdateTask?.cancel()
-        remoteConfigMenuRefreshTask?.cancel()
-        proxyPortsAutoSaveTask?.cancel()
-        settingsFeedbackClearTask?.cancel()
-        coreUpgradeFeedbackClearTask?.cancel()
-        geoUpdateFeedbackClearTask?.cancel()
-
-        let coordinator = streamCoordinator
-        Task { @MainActor in
-            coordinator.cancelAll()
-        }
+    isolated deinit {
+        self.cancelOwnedTasks()
     }
 }

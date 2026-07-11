@@ -117,7 +117,9 @@ extension AppViewModel {
             }
 
             guard let self else { return }
-            if Task.isCancelled { return }
+            if Task.isCancelled {
+                return
+            }
             self.proxyPortsAutoSaveTask = nil
             await self.applyProxyPorts(autoSaved: true)
         }

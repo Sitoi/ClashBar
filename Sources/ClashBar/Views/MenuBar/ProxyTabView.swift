@@ -38,6 +38,8 @@ struct ProxyTabView: TranslatingView {
     }
 
     @EnvironmentObject var appViewModel: AppViewModel
+    @EnvironmentObject var proxyStore: ProxyStore
+    @EnvironmentObject var trafficStore: TrafficStore
     @EnvironmentObject var connectionsStore: ConnectionsStore
     @ObservedObject var rootViewModel: ProxyGroupsViewModel
 
@@ -347,7 +349,7 @@ struct ProxyTabView: TranslatingView {
         VStack(alignment: .leading, spacing: T.space6) {
             self.trafficOverview
             self.proxyQuickRows
-            if !self.appViewModel.sortedProxyProviderNames.isEmpty {
+            if !self.proxyStore.sortedProxyProviderNames.isEmpty {
                 proxyProvidersSection
             }
             proxyGroupsSection
@@ -361,8 +363,8 @@ struct ProxyTabView: TranslatingView {
 
         return ZStack {
             TrafficSparklineView(
-                upValues: self.appViewModel.trafficHistoryUp,
-                downValues: self.appViewModel.trafficHistoryDown)
+                upValues: self.trafficStore.trafficHistoryUp,
+                downValues: self.trafficStore.trafficHistoryDown)
                 .frame(height: sparklineHeight)
                 .padding(.horizontal, sparklineHorizontalInset)
 
@@ -377,8 +379,8 @@ struct ProxyTabView: TranslatingView {
                     self.cornerMetric(
                         symbol: "arrow.up.circle",
                         value: ValueFormatter.speedAndTotal(
-                            rate: self.appViewModel.traffic.up,
-                            total: self.appViewModel.displayUpTotal),
+                            rate: self.trafficStore.traffic.up,
+                            total: self.trafficStore.displayUpTotal),
                         color: nativeInfo,
                         iconTrailing: true)
                         .frame(maxWidth: .infinity, alignment: .trailing)
@@ -389,15 +391,15 @@ struct ProxyTabView: TranslatingView {
                 HStack(spacing: T.space6) {
                     self.cornerMetric(
                         symbol: "memorychip",
-                        value: ValueFormatter.bytesInteger(self.appViewModel.memory.inuse),
+                        value: ValueFormatter.bytesInteger(self.trafficStore.memory.inuse),
                         color: nativeTeal)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     self.cornerMetric(
                         symbol: "arrow.down.circle",
                         value: ValueFormatter.speedAndTotal(
-                            rate: self.appViewModel.traffic.down,
-                            total: self.appViewModel.displayDownTotal),
+                            rate: self.trafficStore.traffic.down,
+                            total: self.trafficStore.displayDownTotal),
                         color: nativePositive.opacity(T.Opacity.solid),
                         iconTrailing: true)
                         .frame(maxWidth: .infinity, alignment: .trailing)
@@ -426,7 +428,11 @@ struct ProxyTabView: TranslatingView {
             .minimumScaleFactor(T.minimumScale)
 
         return HStack(spacing: iconTrailing ? T.space1 : T.space2) {
-            if iconTrailing { text; icon } else { icon; text }
+            if iconTrailing {
+                text; icon
+            } else {
+                icon; text
+            }
         }
     }
 
@@ -658,7 +664,7 @@ struct ProxyTabView: TranslatingView {
                 .labelsHidden()
                 .toggleStyle(.switch)
                 .controlSize(.small)
-                .disabled(self.appViewModel.isProxySyncing)
+                .disabled(self.proxyStore.isProxySyncing)
                 .frame(width: 50, alignment: .trailing)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

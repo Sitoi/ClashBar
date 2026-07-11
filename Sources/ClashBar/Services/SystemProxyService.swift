@@ -460,7 +460,9 @@ struct SystemProxyService {
         message: String?,
         value: @autoclosure () -> Value) -> Result<Value, Error>
     {
-        if success { return .success(value()) }
+        if success {
+            return .success(value())
+        }
         return .failure(SystemProxyServiceError.helperOperationFailed(message ?? "Unknown helper error."))
     }
 

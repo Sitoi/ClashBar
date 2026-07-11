@@ -11,6 +11,7 @@ protocol ConfigRepository: AnyObject {
     func selectConfig(_ url: URL)
     @discardableResult
     func reloadConfigs() -> [URL]
+    func applyScannedConfigs(_ files: [URL])
 
     func writeConfigData(_ data: Data, to targetURL: URL) throws
     func normalizedConfigFileName(_ fileName: String, fallback: String?) -> String?

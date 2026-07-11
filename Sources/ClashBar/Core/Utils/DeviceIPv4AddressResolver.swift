@@ -68,10 +68,18 @@ enum DeviceIPv4AddressResolver {
 
     private static func interfacePriority(_ name: String) -> Int {
         let normalized = name.lowercased()
-        if normalized == "en0" { return 0 }
-        if normalized.hasPrefix("en") { return 1 }
-        if normalized.hasPrefix("bridge") { return 2 }
-        if normalized.hasPrefix("utun") { return 3 }
+        if normalized == "en0" {
+            return 0
+        }
+        if normalized.hasPrefix("en") {
+            return 1
+        }
+        if normalized.hasPrefix("bridge") {
+            return 2
+        }
+        if normalized.hasPrefix("utun") {
+            return 3
+        }
         return 4
     }
 }

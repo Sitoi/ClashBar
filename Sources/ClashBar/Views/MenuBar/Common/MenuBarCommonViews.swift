@@ -588,8 +588,12 @@ extension View {
 
     func latencyColor(_ value: Int?) -> Color {
         guard let value else { return self.nativeTertiaryLabel }
-        if value == 0 { return self.nativeCritical.opacity(T.Opacity.solid) }
-        if value <= 400 { return self.nativePositive.opacity(T.Opacity.solid) }
+        if value == 0 {
+            return self.nativeCritical.opacity(T.Opacity.solid)
+        }
+        if value <= 400 {
+            return self.nativePositive.opacity(T.Opacity.solid)
+        }
         return self.nativeWarning.opacity(T.Opacity.solid)
     }
 

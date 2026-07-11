@@ -3,7 +3,9 @@ import AppKit
 @MainActor
 extension AppViewModel {
     func switchMode(to target: CoreMode) async {
-        if !isModeSwitchEnabled || modeSwitchInFlight || target == currentMode { return }
+        if !isModeSwitchEnabled || modeSwitchInFlight || target == currentMode {
+            return
+        }
         modeSwitchInFlight = true
         defer { modeSwitchInFlight = false }
 
@@ -182,7 +184,9 @@ extension AppViewModel {
             node: node,
             fallbackToGroupHistory: fallbackToGroupHistory)
         else { return tr("ui.common.unknown") }
-        if value == 0 { return tr("ui.common.timeout") }
+        if value == 0 {
+            return tr("ui.common.timeout")
+        }
         return tr("ui.common.latency_ms", value)
     }
 

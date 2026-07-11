@@ -96,7 +96,9 @@ extension AppViewModel {
             guard let self else { return }
 
             for _ in 0..<120 {
-                if Task.isCancelled { return }
+                if Task.isCancelled {
+                    return
+                }
                 guard self.isRuntimeRunning else { return }
                 if await self.applyDeferredEditableSettingsOverlayIfPossible() {
                     self.deferredEditableSettingsOverlayTask = nil

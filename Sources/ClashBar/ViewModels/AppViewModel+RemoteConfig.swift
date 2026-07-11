@@ -349,9 +349,8 @@ extension AppViewModel {
 
     @discardableResult
     func syncSelectedConfigSelection(_ selected: URL?) -> String? {
-        guard let selected else {
-            return nil
-        }
+        self.configDirectoryMonitor?.updateSelectedFile(selected)
+        guard let selected else { return nil }
         selectedConfigName = selected.lastPathComponent
         defaults.set(selected.lastPathComponent, forKey: selectedConfigKey)
         return selected.path

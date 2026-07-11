@@ -35,20 +35,6 @@ extension AppViewModel {
     func bootstrapDirectoriesAndLogs() {
         do {
             try self.workingDirectoryManager.bootstrapDirectories()
-            ProxyGroupIconCache.configure(iconDirectory: workingDirectoryManager.iconDirectoryURL)
-            clashbarLogFileURL = self.workingDirectoryManager.logsDirectoryURL.appendingPathComponent(
-                "clashbar.log",
-                isDirectory: false)
-            mihomoLogFileURL = self.workingDirectoryManager.logsDirectoryURL.appendingPathComponent(
-                "mihomo.log",
-                isDirectory: false)
-
-            if let clashbarLogFileURL, self.clashbarLogStore == nil {
-                self.clashbarLogStore = AppLogStore(logFileURL: clashbarLogFileURL)
-            }
-            if let mihomoLogFileURL, self.mihomoLogStore == nil {
-                self.mihomoLogStore = AppLogStore(logFileURL: mihomoLogFileURL)
-            }
             ensureLogFileExists()
             seedBundledConfigIfNeeded()
         } catch {
@@ -56,7 +42,14 @@ extension AppViewModel {
         }
     }
 
-    func performDeferredInitialization() {
+    func start() {
+        guard !self.didStart else { return }
+        self.didStart = true
+        self.bootstrapDirectoriesAndLogs()
+        self.performDeferredInitialization()
+    }
+
+    private func performDeferredInitialization() {
         restoreSavedConfigDirectory()
         restoreLastSuccessfulConfigIfAvailable()
         self.remoteConfigSubscriptions = loadPersistedRemoteConfigSubscriptions()
@@ -79,7 +72,7 @@ extension AppViewModel {
         self.replaceSystemProxyExceptionsDraft(with: persistedSystemProxyExceptions)
         self.lastSavedSystemProxyExceptions = self.normalizedSystemProxyExceptionValues(persistedSystemProxyExceptions)
 
-        Task { [weak self] in
+        self.startupRefreshTask = Task { [weak self] in
             guard let self else { return }
             await self.refreshFromAPI(includeSlowCalls: true)
             await self.applyPendingAppLaunchSettingsOverlayIfNeeded()
@@ -98,7 +91,7 @@ extension AppViewModel {
         self.startConfigDirectoryMonitoringIfNeeded()
         if self.autoStartCore {
             if !self.shouldDeferAutoStartForMissingManagedCore() {
-                Task { [weak self] in
+                self.autoStartTask = Task { [weak self] in
                     await self?.attemptAutoStartIfNeeded()
                 }
             }

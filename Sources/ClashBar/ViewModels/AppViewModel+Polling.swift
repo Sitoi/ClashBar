@@ -430,12 +430,20 @@ extension AppViewModel {
 extension AppViewModel {
     func runRefresh(_ block: () async throws -> Void) async {
         do {
-            ensureAPIClient()
+            self.ensureAPIClient()
             try await block()
-            apiStatus = .healthy
+            if self.apiStatus != .healthy {
+                self.apiStatus = .healthy
+            }
+            self.lastAPIRefreshErrorFingerprint = nil
         } catch {
-            apiStatus = .degraded
-            appendLog(level: "error", message: error.localizedDescription)
+            if self.apiStatus != .degraded {
+                self.apiStatus = .degraded
+            }
+            let fingerprint = "\(String(reflecting: type(of: error))):\(error.localizedDescription)"
+            guard self.lastAPIRefreshErrorFingerprint != fingerprint else { return }
+            self.lastAPIRefreshErrorFingerprint = fingerprint
+            self.appendLog(level: "error", message: error.localizedDescription)
         }
     }
 

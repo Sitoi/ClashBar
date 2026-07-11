@@ -5,6 +5,7 @@ private typealias T = MenuBarLayoutTokens
 
 struct RulesTabView: TranslatingView {
     @EnvironmentObject var appViewModel: AppViewModel
+    @EnvironmentObject var proxyStore: ProxyStore
     @StateObject private var viewModel = RulesViewModel()
     @AppStorage("clashbar.rules.group_by_policy.v1") private var storedGroupByPolicy = false
     @State private var hoveredRuleKey: String?
@@ -19,10 +20,10 @@ struct RulesTabView: TranslatingView {
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 0) {
                 HStack(spacing: T.space8) {
-                    self.rulesStatChip(title: self.tr("ui.rule.stats.rules"), value: "\(self.appViewModel.rulesCount)")
+                    self.rulesStatChip(title: self.tr("ui.rule.stats.rules"), value: "\(self.proxyStore.rulesCount)")
                     self.rulesStatChip(
                         title: self.tr("ui.rule.stats.sets"),
-                        value: "\(self.appViewModel.providerRuleCount)")
+                        value: "\(self.proxyStore.providerRuleCount)")
                 }
 
                 Spacer(minLength: 0)
@@ -71,8 +72,8 @@ struct RulesTabView: TranslatingView {
             self.viewModel.groupByPolicy = self.storedGroupByPolicy
             self.refreshData()
         }
-        .onChange(of: self.appViewModel.ruleItems) { _ in self.refreshData() }
-        .onChange(of: self.appViewModel.ruleProviders) { _ in self.refreshData() }
+        .onChange(of: self.proxyStore.ruleItems) { _ in self.refreshData() }
+        .onChange(of: self.proxyStore.ruleProviders) { _ in self.refreshData() }
         .onChange(of: self.viewModel.filterText) { _ in self.refreshData() }
         .onChange(of: self.viewModel.typeFilter) { _ in self.refreshData() }
         .onChange(of: self.viewModel.policyFilter) { _ in self.refreshData() }
@@ -87,8 +88,8 @@ struct RulesTabView: TranslatingView {
 
     private func refreshData() {
         self.viewModel.updateVisibleRules(
-            items: self.appViewModel.ruleItems,
-            providers: self.appViewModel.ruleProviders)
+            items: self.proxyStore.ruleItems,
+            providers: self.proxyStore.ruleProviders)
     }
 
     var rulesControlCard: some View {
@@ -105,7 +106,7 @@ struct RulesTabView: TranslatingView {
 
                 self.fractionSummaryBadge(
                     current: self.viewModel.output.rules.count,
-                    total: self.appViewModel.rulesCount)
+                    total: self.proxyStore.rulesCount)
             }
 
             HStack(spacing: T.space6) {
@@ -154,7 +155,7 @@ struct RulesTabView: TranslatingView {
     }
 
     var rulesEmptyState: some View {
-        let key = self.appViewModel.ruleItems.isEmpty ? "ui.empty.rules" : "ui.empty.rules.no_match"
+        let key = self.proxyStore.ruleItems.isEmpty ? "ui.empty.rules" : "ui.empty.rules.no_match"
         return Text(self.tr(key))
             .font(.app(size: T.FontSize.body, weight: .regular))
             .foregroundStyle(nativeSecondaryLabel)
@@ -259,12 +260,12 @@ struct RulesTabView: TranslatingView {
             "arrow.clockwise",
             label: self.tr("ui.action.refresh"),
             toneOverride: nativeInfo,
-            isLoading: self.appViewModel.isRuleProvidersRefreshing)
+            isLoading: self.proxyStore.isRuleProvidersRefreshing)
         {
             await self.appViewModel.refreshRuleProviders()
         }
         .help(self.tr("ui.action.refresh"))
-        .opacity(self.appViewModel.isRuleProvidersRefreshing ? 0.6 : 1)
+        .opacity(self.proxyStore.isRuleProvidersRefreshing ? 0.6 : 1)
     }
 
     func rulesRow(

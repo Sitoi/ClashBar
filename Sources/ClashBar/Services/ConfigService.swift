@@ -96,7 +96,6 @@ struct WorkingDirectoryManager {
 
 @MainActor
 final class ConfigDirectoryManager {
-    private let fm = FileManager.default
     private let workingDirectoryManager: WorkingDirectoryManager
 
     private(set) var configDirectory: URL?
@@ -146,34 +145,38 @@ final class ConfigDirectoryManager {
     @discardableResult
     func reloadConfigs() -> [URL] {
         guard let configDirectory else {
-            self.availableConfigs = []
-            selectedConfig = nil
+            self.applyScannedConfigs([])
             return []
         }
 
-        let keys: [URLResourceKey] = [.isRegularFileKey]
-        let children = (try? self.fm.contentsOfDirectory(
-            at: configDirectory,
-            includingPropertiesForKeys: keys,
-            options: [.skipsHiddenFiles])) ?? []
-        var files: [URL] = []
-        for fileURL in children {
-            let resolved = fileURL.resolvingSymlinksInPath()
-            let isRegularFile = (try? resolved.resourceValues(forKeys: Set(keys)).isRegularFile) ?? false
-            guard isRegularFile else { continue }
-            let ext = fileURL.pathExtension.lowercased()
-            guard ext == "yaml" || ext == "yml" else { continue }
-            files.append(fileURL)
-        }
-
-        files.sort { $0.lastPathComponent < $1.lastPathComponent }
-        self.availableConfigs = files
-
-        if let selectedConfig, files.contains(selectedConfig) {
-            return files
-        }
-        selectedConfig = files.first
+        let files = Self.scanConfigFiles(in: configDirectory)
+        self.applyScannedConfigs(files)
         return files
+    }
+
+    func applyScannedConfigs(_ files: [URL]) {
+        self.availableConfigs = files
+        if let selectedConfig, files.contains(selectedConfig) {
+            return
+        }
+        self.selectedConfig = files.first
+    }
+
+    nonisolated static func scanConfigFiles(in directory: URL) -> [URL] {
+        let keys: Set<URLResourceKey> = [.isRegularFileKey]
+        let children = (try? FileManager.default.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: Array(keys),
+            options: [.skipsHiddenFiles])) ?? []
+
+        return children.filter { fileURL in
+            let resolved = fileURL.resolvingSymlinksInPath()
+            let isRegularFile = (try? resolved.resourceValues(forKeys: keys).isRegularFile) ?? false
+            let fileExtension = fileURL.pathExtension.lowercased()
+            return isRegularFile && (fileExtension == "yaml" || fileExtension == "yml")
+        }.sorted {
+            $0.lastPathComponent < $1.lastPathComponent
+        }
     }
 }
 
@@ -337,6 +340,10 @@ final class DefaultConfigRepository: ConfigRepository {
     @discardableResult
     func reloadConfigs() -> [URL] {
         self.configManager.reloadConfigs()
+    }
+
+    func applyScannedConfigs(_ files: [URL]) {
+        self.configManager.applyScannedConfigs(files)
     }
 
     func writeConfigData(_ data: Data, to targetURL: URL) throws {

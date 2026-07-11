@@ -68,7 +68,9 @@ struct ConnectionSummary: Codable, Equatable, Identifiable {
         guard let value = start?.trimmingCharacters(in: .whitespaces), !value.isEmpty else { return nil }
         let withFractional = ISO8601DateFormatter()
         withFractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = withFractional.date(from: value) { return date.timeIntervalSince1970 }
+        if let date = withFractional.date(from: value) {
+            return date.timeIntervalSince1970
+        }
 
         let basic = ISO8601DateFormatter()
         basic.formatOptions = [.withInternetDateTime]

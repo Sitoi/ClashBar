@@ -312,7 +312,9 @@ extension MenuBarRootView {
                 ? self.segmentedAccentColor(style: style).opacity(style.selectedIconOpacity(isDark: isDarkAppearance))
                 : self.segmentedSelectedForeground(style: style)
         }
-        if hovered { return nativeSecondaryLabel.opacity(isDarkAppearance ? 0.96 : 0.84) }
+        if hovered {
+            return nativeSecondaryLabel.opacity(isDarkAppearance ? 0.96 : 0.84)
+        }
         return nativeTertiaryLabel
     }
 

@@ -47,6 +47,7 @@ enum LogLevelFilter: Hashable, CaseIterable {
 
 struct MenuBarRootView: TranslatingView {
     @EnvironmentObject var appViewModel: AppViewModel
+    @EnvironmentObject var proxyStore: ProxyStore
     @EnvironmentObject var remoteMachineStore: RemoteMachineStore
     @EnvironmentObject var popoverLayoutModel: PopoverLayoutModel
     @Environment(\.colorScheme) var colorScheme
@@ -135,7 +136,7 @@ struct MenuBarRootView: TranslatingView {
                 self.appViewModel.setActiveMenuTab(self.rootViewModel.currentTab)
                 self.refreshDerivedData(for: self.rootViewModel.currentTab)
                 self.rootViewModel.updateFilteredProxyGroups(
-                    from: self.appViewModel.proxyGroups,
+                    from: self.proxyStore.proxyGroups,
                     hideHiddenGroups: self.hideHiddenProxyGroups,
                     currentMode: self.appViewModel.currentMode)
                 publishPreferredPanelHeight()
@@ -157,7 +158,7 @@ struct MenuBarRootView: TranslatingView {
             .onChange(of: self.popoverLayoutModel.maxPanelHeight) { _ in
                 publishPreferredPanelHeight()
             }
-            .onChange(of: self.appViewModel.proxyGroups) { newGroups in
+            .onChange(of: self.proxyStore.proxyGroups) { newGroups in
                 self.rootViewModel.updateFilteredProxyGroups(
                     from: newGroups,
                     hideHiddenGroups: self.hideHiddenProxyGroups,
@@ -165,13 +166,13 @@ struct MenuBarRootView: TranslatingView {
             }
             .onChange(of: self.hideHiddenProxyGroups) { newValue in
                 self.rootViewModel.updateFilteredProxyGroups(
-                    from: self.appViewModel.proxyGroups,
+                    from: self.proxyStore.proxyGroups,
                     hideHiddenGroups: newValue,
                     currentMode: self.appViewModel.currentMode)
             }
             .onChange(of: self.appViewModel.currentMode) { newMode in
                 self.rootViewModel.updateFilteredProxyGroups(
-                    from: self.appViewModel.proxyGroups,
+                    from: self.proxyStore.proxyGroups,
                     hideHiddenGroups: self.hideHiddenProxyGroups,
                     currentMode: newMode)
             }

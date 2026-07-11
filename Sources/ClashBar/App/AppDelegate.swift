@@ -2,7 +2,7 @@ import AppKit
 
 @MainActor
 final class ClashBarAppDelegate: NSObject, NSApplicationDelegate {
-    let appViewModel = AppViewModel()
+    let appViewModel = AppViewModel(dependencies: .live)
     private var statusItemController: StatusItemController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -10,6 +10,7 @@ final class ClashBarAppDelegate: NSObject, NSApplicationDelegate {
             NSApp.applicationIconImage = image
         }
         NSApp.setActivationPolicy(.accessory)
+        self.appViewModel.start()
         self.statusItemController = StatusItemController(appViewModel: self.appViewModel)
         self.appViewModel.presentInitialNoCoreSetupGuideIfNeeded()
     }

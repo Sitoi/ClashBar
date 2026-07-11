@@ -2,93 +2,95 @@ import Foundation
 
 @MainActor
 extension AppViewModel {
-    private var configDirectoryMonitorIntervalNanoseconds: UInt64 {
-        1_000_000_000
-    }
-
     func startConfigDirectoryMonitoringIfNeeded() {
-        guard self.configDirectoryMonitorTask == nil else { return }
-        guard self.ensureConfigDirectoryAvailable() != nil else { return }
+        guard self.configDirectoryMonitor == nil else { return }
+        guard let directoryURL = self.ensureConfigDirectoryAvailable() else { return }
 
         _ = self.configRepository.reloadConfigs()
-        self.configFileSignatureSnapshot = self.currentConfigFileSignatureSnapshot()
-
-        self.configDirectoryMonitorTask = Task { [weak self] in
-            guard let self else { return }
-            while !Task.isCancelled {
-                do {
-                    try await Task.sleep(nanoseconds: self.configDirectoryMonitorIntervalNanoseconds)
-                } catch {
-                    return
-                }
-                await self.handleConfigDirectoryChangesIfNeeded()
+        self.configFileSignatureSnapshot = Self.configFileSignatureSnapshot(for: self.configRepository.availableConfigs)
+        self.configDirectoryMonitor = ConfigDirectoryMonitor(
+            directoryURL: directoryURL,
+            selectedFileURL: self.configRepository.selectedConfig)
+        { [weak self] in
+            Task { @MainActor [weak self] in
+                self?.scheduleConfigDirectoryRefresh()
             }
         }
     }
 
     func stopConfigDirectoryMonitoring() {
-        self.configDirectoryMonitorTask?.cancel()
-        self.configDirectoryMonitorTask = nil
+        self.configDirectoryMonitor?.cancel()
+        self.configDirectoryMonitor = nil
+        self.configDirectoryDebounceTask?.cancel()
+        self.configDirectoryDebounceTask = nil
         self.configFileSignatureSnapshot = [:]
         self.pendingConfigChangeRestart = false
     }
 
-    private func handleConfigDirectoryChangesIfNeeded() async {
-        guard !self.isRemoteTarget else { return }
-
-        if self.pendingConfigChangeRestart,
-           self.isRuntimeRunning,
-           !self.isCoreActionProcessing
-        {
-            self.pendingConfigChangeRestart = false
-            self.appendLog(level: "info", message: self.tr("log.config.changed_restart"))
-            await self.restartCore(trigger: .configSwitch)
-            return
+    private func scheduleConfigDirectoryRefresh(delayNanoseconds: UInt64 = 350_000_000) {
+        self.configDirectoryDebounceTask?.cancel()
+        self.configDirectoryDebounceTask = Task { [weak self] in
+            guard await (try? Task.sleep(nanoseconds: delayNanoseconds)) != nil else { return }
+            await self?.handleConfigDirectoryChangesIfNeeded()
         }
+    }
 
-        guard self.ensureConfigDirectoryAvailable() != nil else { return }
+    private func handleConfigDirectoryChangesIfNeeded() async {
+        guard let directoryURL = self.ensureConfigDirectoryAvailable() else { return }
 
         let previousSelectedPath = self.configRepository.selectedConfig?.path
-        _ = self.configRepository.reloadConfigs()
-        let currentSnapshot = self.currentConfigFileSignatureSnapshot()
-
-        if self.configFileSignatureSnapshot.isEmpty {
-            self.configFileSignatureSnapshot = currentSnapshot
-            return
-        }
+        let scan = await Task.detached(priority: .utility) {
+            let files = ConfigDirectoryManager.scanConfigFiles(in: directoryURL)
+            let signatures = Self.configFileSignatureSnapshot(for: files)
+            return (files, signatures)
+        }.value
+        guard !Task.isCancelled else { return }
 
         let changedFileNames = self.changedConfigFileNames(
             previous: self.configFileSignatureSnapshot,
-            current: currentSnapshot)
-        guard !changedFileNames.isEmpty else { return }
+            current: scan.1)
+        var selectedConfigChanged = false
+        if !changedFileNames.isEmpty {
+            self.configRepository.applyScannedConfigs(scan.0)
+            self.configFileSignatureSnapshot = scan.1
+            let nextSelectedPath = self.syncSelectedConfigStateForMonitoring()
+            self.syncConfigDisplayState()
 
-        self.configFileSignatureSnapshot = currentSnapshot
-        let nextSelectedPath = self.syncSelectedConfigStateForMonitoring()
-        self.syncConfigDisplayState()
+            let involvedSelectedFileNames = Set([
+                self.configFileName(fromPath: previousSelectedPath),
+                self.configFileName(fromPath: nextSelectedPath),
+            ].compactMap(\.self))
+            selectedConfigChanged = !involvedSelectedFileNames.isDisjoint(with: changedFileNames)
+        }
 
-        let involvedSelectedFileNames = Set([
-            self.configFileName(fromPath: previousSelectedPath),
-            self.configFileName(fromPath: nextSelectedPath),
-        ].compactMap(\.self))
-        guard !involvedSelectedFileNames.isDisjoint(with: changedFileNames) else { return }
-        guard self.isRuntimeRunning else { return }
-
-        if self.isCoreActionProcessing {
-            if !self.isTunSyncing {
-                self.pendingConfigChangeRestart = true
-            }
+        guard !self.isRemoteTarget else {
+            self.pendingConfigChangeRestart = false
+            return
+        }
+        guard self.pendingConfigChangeRestart || selectedConfigChanged else { return }
+        guard self.isRuntimeRunning else {
+            self.pendingConfigChangeRestart = false
             return
         }
 
+        if self.isCoreActionProcessing {
+            if selectedConfigChanged, !self.isTunSyncing {
+                self.pendingConfigChangeRestart = true
+            }
+            self.scheduleConfigDirectoryRefresh(delayNanoseconds: 500_000_000)
+            return
+        }
+
+        self.pendingConfigChangeRestart = false
         self.appendLog(level: "info", message: self.tr("log.config.changed_restart"))
         await self.restartCore(trigger: .configSwitch)
     }
 
-    private func currentConfigFileSignatureSnapshot() -> [String: String] {
+    private nonisolated static func configFileSignatureSnapshot(for files: [URL]) -> [String: String] {
         let keys: Set<URLResourceKey> = [.contentModificationDateKey, .fileSizeKey]
         var snapshot: [String: String] = [:]
 
-        for fileURL in self.configRepository.availableConfigs {
+        for fileURL in files {
             let resolved = fileURL.resolvingSymlinksInPath()
             let values = try? resolved.resourceValues(forKeys: keys)
             let modifiedAt = values?.contentModificationDate?.timeIntervalSince1970 ?? 0
@@ -114,14 +116,11 @@ extension AppViewModel {
 
     @discardableResult
     private func syncSelectedConfigStateForMonitoring() -> String? {
-        guard let selected = self.configRepository.selectedConfig else {
+        guard let path = self.syncSelectedConfigSelection(self.configRepository.selectedConfig) else {
             self.selectedConfigName = "-"
             self.defaults.removeObject(forKey: self.selectedConfigKey)
             return nil
         }
-
-        self.selectedConfigName = selected.lastPathComponent
-        self.defaults.set(selected.lastPathComponent, forKey: self.selectedConfigKey)
-        return selected.path
+        return path
     }
 }

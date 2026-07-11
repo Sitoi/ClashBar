@@ -261,7 +261,9 @@ enum ValueFormatter {
     private static let shortDateTimeFormatterKey = "clashbar.formatter.shortDateTime"
 
     private static func threadLocalShortTimeFormatter() -> DateFormatter {
-        if let f = Thread.current.threadDictionary[shortTimeFormatterKey] as? DateFormatter { return f }
+        if let f = Thread.current.threadDictionary[shortTimeFormatterKey] as? DateFormatter {
+            return f
+        }
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "HH:mm"
@@ -270,7 +272,9 @@ enum ValueFormatter {
     }
 
     private static func threadLocalShortDateTimeFormatter() -> DateFormatter {
-        if let f = Thread.current.threadDictionary[shortDateTimeFormatterKey] as? DateFormatter { return f }
+        if let f = Thread.current.threadDictionary[shortDateTimeFormatterKey] as? DateFormatter {
+            return f
+        }
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "MM-dd HH:mm"

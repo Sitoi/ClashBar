@@ -428,7 +428,9 @@ struct ConnectionsTabView: TranslatingView {
         guard !candidate.isEmpty else { return "--" }
 
         let normalized = candidate.uppercased()
-        if normalized == "MATCH" || normalized == "FINAL" { return "--" }
+        if normalized == "MATCH" || normalized == "FINAL" {
+            return "--"
+        }
         return candidate
     }
 

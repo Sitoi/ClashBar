@@ -1,4 +1,4 @@
-# SwiftLint configuration for Peekaboo - Swift 6 compatible
+# SwiftLint configuration for ClashBar - Swift 6 compatible
 
 # Paths to include
 included:
@@ -7,22 +7,9 @@ included:
 # Paths to exclude
 excluded:
   - .build
-  - DerivedData
-  - '**/Generated'
-  - '**/Resources'
-  - '**/.build'
-  - '**/Package.swift'
-  - '**/Tests/Resources'
-  - 'Apps/CLI/.build'
-  - '**/DerivedData'
-  - '**/.swiftpm'
-  - Pods
-  - Carthage
-  - fastlane
-  - vendor
-  - '*.playground'
-  # Exclude specific files that should not be linted/formatted
-  - 'Core/PeekabooCore/Sources/PeekabooCore/Extensions/NSArray+Extensions.swift'
+  - .swiftpm
+  - dist
+  - Sources/ClashBar/Resources
 
 # Analyzer rules (require compilation)
 analyzer_rules:

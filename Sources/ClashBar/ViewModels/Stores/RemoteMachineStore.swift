@@ -33,12 +33,20 @@ final class RemoteMachineStore: ObservableObject {
     private static let activeTargetKey = "clashbar.remote.active_target_id"
 
     private let defaults: UserDefaults
+    private let session: URLSession
 
     @Published var machines: [RemoteMachine] = []
     @Published var activeTargetID: UUID?
     @Published var machineStatuses: [UUID: MachineConnectionStatus] = [:]
 
+    private struct Probe {
+        let generation: Int
+        let task: Task<MachineConnectionStatus, Never>
+    }
+
     private var connectivityTimer: Task<Void, Never>?
+    private var probes: [UUID: Probe] = [:]
+    private var nextProbeGeneration = 0
 
     var activeTarget: MachineTarget {
         guard let id = self.activeTargetID,
@@ -49,14 +57,18 @@ final class RemoteMachineStore: ObservableObject {
         return .remote(machine)
     }
 
-    init(defaults: UserDefaults = .standard) {
+    init(session: URLSession, defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        self.session = session
         self.machines = Self.loadMachines(from: defaults)
         self.activeTargetID = Self.loadActiveTargetID(from: defaults)
     }
 
     deinit {
         connectivityTimer?.cancel()
+        for probe in probes.values {
+            probe.task.cancel()
+        }
     }
 
     func addMachine(_ machine: RemoteMachine) {
@@ -66,11 +78,15 @@ final class RemoteMachineStore: ObservableObject {
 
     func updateMachine(_ machine: RemoteMachine) {
         guard let index = self.machines.firstIndex(where: { $0.id == machine.id }) else { return }
+        self.cancelProbe(for: machine.id)
         self.machines[index] = machine
+        self.machineStatuses[machine.id] = .unknown
         self.persist()
     }
 
     func removeMachine(id: UUID) {
+        self.cancelProbe(for: id)
+        self.machineStatuses.removeValue(forKey: id)
         self.machines.removeAll { $0.id == id }
         if self.activeTargetID == id {
             self.activeTargetID = nil
@@ -105,18 +121,12 @@ final class RemoteMachineStore: ObservableObject {
     }
 
     func checkConnectivity(for machine: RemoteMachine) {
-        Task { [weak self] in
-            guard let self else { return }
-            _ = await self.refreshConnectivity(for: machine)
-        }
+        _ = self.startProbe(for: machine)
     }
 
     @discardableResult
     func refreshConnectivity(for machine: RemoteMachine) async -> MachineConnectionStatus {
-        self.machineStatuses[machine.id] = .checking
-        let status = await Self.probe(machine: machine)
-        self.machineStatuses[machine.id] = status
-        return status
+        await self.startProbe(for: machine).value
     }
 
     func startPeriodicConnectivityChecks() {
@@ -124,8 +134,7 @@ final class RemoteMachineStore: ObservableObject {
         self.checkAllConnectivity()
         self.connectivityTimer = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 5_000_000_000)
-                guard !Task.isCancelled else { return }
+                guard await (try? Task.sleep(nanoseconds: 5_000_000_000)) != nil else { return }
                 self?.checkAllConnectivity()
             }
         }
@@ -134,6 +143,40 @@ final class RemoteMachineStore: ObservableObject {
     func stopPeriodicConnectivityChecks() {
         self.connectivityTimer?.cancel()
         self.connectivityTimer = nil
+        for probe in self.probes.values {
+            probe.task.cancel()
+        }
+        self.probes.removeAll()
+    }
+
+    private func startProbe(for machine: RemoteMachine) -> Task<MachineConnectionStatus, Never> {
+        guard self.machines.contains(machine) else { return Task { .unknown } }
+
+        self.cancelProbe(for: machine.id)
+        self.nextProbeGeneration += 1
+        let generation = self.nextProbeGeneration
+        self.machineStatuses[machine.id] = .checking
+
+        let session = self.session
+        let task = Task { [weak self] in
+            let status = await Self.probe(machine: machine, session: session)
+            guard let self, !Task.isCancelled,
+                  self.probes[machine.id]?.generation == generation,
+                  self.machines.contains(machine)
+            else { return status }
+
+            if self.machineStatuses[machine.id] != status {
+                self.machineStatuses[machine.id] = status
+            }
+            self.probes[machine.id] = nil
+            return status
+        }
+        self.probes[machine.id] = Probe(generation: generation, task: task)
+        return task
+    }
+
+    private func cancelProbe(for id: UUID) {
+        self.probes.removeValue(forKey: id)?.task.cancel()
     }
 
     private func persist() {
@@ -163,7 +206,7 @@ final class RemoteMachineStore: ObservableObject {
         return UUID(uuidString: string)
     }
 
-    private static func probe(machine: RemoteMachine) async -> MachineConnectionStatus {
+    private static func probe(machine: RemoteMachine, session: URLSession) async -> MachineConnectionStatus {
         let timeoutInterval: TimeInterval = 1
         let address = machine.controllerAddress
         let base = address.contains("://") ? address : "http://\(address)"
@@ -178,11 +221,8 @@ final class RemoteMachineStore: ObservableObject {
         }
 
         do {
-            let session = URLSessionFactory.makeEphemeralSession(options: .init(
-                timeoutIntervalForRequest: timeoutInterval,
-                timeoutIntervalForResource: timeoutInterval))
-            defer { session.finishTasksAndInvalidate() }
             let (data, response) = try await session.data(for: request)
+            try Task.checkCancellation()
 
             guard let httpResponse = response as? HTTPURLResponse else {
                 return .failed(reason: "No HTTP response")
@@ -199,8 +239,12 @@ final class RemoteMachineStore: ObservableObject {
                 return .connected(version: version)
             }
             return .connected(version: "OK")
+        } catch is CancellationError {
+            return .unknown
         } catch let error as URLError {
             switch error.code {
+            case .cancelled:
+                return .unknown
             case .timedOut:
                 return .failed(reason: "Timeout")
             case .cannotConnectToHost:

@@ -1,4 +1,4 @@
-# SwiftFormat configuration for Peekaboo project
+# SwiftFormat configuration for ClashBar
 
 # Compatible with Swift 6 strict concurrency mode
 
@@ -57,6 +57,6 @@
 
 # Exclusions
 
---exclude .build,.swiftpm,DerivedData,node_modules,dist,coverage,xcuserdata,Core/PeekabooCore/Sources/PeekabooCore/Extensions/NSArray+Extensions.swift
+--exclude .build,.swiftpm,dist
 
 --disable redundantSendable

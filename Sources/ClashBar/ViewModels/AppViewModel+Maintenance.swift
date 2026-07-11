@@ -233,8 +233,12 @@ extension AppViewModel {
     var currentAppVersionText: String {
         let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
-        if let short, !short.isEmpty { return short }
-        if let build, !build.isEmpty { return build }
+        if let short, !short.isEmpty {
+            return short
+        }
+        if let build, !build.isEmpty {
+            return build
+        }
         return "0.0.1"
     }
 

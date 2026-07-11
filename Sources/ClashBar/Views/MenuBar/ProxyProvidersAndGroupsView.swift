@@ -5,7 +5,7 @@ private typealias T = MenuBarLayoutTokens
 
 extension ProxyTabView {
     var proxyProvidersSection: some View {
-        let providers = appViewModel.sortedProxyProviderNames
+        let providers = proxyStore.sortedProxyProviderNames
 
         return VStack(alignment: .leading, spacing: T.space6) {
             self.nodesSectionHeader(
@@ -34,7 +34,7 @@ extension ProxyTabView {
             } else if !isProxyProvidersCollapsed {
                 VStack(spacing: T.space2) {
                     ForEach(providers, id: \.self) { name in
-                        self.proxyProviderRow(name: name, detail: appViewModel.proxyProvidersDetail[name])
+                        self.proxyProviderRow(name: name, detail: proxyStore.proxyProvidersDetail[name])
                     }
                 }
             }
@@ -56,7 +56,7 @@ extension ProxyTabView {
             return min(max(Double(used) / Double(total), 0), 1)
         }()
         let rowHorizontalPadding = T.space4
-        let isUpdating = appViewModel.providerUpdating.contains(name)
+        let isUpdating = proxyStore.providerUpdating.contains(name)
         let hovered = hoveredProviderName == name
         let updateTimeWidth: CGFloat = 44
 
@@ -317,7 +317,7 @@ extension ProxyTabView {
 
                     self.providerActionButton(
                         .healthcheck,
-                        isLoading: appViewModel.groupLatencyLoading.contains(group.name))
+                        isLoading: proxyStore.groupLatencyLoading.contains(group.name))
                     {
                         await appViewModel.refreshGroupLatency(group)
                     }
@@ -337,7 +337,7 @@ extension ProxyTabView {
             } trailing: {
                 self.providerActionButton(
                     .healthcheck,
-                    isLoading: appViewModel.groupLatencyLoading.contains(group.name))
+                    isLoading: proxyStore.groupLatencyLoading.contains(group.name))
                 {
                     await appViewModel.refreshGroupLatency(group)
                 }
@@ -350,7 +350,7 @@ extension ProxyTabView {
             FrozenPopoverNodesList(nodes: nodes, emptyText: tr("ui.common.na")) { node in
                 ProxyGroupPopoverNodeItem(
                     title: node,
-                    typeText: appViewModel.proxyNodeTypes[node].trimmedNonEmpty,
+                    typeText: proxyStore.proxyNodeTypes[node].trimmedNonEmpty,
                     delayText: appViewModel.delayText(group: group.name, node: node),
                     delayValue: appViewModel.delayValue(group: group.name, node: node),
                     delayColor: latencyColor(appViewModel.delayValue(group: group.name, node: node)),
@@ -493,7 +493,9 @@ extension ProxyTabView {
         var ordered: [String] = []
         ordered.reserveCapacity(names.count)
         for name in names where !name.isEmpty {
-            if seen.insert(name).inserted { ordered.append(name) }
+            if seen.insert(name).inserted {
+                ordered.append(name)
+            }
         }
         return ordered
     }
@@ -512,7 +514,9 @@ extension ProxyTabView {
         let unique = self.orderedUniqueNames(names)
         let sorted = unique.sorted { lhs, rhs in
             let cmp = self.compareLatency(lhs: latencyForNode(lhs), rhs: latencyForNode(rhs), ascending: true)
-            if cmp != .orderedSame { return cmp == .orderedAscending }
+            if cmp != .orderedSame {
+                return cmp == .orderedAscending
+            }
             return lhs.localizedStandardCompare(rhs) == .orderedAscending
         }
         guard appViewModel.hideUnavailableProxyNodes else { return sorted }

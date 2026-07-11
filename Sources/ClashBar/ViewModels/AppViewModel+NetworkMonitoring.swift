@@ -68,7 +68,9 @@ extension AppViewModel {
             self.cancelPolling()
 
             for _ in 0..<120 {
-                if Task.isCancelled { return }
+                if Task.isCancelled {
+                    return
+                }
                 guard self.networkReachabilityStatus == .offline else { return }
                 guard self.isRuntimeRunning else { return }
 
@@ -109,7 +111,9 @@ extension AppViewModel {
             var didLog = false
 
             for _ in 0..<120 {
-                if Task.isCancelled { return }
+                if Task.isCancelled {
+                    return
+                }
                 guard self.networkReachabilityStatus == .online else { return }
                 guard self.shouldResumeCoreAfterNetworkRecovery else { return }
 
