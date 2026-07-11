@@ -1,3 +1,32 @@
+## v0.3.1
+
+![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.3.1-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
+
+> 本次更新集中在 **代理组图标展示与长期运行稳定性**：代理组现在可展示 Mihomo 配置返回的远程图标，并通过内存与磁盘缓存减少重复下载；同时重构配置文件监听、网络恢复、远程主机探测、日志写入与菜单栏状态刷新，提升配置编辑、网络切换和应用退出等场景下的可靠性与响应效率。
+
+### 📝 更新日志 (Changelog)
+
+**✨ 新增功能 (New Features)**
+
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **代理组远程图标**：支持读取并展示 Mihomo 代理组返回的图标地址，在代理组列表和节点弹窗标题中呈现对应图标；图标采用内存与磁盘双层缓存，并限制单文件大小、缓存总量与文件数量，减少重复请求和长期磁盘占用。
+
+**🚀 优化改进 (Improvements)**
+
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **配置文件监听升级**：使用文件系统事件监听配置目录与当前选中的 YAML 文件，替代持续轮询；新增、删除、重命名及直接编辑配置后可及时刷新列表，并仅在当前配置实际变化时重启本地内核。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **网络恢复流程简化**：网络状态监控改为始终启用，断网时自动暂停内核与轮询、网络恢复后自动继续运行，并移除不再需要的「断网停核」开关，减少状态分支和恢复失败风险。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **菜单栏刷新性能优化**：拆分代理、流量、日志与状态栏数据的观察范围，仅在数据真正变化时触发对应界面刷新，降低实时流量、日志和代理状态更新造成的无关重绘。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **远程主机连接检测优化**：复用网络会话并统一管理连接探测任务，新的检查会取消旧请求，避免过期结果覆盖当前状态；删除或修改远程主机时也会同步清理相关任务。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **应用生命周期与日志处理增强**：统一应用依赖和后台任务的启动、取消流程，退出前等待 ClashBar 与 Mihomo 日志写入完成，并保持日志轮转顺序，减少任务残留与日志丢失。
+
+**🐞 修复问题 (Bug Fixes)**
+
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **修复直接编辑配置未被发现的问题**：补充对当前配置文件本身的监听，可识别编辑器原地写入以及原子替换文件等保存方式，避免修改后配置列表或内核未刷新。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **修复远程图标缓存异常**：合并同一地址的并发下载，校验 HTTP 状态与图片数据，并使用原子写入和缓存清理，避免无效响应、损坏文件或重复请求影响图标显示。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **修复远程连接状态被旧请求覆盖的问题**：为探测任务增加取消与代次校验，防止慢请求在目标切换、配置修改或主机删除后写回过期状态。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **修复版本信息缺失时的请求标识**：无法读取 Mihomo 版本时使用默认版本作为 User-Agent 回退值，不再发送包含 `unknown` 的请求标识，提高远程配置请求兼容性。
+
+---
+
 ## v0.3.0
 
 ![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.3.0-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
