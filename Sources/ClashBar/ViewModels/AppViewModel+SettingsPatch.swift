@@ -59,7 +59,7 @@ extension AppViewModel {
         do {
             ensureAPIClient()
             appendLog(level: "info", message: "PATCH /configs [\(patchKeysDescription)]")
-            try await self.settingsPatchTransport().requestNoResponse(.patchConfigs(body: body.mapValues(\.jsonValue)))
+            try await self.clientOrThrow().requestNoResponse(.patchConfigs(body: body.mapValues(\.jsonValue)))
             appendLog(level: "info", message: "PATCH /configs succeeded [\(patchKeysDescription)]")
             await refreshFromAPI(includeSlowCalls: false)
             await self.reconcileEditableSettingsWithRuntimeConfig()
@@ -166,14 +166,6 @@ extension AppViewModel {
         throw APIError.invalidURL
     }
 
-    func modeSwitchTransport() throws -> MihomoAPITransporting {
-        try self.resolvedTransport(override: modeSwitchTransportOverride)
-    }
-
-    func settingsPatchTransport() throws -> MihomoAPITransporting {
-        try self.resolvedTransport(override: settingsPatchTransportOverride)
-    }
-
     private func previousSystemProxyPortsForSyncIfNeeded(shouldSync: Bool) async -> SystemProxyPorts? {
         guard shouldSync, isSystemProxyEnabled else { return nil }
         do {
@@ -271,12 +263,5 @@ extension AppViewModel {
             guard self[keyPath: stateKeyPath] == previous[keyPath: snapshotKeyPath] else { continue }
             self[keyPath: stateKeyPath] = incoming[keyPath: snapshotKeyPath]
         }
-    }
-
-    func resolvedTransport(override: MihomoAPITransporting?) throws -> MihomoAPITransporting {
-        if let override {
-            return override
-        }
-        return try self.clientOrThrow()
     }
 }

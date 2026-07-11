@@ -354,14 +354,6 @@ extension AppViewModel {
         self.proxyNodeTypes = presentation.nodeTypes
     }
 
-    func normalizedHealthcheckURL(_ value: String?) -> String? {
-        HealthcheckNormalization.normalizedURL(value)
-    }
-
-    func normalizedHealthcheckTimeout(_ value: Int?) -> Int? {
-        HealthcheckNormalization.normalizedTimeout(value)
-    }
-
     func refreshConnections() async {
         let policy = self.desiredDataAcquisitionPolicy(panelPresented: isPanelPresented, activeTab: activeMenuTab)
         guard policy.enableConnectionsStream else {

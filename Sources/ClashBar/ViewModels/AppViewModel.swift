@@ -373,8 +373,6 @@ final class AppViewModel: ObservableObject {
     let ssidMonitorService: SSIDMonitorService
     let remoteMachineStore: RemoteMachineStore
     var apiClient: MihomoAPIService?
-    var modeSwitchTransportOverride: MihomoAPITransporting?
-    var settingsPatchTransportOverride: MihomoAPITransporting?
 
     var mediumFrequencyTask: Task<Void, Never>?
     var lowFrequencyTask: Task<Void, Never>?
@@ -480,8 +478,7 @@ final class AppViewModel: ObservableObject {
         ssidMonitorService: SSIDMonitorService = SSIDMonitorService(),
         remoteMachineStore: RemoteMachineStore = RemoteMachineStore(),
         clashbarLogStore: AppLogStore? = nil,
-        mihomoLogStore: AppLogStore? = nil,
-        startBackgroundRefresh: Bool = true)
+        mihomoLogStore: AppLogStore? = nil)
     {
         self.processManager = processManager ?? MihomoProcessManager(workingDirectoryManager: workingDirectoryManager)
         self.coreRepository = DefaultCoreRepository(processManager: self.processManager)
@@ -511,7 +508,7 @@ final class AppViewModel: ObservableObject {
 
         self.configureManagedProcessCallbacks()
         self.bootstrapDirectoriesAndLogs()
-        self.performDeferredInitialization(startBackgroundRefresh: startBackgroundRefresh)
+        self.performDeferredInitialization()
     }
 
     deinit {

@@ -56,7 +56,7 @@ extension AppViewModel {
         }
     }
 
-    func performDeferredInitialization(startBackgroundRefresh: Bool) {
+    func performDeferredInitialization() {
         restoreSavedConfigDirectory()
         restoreLastSuccessfulConfigIfAvailable()
         self.remoteConfigSubscriptions = loadPersistedRemoteConfigSubscriptions()
@@ -79,26 +79,24 @@ extension AppViewModel {
         self.replaceSystemProxyExceptionsDraft(with: persistedSystemProxyExceptions)
         self.lastSavedSystemProxyExceptions = self.normalizedSystemProxyExceptionValues(persistedSystemProxyExceptions)
 
-        if startBackgroundRefresh {
-            Task { [weak self] in
-                guard let self else { return }
-                await self.refreshFromAPI(includeSlowCalls: true)
-                await self.applyPendingAppLaunchSettingsOverlayIfNeeded()
-                self.seedCoreFeatureRecoveryFromPersistedQuitState()
-                if self.hasSystemProxyOpenIntent {
-                    await self.systemProxyRepository.warmUpHelperIfPossible()
-                    await self.refreshSystemProxyHelperStatus()
-                    await self.refreshSystemProxyStatus()
-                    await self.ensureSystemProxyConsistencyOnFirstLaunchIfNeeded()
-                } else {
-                    self.resetSystemProxyObservedState()
-                    self.didCheckSystemProxyConsistencyOnLaunch = true
-                }
+        Task { [weak self] in
+            guard let self else { return }
+            await self.refreshFromAPI(includeSlowCalls: true)
+            await self.applyPendingAppLaunchSettingsOverlayIfNeeded()
+            self.seedCoreFeatureRecoveryFromPersistedQuitState()
+            if self.hasSystemProxyOpenIntent {
+                await self.systemProxyRepository.warmUpHelperIfPossible()
+                await self.refreshSystemProxyHelperStatus()
+                await self.refreshSystemProxyStatus()
+                await self.ensureSystemProxyConsistencyOnFirstLaunchIfNeeded()
+            } else {
+                self.resetSystemProxyObservedState()
+                self.didCheckSystemProxyConsistencyOnLaunch = true
             }
-
-            self.startConfigDirectoryMonitoringIfNeeded()
         }
-        if startBackgroundRefresh, self.autoStartCore {
+
+        self.startConfigDirectoryMonitoringIfNeeded()
+        if self.autoStartCore {
             if !self.shouldDeferAutoStartForMissingManagedCore() {
                 Task { [weak self] in
                     await self?.attemptAutoStartIfNeeded()

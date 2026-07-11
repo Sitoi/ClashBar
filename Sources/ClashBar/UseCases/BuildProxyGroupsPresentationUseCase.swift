@@ -15,10 +15,9 @@ struct BuildProxyGroupsPresentationUseCase {
         let providerLookup = proxyProviders.isEmpty ? fallbackProxyProviders : proxyProviders
         let proxiesWithHealthcheckConfig = response.proxies.values.map { proxy in
             let provider = providerLookup[proxy.name]
-            let resolvedTestURL = HealthcheckNormalization.normalizedURL(proxy.testUrl)
-                ?? HealthcheckNormalization.normalizedURL(provider?.testUrl)
-            let resolvedTimeout = HealthcheckNormalization.normalizedTimeout(proxy.timeout)
-                ?? HealthcheckNormalization.normalizedTimeout(provider?.timeout)
+            let resolvedTestURL = proxy.testUrl?.trimmedNonEmpty ?? provider?.testUrl?.trimmedNonEmpty
+            let resolvedTimeout = proxy.timeout.flatMap { $0 > 0 ? $0 : nil }
+                ?? provider?.timeout.flatMap { $0 > 0 ? $0 : nil }
 
             return ProxyGroup(
                 name: proxy.name,

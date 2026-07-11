@@ -47,7 +47,6 @@ enum LogLevelFilter: Hashable, CaseIterable {
 
 struct MenuBarRootView: TranslatingView {
     @EnvironmentObject var appViewModel: AppViewModel
-    @EnvironmentObject var connectionsStore: ConnectionsStore
     @EnvironmentObject var remoteMachineStore: RemoteMachineStore
     @EnvironmentObject var popoverLayoutModel: PopoverLayoutModel
     @Environment(\.colorScheme) var colorScheme

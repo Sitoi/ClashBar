@@ -18,10 +18,6 @@ final class StatusBarViewModel: ObservableObject {
             }
     }
 
-    var connectionsStore: ConnectionsStore {
-        self.session.connectionsStore
-    }
-
     func setPanelPresented(_ presented: Bool) {
         self.session.setPanelVisibility(presented)
     }

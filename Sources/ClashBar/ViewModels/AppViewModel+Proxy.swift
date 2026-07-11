@@ -12,7 +12,7 @@ extension AppViewModel {
         persistEditableSettingsSnapshot()
 
         do {
-            try await self.modeSwitchTransport()
+            try await self.clientOrThrow()
                 .requestNoResponse(.patchConfigs(body: ["mode": .string(target.rawValue)]))
         } catch {
             currentMode = previous
@@ -123,8 +123,8 @@ extension AppViewModel {
         groupLatencyLoading.insert(group.name)
         defer { groupLatencyLoading.remove(group.name) }
 
-        let testURL = normalizedHealthcheckURL(group.testUrl) ?? defaultHealthcheckURL
-        let timeout = normalizedHealthcheckTimeout(group.timeout) ?? defaultHealthcheckTimeoutMilliseconds
+        let testURL = group.testUrl?.trimmedNonEmpty ?? defaultHealthcheckURL
+        let timeout = group.timeout.flatMap { $0 > 0 ? $0 : nil } ?? defaultHealthcheckTimeoutMilliseconds
         await runRefresh {
             let response: GroupDelayMeasurement = try await self.clientOrThrow().request(
                 .groupDelay(name: group.name, url: testURL, timeout: timeout))
@@ -162,8 +162,8 @@ extension AppViewModel {
         defer { self.proxyLatencyTesting.remove(key) }
 
         let proxyGroup = self.proxyGroups.first { $0.name == group }
-        let testURL = normalizedHealthcheckURL(proxyGroup?.testUrl) ?? defaultHealthcheckURL
-        let timeout = normalizedHealthcheckTimeout(proxyGroup?.timeout) ?? defaultHealthcheckTimeoutMilliseconds
+        let testURL = proxyGroup?.testUrl?.trimmedNonEmpty ?? defaultHealthcheckURL
+        let timeout = proxyGroup?.timeout.flatMap { $0 > 0 ? $0 : nil } ?? defaultHealthcheckTimeoutMilliseconds
 
         await runRefresh {
             let response: DelayMeasurement = try await self.clientOrThrow().request(
