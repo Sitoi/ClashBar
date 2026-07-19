@@ -37,15 +37,5 @@
     "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3",
     "wrangler": "^4.112.0"
-  },
-  "pnpm": {
-    "overrides": {
-      "style-to-js": "link:shims/style-to-js"
-    },
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "sharp",
-      "workerd"
-    ]
   }
 }

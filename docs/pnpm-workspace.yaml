@@ -1,6 +1,15 @@
 packages:
   - '.'
 
+# pnpm 10+/11: settings live here (package.json "pnpm" field is ignored).
+overrides:
+  style-to-js: link:shims/style-to-js
+
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+  - workerd
+
 allowBuilds:
   esbuild: true
   sharp: true
