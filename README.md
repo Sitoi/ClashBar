@@ -39,9 +39,6 @@
   <a href="https://github.com/Sitoi/ClashBar/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">
     <img alt="License" src="https://img.shields.io/github/license/Sitoi/ClashBar?style=flat-square" />
   </a>
-  <a href="https://t.me/clashbars" target="_blank" rel="noopener noreferrer">
-    <img alt="Telegram" src="https://img.shields.io/badge/Telegram-@clashbars-26A5E4?style=flat-square&logo=telegram&logoColor=white" />
-  </a>
 </p>
 
 <p>
