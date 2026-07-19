@@ -6,11 +6,16 @@
     "build": "next build",
     "dev": "next dev",
     "start": "next start",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "types:check": "fumadocs-mdx && next typegen && tsc --noEmit",
     "check:inventory": "node scripts/check-feature-inventory.mjs",
     "postinstall": "fumadocs-mdx"
   },
   "dependencies": {
+    "@opennextjs/cloudflare": "1.20.1",
     "cnfast": "^0.0.8",
     "fumadocs-core": "16.11.4",
     "fumadocs-mdx": "15.1.1",
@@ -29,11 +34,17 @@
     "@types/react-dom": "^19.2.3",
     "postcss": "^8.5.17",
     "tailwindcss": "^4.3.2",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "wrangler": "^4.112.0"
   },
   "pnpm": {
     "overrides": {
       "style-to-js": "link:shims/style-to-js"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "workerd"
+    ]
   }
 }
