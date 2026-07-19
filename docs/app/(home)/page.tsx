@@ -182,7 +182,7 @@ export default function HomePage() {
           </div>
 
           <Image
-            src="/clashbar-dark.png"
+            src="/clashbar-black.png"
             alt="ClashBar 深色菜单栏界面"
             width={812}
             height={1580}
