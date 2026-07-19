@@ -1,7 +1,5 @@
 import { source } from '@/lib/source';
 import { createFromSource } from 'fumadocs-core/search/server';
 
-export const { GET } = createFromSource(source, {
-  // https://docs.orama.com/docs/orama-js/supported-languages
-  language: 'chinese',
-});
+// Orama does not ship a Chinese stemmer; omit `language` so indexing works on Workers.
+export const { GET } = createFromSource(source);

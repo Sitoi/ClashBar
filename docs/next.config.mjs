@@ -19,6 +19,8 @@ const allowedDevOrigins = [
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
+  // Required by @opennextjs/cloudflare (reads `.next/standalone`).
+  output: 'standalone',
   allowedDevOrigins,
 };
 
