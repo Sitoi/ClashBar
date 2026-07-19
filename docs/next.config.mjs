@@ -15,12 +15,15 @@ const withMDX = createMDX();
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
+  // Required by @opennextjs/cloudflare (reads `.next/standalone`).
+  output: 'standalone',
   turbopack: {
     resolveAlias: {
       'style-to-js': styleToJsShimRel,
     },
   },
 };
+
 
 function mapLoader(loader) {
   if (typeof loader === 'string') {
@@ -124,3 +127,9 @@ function rewriteFumadocsLoaders(nextConfig) {
 }
 
 export default rewriteFumadocsLoaders(withMDX(config));
+
+// Enable `getCloudflareContext()` during local `next dev`.
+// See https://opennext.js.org/cloudflare/bindings#local-access-to-bindings
+import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
+initOpenNextCloudflareForDev();
+

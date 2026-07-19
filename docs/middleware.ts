@@ -11,19 +11,28 @@ const { rewrite: rewriteSuffix } = rewritePath(
   `${docsContentRoute}{/*path}/content.md`,
 );
 
-export default function proxy(request: NextRequest) {
+/**
+ * Edge Middleware (required by @opennextjs/cloudflare).
+ * Next.js 16 `proxy.ts` defaults to the Node.js runtime, which OpenNext rejects.
+ */
+export function middleware(request: NextRequest) {
   const result = rewriteSuffix(request.nextUrl.pathname);
   if (result) {
     return NextResponse.rewrite(new URL(result, request.nextUrl));
   }
 
   if (isMarkdownPreferred(request)) {
-    const result = rewriteDocs(request.nextUrl.pathname);
+    const docsResult = rewriteDocs(request.nextUrl.pathname);
 
-    if (result) {
-      return NextResponse.rewrite(new URL(result, request.nextUrl));
+    if (docsResult) {
+      return NextResponse.rewrite(new URL(docsResult, request.nextUrl));
     }
   }
 
   return NextResponse.next();
 }
+
+export const config = {
+  // Skip static assets; only rewrite docs markdown negotiation.
+  matcher: ['/docs/:path*', '/docs'],
+};
