@@ -49,7 +49,7 @@
 </p>
 
 <p align="center">
-  🌐 <a href="https://clashbar.vercel.app"><strong>Website: clashbar.vercel.app</strong></a>
+  🌐 <a href="https://clashbar.sitoi.cn"><strong>Website: clashbar.sitoi.cn</strong></a>
 </p>
 
 </div>
