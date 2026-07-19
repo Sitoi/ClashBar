@@ -130,9 +130,7 @@ extension AppViewModel {
         await runRefresh {
             let response: GroupDelayMeasurement = try await self.clientOrThrow().request(
                 .groupDelay(name: group.name, url: testURL, timeout: timeout))
-            let delays = response.values.filter { $0.value > 0 }
-
-            self.groupLatencies[group.name] = delays
+            self.applyMeasuredNodeDelays(response.values)
         }
     }
 
@@ -171,11 +169,23 @@ extension AppViewModel {
             let response: DelayMeasurement = try await self.clientOrThrow().request(
                 .proxyDelay(name: node, url: testURL, timeout: timeout))
             guard let value = response.value else { return }
-
-            var groupDelays = self.groupLatencies[group] ?? [:]
-            groupDelays[node] = value
-            self.groupLatencies[group] = groupDelays
+            self.applyMeasuredNodeDelays([node: value])
         }
+    }
+
+    private func applyMeasuredNodeDelays(_ delays: [String: Int]) {
+        guard !delays.isEmpty else { return }
+
+        var samples = self.proxyDelaySamples
+        for (name, delay) in delays {
+            var series = samples[name] ?? []
+            series.append(delay)
+            if series.count > ProxyDelayHistory.limit {
+                series = Array(series.suffix(ProxyDelayHistory.limit))
+            }
+            samples[name] = series
+        }
+        self.proxyDelaySamples = samples
     }
 
     func delayText(group: String, node: String, fallbackToGroupHistory: Bool = false) -> String {
@@ -191,16 +201,40 @@ extension AppViewModel {
     }
 
     func delayValue(group: String, node: String, fallbackToGroupHistory: Bool = false) -> Int? {
-        if let liveValue = groupLatencies[group]?[node] {
-            return liveValue
-        }
-        if let historyValue = proxyHistoryLatestDelay[node] {
-            return historyValue
+        self.delaySamples(group: group, node: node, fallbackToGroupHistory: fallbackToGroupHistory).last
+    }
+
+    func delaySamples(group: String, node: String, fallbackToGroupHistory: Bool = false) -> [Int] {
+        for name in self.proxySelectionChain(startingAt: node).reversed() {
+            if let samples = self.proxyDelaySamples[name], !samples.isEmpty {
+                return samples
+            }
         }
         if fallbackToGroupHistory {
-            return proxyHistoryLatestDelay[group]
+            for name in self.proxySelectionChain(startingAt: group).reversed() {
+                if let samples = self.proxyDelaySamples[name], !samples.isEmpty {
+                    return samples
+                }
+            }
         }
-        return nil
+        return []
+    }
+
+    private func proxySelectionChain(startingAt start: String) -> [String] {
+        var chain: [String] = []
+        var current = start
+        var seen = Set<String>()
+        while seen.insert(current).inserted {
+            chain.append(current)
+            guard let nested = self.proxyGroups.first(where: { $0.name == current }),
+                  !nested.all.isEmpty,
+                  let next = nested.now?.trimmedNonEmpty
+            else {
+                break
+            }
+            current = next
+        }
+        return chain
     }
 
     func controllerHost() -> String {

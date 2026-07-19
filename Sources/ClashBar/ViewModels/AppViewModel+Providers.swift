@@ -58,10 +58,14 @@ extension AppViewModel {
         previous: ProviderDetail?,
         incoming: ProviderDetail) -> ProviderDetail
     {
-        let fallbackNodes = incoming.proxies?.map {
-            ProviderProxyNode(name: $0.name, latestDelay: $0.latestDelay)
+        let incomingNodes = incoming.proxies
+        if let incomingNodes, !incomingNodes.isEmpty {
+            return incoming.with(proxies: incomingNodes)
         }
-        return incoming.with(proxies: previous?.proxies ?? fallbackNodes)
+        if let previousNodes = previous?.proxies, !previousNodes.isEmpty {
+            return incoming.with(proxies: previousNodes)
+        }
+        return incoming.with(proxies: incomingNodes)
     }
 
     private func shouldIncludeProxyProvider(named key: String, detail: ProviderDetail) -> Bool {

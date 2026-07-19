@@ -1,5 +1,9 @@
 import Foundation
 
+enum ProxyDelayHistory {
+    static let limit = 4
+}
+
 struct ProxyGroupsResponse: Decodable, Equatable {
     let proxies: [String: ProxyGroup]
 }
@@ -13,7 +17,7 @@ struct ProxyGroup: Decodable, Equatable {
     let timeout: Int?
     let icon: String?
     let hidden: Bool?
-    let latestDelay: Int?
+    let delayHistory: [Int]
 
     init(
         name: String,
@@ -24,7 +28,7 @@ struct ProxyGroup: Decodable, Equatable {
         timeout: Int? = nil,
         icon: String? = nil,
         hidden: Bool? = nil,
-        latestDelay: Int? = nil)
+        delayHistory: [Int] = [])
     {
         self.name = name
         self.type = type
@@ -34,7 +38,7 @@ struct ProxyGroup: Decodable, Equatable {
         self.timeout = timeout.positiveOrNil
         self.icon = icon.trimmedNonEmpty
         self.hidden = hidden
-        self.latestDelay = latestDelay
+        self.delayHistory = delayHistory
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -59,7 +63,7 @@ struct ProxyGroup: Decodable, Equatable {
         self.timeout = container.decodeFlexibleInt(forKey: .timeout).positiveOrNil
         self.icon = try container.decodeIfPresent(String.self, forKey: .icon).trimmedNonEmpty
         self.hidden = try container.decodeIfPresent(Bool.self, forKey: .hidden)
-        self.latestDelay = container.decodeLatestDelay(forKey: .history)
+        self.delayHistory = container.decodeDelayHistory(forKey: .history)
     }
 }
 

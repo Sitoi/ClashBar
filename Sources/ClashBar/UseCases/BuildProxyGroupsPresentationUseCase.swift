@@ -2,7 +2,7 @@ import Foundation
 
 struct ProxyGroupsPresentation {
     let groups: [ProxyGroup]
-    let history: [String: Int]
+    let delaySamples: [String: [Int]]
     let nodeTypes: [String: String]
 }
 
@@ -28,7 +28,7 @@ struct BuildProxyGroupsPresentationUseCase {
                 timeout: resolvedTimeout,
                 icon: proxy.icon,
                 hidden: proxy.hidden,
-                latestDelay: proxy.latestDelay)
+                delayHistory: proxy.delayHistory)
         }
 
         let sortIndex = (response.proxies["GLOBAL"]?.all ?? []) + ["GLOBAL"]
@@ -52,17 +52,31 @@ struct BuildProxyGroupsPresentationUseCase {
             }
             .map(\.element)
 
-        var history: [String: Int] = [:]
+        var delaySamples: [String: [Int]] = [:]
         var nodeTypes: [String: String] = [:]
         for proxy in response.proxies.values {
             if proxy.all.isEmpty, let type = proxy.type.trimmedNonEmpty {
                 nodeTypes[proxy.name] = type
             }
-            if let latest = proxy.latestDelay {
-                history[proxy.name] = latest
+            if !proxy.delayHistory.isEmpty {
+                delaySamples[proxy.name] = proxy.delayHistory
             }
         }
 
-        return ProxyGroupsPresentation(groups: groups, history: history, nodeTypes: nodeTypes)
+        for provider in providerLookup.values {
+            for node in provider.proxies ?? [] {
+                if !node.delayHistory.isEmpty, delaySamples[node.name] == nil {
+                    delaySamples[node.name] = node.delayHistory
+                }
+                if let type = node.type.trimmedNonEmpty, nodeTypes[node.name] == nil {
+                    nodeTypes[node.name] = type
+                }
+            }
+        }
+
+        return ProxyGroupsPresentation(
+            groups: groups,
+            delaySamples: delaySamples,
+            nodeTypes: nodeTypes)
     }
 }

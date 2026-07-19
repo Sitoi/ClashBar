@@ -259,11 +259,12 @@ extension ProxyTabView {
 
     func proxyGroupInlineRow(_ group: ProxyGroup) -> some View {
         let currentNode = group.now ?? tr("ui.common.na")
-        let delayText = appViewModel.delayText(
+        let delaySamples = appViewModel.delaySamples(
             group: group.name,
             node: currentNode,
             fallbackToGroupHistory: true)
-        let delayValue = appViewModel.delayValue(
+        let delayValue = delaySamples.last
+        let delayText = appViewModel.delayText(
             group: group.name,
             node: currentNode,
             fallbackToGroupHistory: true)
@@ -303,8 +304,8 @@ extension ProxyTabView {
                         .frame(width: columns.current, alignment: .leading)
 
                     Group {
-                        if let delayValue {
-                            delayBadge(delayValue, fallbackText: delayText, barColor: latencyColor(delayValue))
+                        if delayValue != nil {
+                            delayBadge(samples: delaySamples, fallbackText: delayText)
                         } else {
                             Text(delayText)
                                 .font(.app(size: T.FontSize.caption, weight: .regular))
@@ -348,12 +349,14 @@ extension ProxyTabView {
                 ? self.sortedGroupNodes(group)
                 : self.defaultGroupNodes(group)
             FrozenPopoverNodesList(nodes: nodes, emptyText: tr("ui.common.na")) { node in
+                let nodeSamples = appViewModel.delaySamples(group: group.name, node: node)
+                let nodeDelay = nodeSamples.last
                 ProxyGroupPopoverNodeItem(
                     title: node,
                     typeText: proxyStore.proxyNodeTypes[node].trimmedNonEmpty,
                     delayText: appViewModel.delayText(group: group.name, node: node),
-                    delayValue: appViewModel.delayValue(group: group.name, node: node),
-                    delayColor: latencyColor(appViewModel.delayValue(group: group.name, node: node)),
+                    delaySamples: nodeSamples,
+                    delayColor: latencyColor(nodeDelay),
                     isTesting: appViewModel.isProxyLatencyTesting(group: group.name, node: node),
                     selected: node == group.now,
                     testLatencyLabel: tr("ui.action.test_latency"),
@@ -560,7 +563,7 @@ private struct ProxyGroupPopoverNodeItem: View {
     let title: String
     let typeText: String?
     let delayText: String
-    let delayValue: Int?
+    let delaySamples: [Int]
     let delayColor: Color
     let isTesting: Bool
     let selected: Bool
@@ -570,6 +573,10 @@ private struct ProxyGroupPopoverNodeItem: View {
 
     @State private var isHovered = false
     @State private var isTestButtonHovered = false
+
+    private var delayValue: Int? {
+        self.delaySamples.last
+    }
 
     var body: some View {
         HStack(spacing: T.space1) {
@@ -673,8 +680,8 @@ private struct ProxyGroupPopoverNodeItem: View {
 
     @ViewBuilder
     var delayMetricView: some View {
-        if let delayValue = self.delayValue {
-            self.delayBadge(delayValue, fallbackText: self.delayText, barColor: self.delayColor)
+        if self.delayValue != nil {
+            self.delayBadge(samples: self.delaySamples, fallbackText: self.delayText)
         } else {
             Text(self.delayText)
                 .font(.app(size: T.FontSize.caption, weight: .regular))
@@ -686,18 +693,46 @@ private struct ProxyGroupPopoverNodeItem: View {
 }
 
 extension View {
-    /// 迷你色块 + 等宽延迟数字，组路由行与弹窗节点共用。
-    /// 超时(value == 0)回落到 fallbackText（已本地化的 delayText，即「超时」/「Timeout」），不显示 0。
-    fileprivate func delayBadge(_ value: Int, fallbackText: String, barColor: Color) -> some View {
-        HStack(alignment: .center, spacing: 6) {
-            RoundedRectangle(cornerRadius: 1, style: .continuous)
-                .fill(barColor)
-                .frame(width: 3, height: 12)
+    fileprivate func delayBadge(samples: [Int], fallbackText: String) -> some View {
+        let value = samples.last ?? 0
+        return HStack(alignment: .center, spacing: 5) {
+            LatencySignalBars(samples: samples)
             Text(value == 0 ? fallbackText : "\(value)")
                 .font(.system(size: T.FontSize.caption, weight: .medium, design: .monospaced))
                 .foregroundStyle(self.nativePrimaryLabel)
                 .lineLimit(1)
         }
+    }
+}
+
+private struct LatencySignalBars: View {
+    let samples: [Int]
+
+    private static let barCount = ProxyDelayHistory.limit
+    private static let barWidth: CGFloat = 2
+    private static let barSpacing: CGFloat = 1.5
+    private static let heights: [CGFloat] = [4, 7, 10, 13]
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: Self.barSpacing) {
+            ForEach(0..<Self.barCount, id: \.self) { index in
+                RoundedRectangle(cornerRadius: 0.75, style: .continuous)
+                    .fill(self.barColor(at: index))
+                    .frame(width: Self.barWidth, height: Self.heights[index])
+            }
+        }
+        .frame(height: Self.heights.last, alignment: .bottom)
+        .accessibilityHidden(true)
+    }
+
+    private func barColor(at index: Int) -> Color {
+        // Align samples to the right (newest under the tallest bar).
+        let offset = Self.barCount - self.samples.count
+        let sampleIndex = index - offset
+        guard sampleIndex >= 0, sampleIndex < self.samples.count else {
+            return Color(nsColor: .quaternaryLabelColor).opacity(0.35)
+        }
+        return self.latencyColor(self.samples[sampleIndex])
     }
 }
 

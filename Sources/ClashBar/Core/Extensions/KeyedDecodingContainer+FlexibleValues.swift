@@ -64,20 +64,23 @@ extension KeyedDecodingContainer where K: CodingKey {
 }
 
 extension KeyedDecodingContainer {
-    func decodeLatestDelay(forKey key: Key) -> Int? {
+    func decodeDelayHistory(forKey key: Key, limit: Int = ProxyDelayHistory.limit) -> [Int] {
         guard var historyContainer = try? self.nestedUnkeyedContainer(forKey: key) else {
-            return nil
+            return []
         }
-        var latest: Int?
+        var samples: [Int] = []
         while !historyContainer.isAtEnd {
             guard let entry = try? historyContainer.decode(FlexibleDelayHistoryEntry.self) else {
                 break
             }
             if let delay = entry.delay {
-                latest = delay
+                samples.append(delay)
             }
         }
-        return latest
+        guard limit > 0, samples.count > limit else {
+            return samples
+        }
+        return Array(samples.suffix(limit))
     }
 }
 
