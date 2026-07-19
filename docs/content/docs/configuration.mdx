@@ -5,7 +5,7 @@ description: 数据目录、配置发现规则、导入与订阅维护。
 
 安装并完成首次启动后，配置与订阅是日常维护的核心。ClashBar 将工作文件放在 `~/Library/Application Support/clashbar`；配置相关文件位于 `…/clashbar/config`，并在菜单栏面板的配置菜单中提供切换入口。
 
-面板内选节点、测延迟见 [日常使用](./daily-use)；按 Wi‑Fi 自动换配置见 [SSID 策略](./ssid-strategy)。
+面板内选节点、测延迟见 [日常使用](/docs/daily-use)；按 Wi‑Fi 自动换配置见 [SSID 策略](/docs/ssid-strategy)。
 
 ## 数据目录
 
@@ -18,7 +18,7 @@ description: 数据目录、配置发现规则、导入与订阅维护。
 | `logs/` | 运行日志与排障输出 | 排障后可按需清理 |
 | `state/` | 应用运行状态与会话数据 | 建议由程序维护，勿手改 |
 
-根目录下还可能出现缓存文件（如 `cache.db`）以及内核生成的 GEO / 规则相关文件。切换内核后若异常，可参考 [快速开始 · 切换内核](./quick-start#切换内核) 清理缓存。
+根目录下还可能出现缓存文件（如 `cache.db`）以及内核生成的 GEO / 规则相关文件。切换内核后若异常，可参考 [快速开始 · 切换内核](/docs/quick-start#切换内核) 清理缓存。
 
 <Callout type="info" title="维护建议">
 日常只需维护 `config/`；`icon/`、`ui/`、`logs/`、`state/`、`core/` 等优先交给 ClashBar 或内核管理，以降低运行状态不一致风险。
@@ -38,7 +38,7 @@ description: 数据目录、配置发现规则、导入与订阅维护。
 
 在配置菜单中选择「导入本地配置」，选择有效的 Mihomo YAML。导入后从「切换配置」选中它；启动前会做配置校验。
 
-若校验失败，请查看「日志」中 Mihomo 返回的错误，修正 YAML 后重新加载。缺少 GEO / MMDB 时的处理见 [常见问题 · MMDB](./troubleshooting#日志提示找不到-mmdb-并开始下载)。
+若校验失败，请查看「日志」中 Mihomo 返回的错误，修正 YAML 后重新加载。缺少 GEO / MMDB 时的处理见 [常见问题 · MMDB](/docs/troubleshooting#日志提示找不到-mmdb-并开始下载)。
 
 ## 导入订阅链接
 
@@ -57,16 +57,16 @@ description: 数据目录、配置发现规则、导入与订阅维护。
 - 「更新订阅链接」可**批量**更新已保存订阅
 - 「重新加载配置」让运行中内核重读当前配置
 - 「重载配置文件」重新扫描配置目录列表
-- 「在访达中显示」打开配置目录；设置中可打开[内核目录](./settings)
+- 「在访达中显示」打开配置目录；设置中可打开[内核目录](/docs/settings)
 
-远程更新成功但节点/规则未变时，见 [常见问题 · 远程配置更新后未生效](./troubleshooting#远程配置更新后未生效)。
+远程更新成功但节点/规则未变时，见 [常见问题 · 远程配置更新后未生效](/docs/troubleshooting#远程配置更新后未生效)。
 
 ## 按 Wi‑Fi 切换配置
 
-可开启 Wi‑Fi 自动切换，并将当前 SSID 绑定到某份配置。说明见 [SSID 策略](./ssid-strategy)。
+可开启 Wi‑Fi 自动切换，并将当前 SSID 绑定到某份配置。说明见 [SSID 策略](/docs/ssid-strategy)。
 
 ## 配置中的运行时设置
 
-「设置」标签可覆盖端口、允许局域网、IPv6、TCP 并发、日志级别等。详见 [设置与维护](./settings)。
+「设置」标签可覆盖端口、允许局域网、IPv6、TCP 并发、日志级别等。详见 [设置与维护](/docs/settings)。
 
-复杂的代理组、规则提供者与 DNS 仍应在 YAML 中维护权威配置。全部能力对照见 [功能总览](./features)。
+复杂的代理组、规则提供者与 DNS 仍应在 YAML 中维护权威配置。全部能力对照见 [功能总览](/docs/features)。

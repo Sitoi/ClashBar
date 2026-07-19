@@ -3,7 +3,7 @@ title: 常见问题
 description: 安装、内核、系统代理、节点、订阅、GEO 与 API 鉴权等问题排查。
 ---
 
-按现象查找；先确认是否完成 [快速开始](./quick-start) 中的安装与登录项设置。数据目录见 [配置与订阅](./configuration)，网络接管见 [系统代理与 TUN](./network-mode)。
+按现象查找；先确认是否完成 [快速开始](/docs/quick-start) 中的安装与登录项设置。数据目录见 [配置与订阅](/docs/configuration)，网络接管见 [系统代理与 TUN](/docs/network-mode)。
 
 ## 无法启动内核
 
@@ -14,7 +14,7 @@ description: 安装、内核、系统代理、节点、订阅、GEO 与 API 鉴�
 3. 当前已选中一份有效配置（见配置发现规则）。
 4. 「日志」中无配置校验失败或端口占用错误。
 
-含 Core / 无 Core 构建差异见 [快速开始 · 准备 Mihomo 内核](./quick-start#2-准备-mihomo-内核)。可用「打开内核目录」核对路径。
+含 Core / 无 Core 构建差异见 [快速开始 · 准备 Mihomo 内核](/docs/quick-start#2-准备-mihomo-内核)。可用「打开内核目录」核对路径。
 
 ## macOS 提示「已损坏」或「无法验证开发者」
 
@@ -58,7 +58,7 @@ ClashBar 会调用 Mihomo 校验 YAML。请在「日志」中查看错误行号�
 
 ## 开启 TUN 失败
 
-常见原因：找不到/无法执行 mihomo、管理员授权取消、内核重启后 TUN 未生效。确认内核路径与权限后重试；切换内核后可能需重新授权。详见 [系统代理与 TUN](./network-mode)。
+常见原因：找不到/无法执行 mihomo、管理员授权取消、内核重启后 TUN 未生效。确认内核路径与权限后重试；切换内核后可能需重新授权。详见 [系统代理与 TUN](/docs/network-mode)。
 
 ## 切换节点后网络无变化
 
@@ -93,7 +93,7 @@ ClashBar 会调用 Mihomo 校验 YAML。请在「日志」中查看错误行号�
 2. 下载完成后重新启动内核。
 3. 网络受限时，可手动将 `Country.mmdb` 放入 `~/Library/Application Support/clashbar/` 后再启动。
 
-也可在设置中尝试「更新 Geo 数据库」（内核运行中）。见 [设置与维护](./settings)。
+也可在设置中尝试「更新 Geo 数据库」（内核运行中）。见 [设置与维护](/docs/settings)。
 
 ## 出现 bad response 或 API 鉴权失败（401）
 
@@ -111,7 +111,7 @@ ClashBar 会调用 Mihomo 校验 YAML。请在「日志」中查看错误行号�
 3. 当前 SSID 已绑定到仍存在的配置。
 4. 日志中是否有权限不足或配置缺失记录。
 
-详见 [SSID 策略](./ssid-strategy)。
+详见 [SSID 策略](/docs/ssid-strategy)。
 
 ## 远程机器连不上
 
@@ -119,11 +119,11 @@ ClashBar 会调用 Mihomo 校验 YAML。请在「日志」中查看错误行号�
 2. 本机网络可达该地址。
 3. 在机器切换器中查看失败原因。
 
-详见 [远程机器](./remote-machine)。
+详见 [远程机器](/docs/remote-machine)。
 
 ## 配置、日志和状态文件在哪里
 
-根目录：`~/Library/Application Support/clashbar`。分项职责与配置发现规则见 [配置与订阅](./configuration)。
+根目录：`~/Library/Application Support/clashbar`。分项职责与配置发现规则见 [配置与订阅](/docs/configuration)。
 
 ## 如何提交问题
 
@@ -132,4 +132,4 @@ ClashBar 会调用 Mihomo 校验 YAML。请在「日志」中查看错误行号�
 
 请附上 ClashBar 版本、macOS 版本、本机或远程内核，以及已脱敏日志。勿上传订阅链接与密钥。
 
-功能对照见 [功能总览](./features)；设计与许可见 [关于](./about)。
+功能对照见 [功能总览](/docs/features)；设计与许可见 [关于](/docs/about)。
