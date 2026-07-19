@@ -16,3 +16,10 @@ skills-lock.json
 CLAUDE.md
 docs/
 Sources/ClashBar/Resources/bin/mihomo
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
