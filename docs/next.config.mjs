@@ -5,21 +5,21 @@ import { createMDX } from 'fumadocs-mdx/next';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const mdxBridge = path.join(__dirname, 'loaders/fumadocs-mdx-mdx.cjs');
 const metaBridge = path.join(__dirname, 'loaders/fumadocs-mdx-meta.cjs');
-/** Dual CJS/ESM shim — avoids Turbopack `styleToJs is not a function` on MDX code fences. */
-const styleToJsShimAbs = path.join(__dirname, 'shims/style-to-js');
-/** Turbopack rejects absolute resolveAlias paths (prefixes `./` and fails). */
-const styleToJsShimRel = './shims/style-to-js';
 
 const withMDX = createMDX();
+
+/** LAN / phone preview hosts for Next.js dev HMR (comma-separated override). */
+const allowedDevOrigins = [
+  '192.168.1.9',
+  ...(process.env.NEXT_ALLOWED_DEV_ORIGINS?.split(',')
+    .map((host) => host.trim())
+    .filter(Boolean) ?? []),
+];
 
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
-  turbopack: {
-    resolveAlias: {
-      'style-to-js': styleToJsShimRel,
-    },
-  },
+  allowedDevOrigins,
 };
 
 function mapLoader(loader) {
@@ -97,24 +97,12 @@ function rewriteFumadocsLoaders(nextConfig) {
     : nextConfig.turbopack;
 
   const originalWebpack = nextConfig.webpack;
-  const mergedTurbopack = {
-    ...turbopack,
-    resolveAlias: {
-      ...(turbopack?.resolveAlias ?? {}),
-      'style-to-js': styleToJsShimRel,
-    },
-  };
 
   return {
     ...nextConfig,
-    turbopack: mergedTurbopack,
+    turbopack,
     webpack: (webpackConfig, options) => {
       const cfg = originalWebpack ? originalWebpack(webpackConfig, options) : webpackConfig;
-      cfg.resolve = cfg.resolve ?? {};
-      cfg.resolve.alias = {
-        ...(cfg.resolve.alias ?? {}),
-        'style-to-js': styleToJsShimAbs,
-      };
       for (const rule of cfg.module?.rules ?? []) {
         rewriteRule(rule);
       }
