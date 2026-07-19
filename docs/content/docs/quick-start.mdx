@@ -1,0 +1,130 @@
+---
+title: 快速开始
+description: 安装 ClashBar、准备内核、导入配置并完成第一次连接。
+---
+
+本页带你完成最小可用配置。建议同一时间只让一个 mihomo / Clash 系客户端接管系统代理，避免端口、系统代理或后台辅助进程相互覆盖。
+
+## 系统要求
+
+- macOS Ventura（13.0）及以上
+
+## 1. 安装 ClashBar
+
+### Homebrew（推荐）
+
+```sh
+brew tap Sitoi/tap
+brew install --cask clashbar
+```
+
+### 手动安装
+
+从 [GitHub Releases](https://github.com/Sitoi/ClashBar/releases/latest) 下载最新 `.dmg`，挂载后将 `ClashBar.app` 拖入 `/Applications`。
+
+首次打开时，macOS 可能要求确认应用来源；若被 Gatekeeper 拦截，请在 **系统设置 → 隐私与安全性** 中选择「仍要打开」。
+
+### 卸载
+
+```sh
+brew uninstall --cask clashbar
+
+# 同时清除 cask 相关数据（若通过 Homebrew 安装）
+brew uninstall --zap --cask clashbar
+```
+
+手动安装时可直接将 `ClashBar.app` 移入废纸篓；运行时数据目录见下文与 [配置与订阅](./configuration)。
+
+## 安装与使用前注意事项
+
+这些不是可选项，很多时候决定能不能正常用：
+
+1. **同一时间只保留一个** mihomo / Clash 系客户端接管系统代理。请先退出 ClashX、Clash Verge、Clash Nyanpasu、Clash Party、FlClash 等同类软件。
+2. 系统代理依赖打包后的 `.app` 与 macOS **登录项 / 后台活动**授权。优先使用 Release 的 `.app` / `.dmg`，并把应用放到 `/Applications` 后再打开。
+3. 第一次启用系统代理或开机启动时，若 macOS 弹出后台项目提示，请到 **系统设置 → 通用 → 登录项** 允许 ClashBar。
+4. 升级、替换 App 后若系统代理开关无反应，常见原因是后台项目状态卡住：在登录项里把 ClashBar 后台项目**关闭再打开**，回到应用重试。
+5. 切换配置、替换内核、批量更新订阅后若行为异常，先执行一次 **重启内核**，把运行态清干净再继续排查。
+
+## 2. 准备 Mihomo 内核
+
+运行时统一使用：
+
+`~/Library/Application Support/clashbar/core/mihomo`
+
+文件名必须为 `mihomo`，并具有可执行权限。仅从可信来源获取与芯片架构匹配的二进制。
+
+### 路径 A：含 Core 的构建（常见 Release）
+
+部分 Release / 打包会**内置** mihomo。首次启动时，应用可能将内置内核复制到上述 `core/` 目录，之后始终从该路径运行，避免改写已签名的 app bundle。
+
+若日志或状态已显示内核可用，可跳过手动放置。
+
+### 路径 B：无 Core 的构建
+
+部分体积更小的构建**不内置** mihomo。此时需自行准备可执行文件：
+
+1. 在 ClashBar 中停止内核（若已在运行）。
+2. 将 `mihomo` 放到 `~/Library/Application Support/clashbar/core/mihomo`。
+3. 在设置中使用「打开内核目录」核对路径，再启动或重启内核。
+
+更换自定义内核的步骤、缓存清理与 TUN 授权说明见下文「切换内核」。
+
+## 3. 导入配置
+
+点击菜单栏图标打开面板：
+
+1. 首次可先用**默认配置**启动一次，让 Mihomo 准备 GEO 等资源（需要网络可达）。
+2. 选择「导入本地配置」或「导入订阅链接」。
+3. 在「切换配置」中选中目标配置。
+4. 如需示例 YAML，可在配置目录中查看并按自己的订阅修改。
+
+配置发现规则与订阅维护见 [配置与订阅](./configuration)。
+
+## 4. 启动并验证（快速上手）
+
+1. 打开菜单栏面板。
+2. 在「节点」页选择配置，或完成导入。
+3. 点击 **启动内核**；刚改过配置或内核时优先 **重启内核**。
+4. 选择模式：**规则 / 全局 / 直连**。
+5. 在代理组中切换节点并做**延迟测试**，确认线路可用。
+6. 验证连通性后再开启**系统代理**；无效时先检查登录项中的后台活动。
+
+可用「连接」「日志」交叉确认请求是否出现。不再需要代理时，先关系统代理再停内核。
+
+## 切换内核
+
+1. 在 ClashBar 中 **停止** 内核，确保进程已退出。
+2. 准备目标可执行文件，命名为 `mihomo`，覆盖  
+   `~/Library/Application Support/clashbar/core/mihomo`。
+3. 返回应用，执行 **启动** 或 **重启**。
+
+若切换后出现缓存兼容问题，可清理后重试：
+
+```bash
+rm -f "$HOME/Library/Application Support/clashbar/cache.db"
+```
+
+使用 TUN 时，切换内核后可能需要重新完成管理员授权（root + setuid）。详见 [系统代理与 TUN](./network-mode)。
+
+## 常用快捷键（可选）
+
+应用在前台时：
+
+- <kbd>⌘S</kbd> 系统代理 · <kbd>⌘E</kbd> TUN  
+- <kbd>⌃⌘1</kbd>…<kbd>⌃⌘3</kbd> 运行模式 Rule / Global / Direct  
+- <kbd>⌘⇧R</kbd> 启动/重启内核 · <kbd>⌘⇧.</kbd> 停止内核  
+- <kbd>⌘⌥1</kbd>…<kbd>⌘⌥5</kbd> 切换面板标签  
+
+完整列表与限制见 [日常使用 · 键盘快捷键](./daily-use#键盘快捷键)。
+
+## 下一步
+
+按文档结构继续：
+
+1. [功能总览](./features) — 看全量能力对照
+2. [配置与订阅](./configuration) — 数据目录、导入与刷新
+3. [日常使用](./daily-use) — 节点 / 分流 / 连接 / 日志与快捷键
+4. [系统代理与 TUN](./network-mode) — 正式接管系统流量
+5. [设置与维护](./settings) — 自启、端口、缓存与 Geo
+
+进阶场景见 [SSID 策略](./ssid-strategy)、[远程机器](./remote-machine)；排障见 [常见问题](./troubleshooting)。

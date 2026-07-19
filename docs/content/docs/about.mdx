@@ -1,0 +1,51 @@
+---
+title: 关于 ClashBar
+description: 设计初心、体积对比、社区与开源许可。
+---
+
+ClashBar 是基于 [mihomo](https://github.com/MetaCubeX/mihomo) 的原生 macOS 菜单栏代理客户端，使用 SwiftUI + AppKit，面向轻量、稳定与可观测的日常使用。
+
+## 设计初心
+
+围绕两个关键词：**轻量** 与 **稳定**。
+
+- **轻量化优先**：在打包 mihomo Core 的前提下，应用体积目标控制在 **15 MB 以内**。
+- **可裁剪交付**：移除 Core 后，应用体积目标控制在 **3 MB 以内**，便于快速分发。
+- **稳定性优先**：优先保证日常可用性与长期运行稳定，避免为短期功能堆叠牺牲可靠性。
+
+首次安装见 [快速开始](./quick-start)；完整产品能力见 [功能总览](./features)；排障见 [常见问题](./troubleshooting)。
+
+## App 体积对比（macOS）
+
+| 客户端 | 应用体积 | 相对 ClashBar（无 Core） |
+| --- | ---: | ---: |
+| ClashBar.app（No Core） | 2.7 MB | 1.0× |
+| ClashBar.app（含 Core） | 14.2 MB | 5.2× |
+| ClashMac.app | 75.2 MB | 27.8× |
+| Clash Verge.app | 128.4 MB | 47.5× |
+| Clash Party.app | 496.7 MB | 183.9× |
+| Sparkle.app | 519.8 MB | 192.5× |
+
+<Callout type="info" title="数据说明">
+对比数据来自同一台 macOS 环境下 Finder 显示值。不同版本与构建方式会影响最终体积，以上用于说明轻量化设计方向，而非严格性能基准。
+</Callout>
+
+## 社区与支持
+
+| 渠道 | 说明 |
+| --- | --- |
+| [Telegram @clashbars](https://t.me/clashbars) | 更新、讨论与互助 |
+| [GitHub Issues](https://github.com/Sitoi/ClashBar/issues) | Bug、功能建议与文档修正 |
+| [GitHub Releases](https://github.com/Sitoi/ClashBar/releases) | 正式安装包与变更说明 |
+| [Homebrew cask](https://github.com/Sitoi/homebrew-tap) | `brew install --cask clashbar`（见[快速开始](./quick-start)） |
+
+提交 Issue 时请附上 ClashBar 版本、macOS 版本、本机或远程内核，以及已脱敏的日志。请勿上传订阅链接、密钥等私人信息。
+
+## 致谢
+
+- [MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo) — 代理内核
+- 所有通过 Issue、PR 与反馈参与改进的贡献者
+
+## 许可证
+
+本项目采用 **GPL-3.0** 开源许可，详见仓库 [LICENSE](https://github.com/Sitoi/ClashBar/blob/main/LICENSE)。

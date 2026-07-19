@@ -1,0 +1,68 @@
+---
+title: ClashBar 使用文档
+description: 在 macOS 菜单栏中管理 Mihomo 配置、节点与网络连接。
+---
+
+ClashBar 是面向 macOS 菜单栏的 [mihomo](https://github.com/MetaCubeX/mihomo) 客户端：把配置、节点、分流、连接与日志收进一个轻量原生面板。
+
+## 建议阅读路径
+
+按使用阶段阅读，比按功能名跳转更省事：
+
+1. **装好并能连上** → [快速开始](./quick-start)
+2. **了解有哪些能力** → [功能总览](./features)
+3. **管好配置与订阅** → [配置与订阅](./configuration)
+4. **日常切节点、看规则与日志** → [日常使用](./daily-use)
+5. **接管系统流量** → [系统代理与 TUN](./network-mode)
+6. **偏好与维护** → [设置与维护](./settings)
+7. **多网络 / 远程控制** → [SSID 策略](./ssid-strategy)、[远程机器](./remote-machine)
+8. **出问题再查** → [常见问题](./troubleshooting)
+
+设计初心、体积对比与社区见 [关于](./about)。
+
+## 入门
+
+第一次安装、或刚换机器时从这里开始。
+
+<Cards>
+  <Card title="快速开始" description="安装、内核、导入配置并完成第一次连接。" href="./quick-start" />
+  <Card title="功能总览" description="全部主要能力对照表，并链到专题说明。" href="./features" />
+</Cards>
+
+## 使用
+
+日常最常打开的几页：配置、面板操作、网络接管与设置。
+
+<Cards>
+  <Card title="配置与订阅" description="数据目录、发现规则、导入与刷新订阅。" href="./configuration" />
+  <Card title="日常使用" description="节点、分流、连接、日志与键盘快捷键。" href="./daily-use" />
+  <Card title="系统代理与 TUN" description="两种网络接管方式、权限与安全边界。" href="./network-mode" />
+  <Card title="设置与维护" description="状态栏、自启、端口、缓存与 Geo / 内核。" href="./settings" />
+</Cards>
+
+## 进阶
+
+按场景再深入：家里/公司自动换配置，或控制远端 Mihomo。
+
+<Cards>
+  <Card title="SSID 策略" description="按当前 Wi‑Fi 自动切换配置。" href="./ssid-strategy" />
+  <Card title="远程机器" description="管理并切换到远程 External Controller。" href="./remote-machine" />
+</Cards>
+
+## 帮助
+
+<Cards>
+  <Card title="常见问题" description="安装、内核、代理、订阅、GEO 与 API 鉴权排查。" href="./troubleshooting" />
+  <Card title="关于" description="设计初心、体积对比、Telegram 与开源许可。" href="./about" />
+</Cards>
+
+## 使用前须知
+
+<Callout type="warn" title="互斥客户端">
+同一时间只保留一个 mihomo / Clash 系客户端接管系统代理。请将 `ClashBar.app` 放入「应用程序」，并在登录项中允许后台活动。完整清单见 [快速开始 · 安装与使用前注意事项](./quick-start#安装与使用前注意事项)。
+</Callout>
+
+## 社区
+
+- Telegram：[t.me/clashbars](https://t.me/clashbars)
+- GitHub：[Sitoi/ClashBar](https://github.com/Sitoi/ClashBar)

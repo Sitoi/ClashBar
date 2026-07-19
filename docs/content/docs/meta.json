@@ -1,0 +1,20 @@
+{
+  "title": "ClashBar 文档",
+  "pages": [
+    "index",
+    "---入门---",
+    "quick-start",
+    "features",
+    "---使用---",
+    "configuration",
+    "daily-use",
+    "network-mode",
+    "settings",
+    "---进阶---",
+    "ssid-strategy",
+    "remote-machine",
+    "---帮助---",
+    "troubleshooting",
+    "about"
+  ]
+}
