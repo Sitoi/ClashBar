@@ -1,3 +1,24 @@
+## v0.3.2
+
+![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.3.2-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
+
+> 本次更新集中在 **延迟趋势可视化与官方文档站上线**：节点延迟从「单次结果」升级为保留最近 4 次样本，代理组列表与节点弹窗以信号条形式展示近期趋势；本地测速与 API/提供者历史会合并保留，刷新后不再轻易丢掉刚测出的结果。同时新增完整的 ClashBar 文档站（快速开始、功能总览、排障等），并重写 README 入口与站内链接。
+
+### 📝 更新日志 (Changelog)
+
+**✨ 新增功能 (New Features)**
+
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **延迟趋势信号条**：代理组当前节点行与节点弹窗的延迟展示由单色块改为最多 4 根信号条，按时间对齐最近若干次延迟样本并着色；最新一次延迟仍以等宽数字显示，超时继续显示「超时」文案而非 0。
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **官方文档站**：新增基于 Fumadocs 的文档站点，覆盖快速开始（含 Core / 无 Core）、配置与订阅、日常使用、系统代理与 TUN、SSID 策略、远程机器、设置维护、常见问题与关于页；README 同步指向 [clashbar.sitoi.cn](https://clashbar.sitoi.cn)。
+
+**🚀 优化改进 (Improvements)**
+
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **延迟样本链路重构**：接口与模型由「仅最新延迟」改为最近 4 次样本序列；组测速 / 单节点测速写入同一套样本，并与 Mihomo API 返回的 history 合并，避免面板刷新后本地测量结果被覆盖。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **提供者与嵌套组回填**：解析代理提供者节点的类型与延迟历史，补充展示用类型信息；延迟查询沿选择链回退到实际叶子节点样本，嵌套代理组展示更准确。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **文档入口与链接维护**：精简主 README 安装与上手说明，统一官网与 Releases 链接；文档站内链改为 `/docs/*` 绝对路径，避免无尾斜杠路由下相对链接失效。
+
+---
+
 ## v0.3.1
 
 ![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.3.1-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
