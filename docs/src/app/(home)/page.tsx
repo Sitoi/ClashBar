@@ -10,74 +10,71 @@ import {
   Settings2,
   ShieldCheck,
   Zap,
-} from 'lucide-react'
-import Image from 'next/image'
-import Link from 'next/link'
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 
 const highlights = [
-  { label: '安装包体积', value: '2.7 MB', hint: '无 Core 构建约数' },
-  { label: '含 Core 体积', value: '≈14 MB', hint: '打包 mihomo 目标 <15 MB' },
-  { label: '代理内核', value: 'mihomo', hint: 'Meta 生态兼容' },
-  { label: '系统要求', value: 'macOS 13+', hint: 'Homebrew / DMG 安装' },
-]
+  { label: "安装包体积", value: "3 MB", hint: "无 Core 构建约数" },
+  { label: "含 Core 体积", value: "≈14 MB", hint: "打包 mihomo 目标 <15 MB" },
+  { label: "代理内核", value: "mihomo", hint: "Meta 生态兼容" },
+  { label: "系统要求", value: "macOS 13+", hint: "Homebrew / DMG 安装" },
+];
 
 const pillars = [
   {
     icon: <Zap className="size-5" />,
-    title: '菜单栏即控制台',
-    description:
-      '配置、节点、系统代理与排障视图收进一个紧凑的原生面板，点击菜单栏图标即可完成日常操作。',
+    title: "菜单栏即控制台",
+    description: "配置、节点、系统代理与排障视图收进一个紧凑的原生面板，点击菜单栏图标即可完成日常操作。",
   },
   {
     icon: <Gauge className="size-5" />,
-    title: '轻量常驻',
-    description:
-      '安装包约 2.7 MB，零第三方依赖，专注低占用与稳定运行，不把菜单栏工具做成重型桌面套件。',
+    title: "轻量常驻",
+    description: "安装包约 3 MB，零第三方依赖，专注低占用与稳定运行，不把菜单栏工具做成重型桌面套件。",
   },
   {
     icon: <GitBranch className="size-5" />,
-    title: 'mihomo 驱动',
-    description:
-      '基于 mihomo 内核，支持本地 YAML、远程订阅、系统代理与 TUN，覆盖从入门到进阶的接管路径。',
+    title: "mihomo 驱动",
+    description: "基于 mihomo 内核，支持本地 YAML、远程订阅、系统代理与 TUN，覆盖从入门到进阶的接管路径。",
   },
-]
+];
 
 const quickSteps = [
   {
-    title: '清理冲突客户端',
-    body: '先退出其他 mihomo / Clash 系客户端，避免系统代理、端口或后台辅助进程互相覆盖。',
+    title: "清理冲突客户端",
+    body: "先退出其他 mihomo / Clash 系客户端，避免系统代理、端口或后台辅助进程互相覆盖。",
   },
   {
-    title: '完成首次启动',
-    body: '首次启动时，先用默认配置启动一次，让 mihomo 完成所需资源准备。',
+    title: "完成首次启动",
+    body: "首次启动时，先用默认配置启动一次，让 mihomo 完成所需资源准备。",
   },
   {
-    title: '导入节点配置',
-    body: '在“节点”页面选择或导入本地 YAML、远程订阅配置。',
+    title: "导入节点配置",
+    body: "在“节点”页面选择或导入本地 YAML、远程订阅配置。",
   },
   {
-    title: '启动或重启内核',
-    body: '启动内核；刚替换配置或内核时，使用“重启内核”。',
+    title: "启动或重启内核",
+    body: "启动内核；刚替换配置或内核时，使用“重启内核”。",
   },
   {
-    title: '验证线路可用性',
-    body: '在节点分组中选择节点并执行延迟测试，先确认线路可用。',
+    title: "验证线路可用性",
+    body: "在节点分组中选择节点并执行延迟测试，先确认线路可用。",
   },
   {
-    title: '开启系统代理',
-    body: '确认连通性正常后再开启系统代理；若开关无反应，请检查“登录项”中的后台活动。',
+    title: "开启系统代理",
+    body: "确认连通性正常后再开启系统代理；若开关无反应，请检查“登录项”中的后台活动。",
   },
-]
+];
 
 const bentoCard =
-  'bento-card relative flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.055] to-white/[0.015] p-4 transition duration-200 hover:border-white/15'
+  "relative flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.055] to-white/[0.015] p-4 transition duration-200 hover:border-white/15";
 
 function ShortcutKey({ children }: { children: string }) {
   return (
     <kbd className="inline-flex items-center justify-center rounded-md border border-white/10 bg-black/45 px-1.5 py-0.5 font-mono text-[10px] font-semibold leading-none tracking-wide text-slate-300 shadow-[inset_0_1px_rgba(255,255,255,0.06)]">
       {children}
     </kbd>
-  )
+  );
 }
 
 export default function HomePage() {
@@ -132,20 +129,12 @@ export default function HomePage() {
           </div>
 
           <ul className="mt-8 flex flex-wrap gap-x-5 gap-y-2.5 text-sm text-slate-400">
-            {['SwiftUI + AppKit', '零第三方依赖', 'GPL-3.0 开源'].map(
-              (item) => (
-                <li
-                  key={item}
-                  className="flex items-center gap-2"
-                >
-                  <Check
-                    className="size-3.5 text-sky-400"
-                    strokeWidth={2.5}
-                  />
-                  {item}
-                </li>
-              ),
-            )}
+            {["SwiftUI + AppKit", "零第三方依赖", "GPL-3.0 开源"].map((item) => (
+              <li key={item} className="flex items-center gap-2">
+                <Check className="size-3.5 text-sky-400" strokeWidth={2.5} />
+                {item}
+              </li>
+            ))}
           </ul>
         </div>
 
@@ -159,25 +148,18 @@ export default function HomePage() {
             className="absolute inset-[10%] rounded-[2rem] border border-white/10 bg-sky-400/[0.03]"
           />
 
-          <div className="clashbar-float absolute -left-2 top-[18%] z-20 hidden rounded-2xl border border-white/10 bg-slate-950/80 px-3.5 py-2.5 shadow-2xl backdrop-blur-xl sm:left-0 lg:block">
+          <div className="absolute -left-2 top-[18%] z-20 hidden animate-clashbar-float rounded-2xl border border-white/10 bg-slate-950/80 px-3.5 py-2.5 shadow-2xl backdrop-blur-xl motion-reduce:animate-none sm:left-0 lg:block">
             <span className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.14em] text-slate-400">
               <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
               SYSTEM ONLINE
             </span>
-            <span className="mt-1.5 block font-mono text-sm font-semibold text-white">
-              127.0.0.1:7890
-            </span>
+            <span className="mt-1.5 block font-mono text-sm font-semibold text-white">127.0.0.1:7890</span>
           </div>
 
-          <div className="clashbar-float-delayed absolute bottom-[12%] -right-1 z-20 hidden rounded-2xl border border-white/10 bg-slate-950/80 px-3.5 py-2.5 shadow-2xl backdrop-blur-xl sm:right-0 lg:block">
-            <span className="block text-[10px] font-semibold tracking-[0.14em] text-slate-400">
-              INSTALL SIZE
-            </span>
+          <div className="absolute bottom-[12%] -right-1 z-20 hidden animate-clashbar-float-delayed rounded-2xl border border-white/10 bg-slate-950/80 px-3.5 py-2.5 shadow-2xl backdrop-blur-xl motion-reduce:animate-none sm:right-0 lg:block">
+            <span className="block text-[10px] font-semibold tracking-[0.14em] text-slate-400">INSTALL SIZE</span>
             <span className="mt-1 block text-xl font-semibold tracking-tight text-sky-200">
-              2.7{' '}
-              <span className="text-xs font-medium tracking-normal text-sky-300/80">
-                MB
-              </span>
+              3 <span className="text-xs font-medium tracking-normal text-sky-300/80">MB</span>
             </span>
           </div>
 
@@ -196,16 +178,9 @@ export default function HomePage() {
       <section className="relative border-y border-white/[0.06]">
         <div className="mx-auto grid max-w-[1200px] grid-cols-2 divide-x divide-y divide-white/[0.06] sm:grid-cols-4 sm:divide-y-0">
           {highlights.map((item) => (
-            <div
-              key={item.label}
-              className="px-6 py-7 text-center sm:px-4 lg:px-8"
-            >
-              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-500">
-                {item.label}
-              </p>
-              <p className="mt-2 text-xl font-semibold tracking-tight text-white sm:text-2xl">
-                {item.value}
-              </p>
+            <div key={item.label} className="px-6 py-7 text-center sm:px-4 lg:px-8">
+              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-500">{item.label}</p>
+              <p className="mt-2 text-xl font-semibold tracking-tight text-white sm:text-2xl">{item.value}</p>
               <p className="mt-1 text-xs text-slate-500">{item.hint}</p>
             </div>
           ))}
@@ -228,33 +203,21 @@ export default function HomePage() {
               <div className="flex size-10 items-center justify-center rounded-xl border border-sky-400/20 bg-sky-400/10 text-sky-300">
                 {pillar.icon}
               </div>
-              <h3 className="mt-5 text-lg font-semibold tracking-tight text-white">
-                {pillar.title}
-              </h3>
-              <p className="mt-2.5 text-sm leading-6 text-slate-400">
-                {pillar.description}
-              </p>
+              <h3 className="mt-5 text-lg font-semibold tracking-tight text-white">{pillar.title}</h3>
+              <p className="mt-2.5 text-sm leading-6 text-slate-400">{pillar.description}</p>
             </article>
           ))}
         </div>
       </section>
 
       {/* Features — 8-col bento (aligned with main site index.html) */}
-      <section
-        id="features"
-        className="relative mx-auto max-w-[1200px] scroll-mt-24 px-5 py-16 sm:px-8 lg:py-20"
-      >
+      <section id="features" className="relative mx-auto max-w-[1200px] scroll-mt-24 px-5 py-16 sm:px-8 lg:py-20">
         <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0 max-w-2xl">
-            <p className="text-xs font-semibold tracking-[0.16em] text-sky-300/90">
-              功能概览
-            </p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-white sm:text-4xl">
-              原生菜单栏控制台
-            </h2>
+            <p className="text-xs font-semibold tracking-[0.16em] text-sky-300/90">功能概览</p>
+            <h2 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-white sm:text-4xl">原生菜单栏控制台</h2>
             <p className="mt-2.5 text-sm leading-6 text-slate-400">
-              节点 · 分流 · 连接 · 日志 ·
-              设置，以及系统代理、TUN、订阅与远程管理——一屏扫完。
+              节点 · 分流 · 连接 · 日志 · 设置，以及系统代理、TUN、订阅与远程管理——一屏扫完。
             </p>
           </div>
           <Link
@@ -273,7 +236,7 @@ export default function HomePage() {
                                Core+Config(2) Remote(2)
         */}
         <div
-          className="bento-grid grid auto-rows-[minmax(112px,auto)] grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-8"
+          className="grid auto-rows-[minmax(112px,auto)] grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-8"
           aria-label="ClashBar 功能展示"
         >
           {/* 1. 运行态指标 4×2 */}
@@ -285,9 +248,7 @@ export default function HomePage() {
               className="pointer-events-none absolute -left-20 -top-20 size-64 rounded-full bg-sky-400/20 blur-[80px]"
             />
             <div className="relative z-10">
-              <h3 className="mb-0.5 text-base font-semibold tracking-tight text-white">
-                运行态指标
-              </h3>
+              <h3 className="mb-0.5 text-base font-semibold tracking-tight text-white">运行态指标</h3>
               <p className="max-w-none text-[12px] leading-snug text-slate-400 sm:whitespace-nowrap">
                 在菜单栏和面板同时看到上/下行速率、连接数、内存占用和当前模式。
               </p>
@@ -296,29 +257,19 @@ export default function HomePage() {
               <div className="mb-2 grid grid-cols-2 gap-2">
                 <div className="rounded-xl border border-white/5 bg-black/40 p-2">
                   <strong className="block text-lg font-bold text-white">
-                    1.2{' '}
-                    <span className="text-xs font-medium text-slate-500">
-                      MB/s
-                    </span>
+                    1.2 <span className="text-xs font-medium text-slate-500">MB/s</span>
                   </strong>
-                  <span className="mt-0.5 block text-[10px] uppercase tracking-wider text-slate-500">
-                    实时速率
-                  </span>
+                  <span className="mt-0.5 block text-[10px] uppercase tracking-wider text-slate-500">实时速率</span>
                 </div>
                 <div className="rounded-xl border border-white/5 bg-black/40 p-2">
                   <strong className="block text-lg font-bold text-white">
-                    48.2{' '}
-                    <span className="text-xs font-medium text-slate-500">
-                      MB
-                    </span>
+                    48.2 <span className="text-xs font-medium text-slate-500">MB</span>
                   </strong>
-                  <span className="mt-0.5 block text-[10px] uppercase tracking-wider text-slate-500">
-                    内存占用
-                  </span>
+                  <span className="mt-0.5 block text-[10px] uppercase tracking-wider text-slate-500">内存占用</span>
                 </div>
               </div>
               <div
-                className="runtime-chart"
+                className="relative overflow-hidden rounded-xl border border-white/[0.08] bg-black/35 px-[0.45rem] pb-[0.3rem] pt-[0.4rem]"
                 aria-hidden="true"
               >
                 <svg
@@ -326,6 +277,7 @@ export default function HomePage() {
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
                   preserveAspectRatio="none"
+                  className="block h-[3.75rem] w-full"
                 >
                   <path
                     d="M10 70C22 62 34 46 46 44C58 42 70 54 82 49C94 44 106 22 118 24C130 26 142 40 154 38C166 36 178 18 190 20C202 22 214 34 230 28V92H10V70Z"
@@ -349,32 +301,10 @@ export default function HomePage() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
-                  <circle
-                    cx="190"
-                    cy="20"
-                    r="4"
-                    fill="#38BDF8"
-                  />
-                  <circle
-                    cx="190"
-                    cy="20"
-                    r="8"
-                    fill="#38BDF8"
-                    fillOpacity="0.12"
-                  />
-                  <circle
-                    cx="190"
-                    cy="50"
-                    r="4"
-                    fill="#34D399"
-                  />
-                  <circle
-                    cx="190"
-                    cy="50"
-                    r="8"
-                    fill="#34D399"
-                    fillOpacity="0.12"
-                  />
+                  <circle cx="190" cy="20" r="4" fill="#38BDF8" />
+                  <circle cx="190" cy="20" r="8" fill="#38BDF8" fillOpacity="0.12" />
+                  <circle cx="190" cy="50" r="4" fill="#34D399" />
+                  <circle cx="190" cy="50" r="8" fill="#34D399" fillOpacity="0.12" />
                   <defs>
                     <linearGradient
                       id="runtime-download-fill"
@@ -384,15 +314,8 @@ export default function HomePage() {
                       y2="92"
                       gradientUnits="userSpaceOnUse"
                     >
-                      <stop
-                        stopColor="#38BDF8"
-                        stopOpacity="0.25"
-                      />
-                      <stop
-                        offset="1"
-                        stopColor="#38BDF8"
-                        stopOpacity="0"
-                      />
+                      <stop stopColor="#38BDF8" stopOpacity="0.25" />
+                      <stop offset="1" stopColor="#38BDF8" stopOpacity="0" />
                     </linearGradient>
                     <linearGradient
                       id="runtime-upload-fill"
@@ -402,25 +325,18 @@ export default function HomePage() {
                       y2="92"
                       gradientUnits="userSpaceOnUse"
                     >
-                      <stop
-                        stopColor="#34D399"
-                        stopOpacity="0.2"
-                      />
-                      <stop
-                        offset="1"
-                        stopColor="#34D399"
-                        stopOpacity="0"
-                      />
+                      <stop stopColor="#34D399" stopOpacity="0.2" />
+                      <stop offset="1" stopColor="#34D399" stopOpacity="0" />
                     </linearGradient>
                   </defs>
                 </svg>
-                <div className="runtime-chart-legend">
-                  <span className="runtime-chart-series">
-                    <span className="runtime-chart-dot download" />
+                <div className="mt-[0.35rem] flex items-center gap-[0.85rem] px-[0.15rem] text-[10px] text-slate-500">
+                  <span className="inline-flex items-center gap-[0.35rem]">
+                    <span className="size-1.5 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.6)]" />
                     下行
                   </span>
-                  <span className="runtime-chart-series">
-                    <span className="runtime-chart-dot upload" />
+                  <span className="inline-flex items-center gap-[0.35rem]">
+                    <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.55)]" />
                     上行
                   </span>
                 </div>
@@ -444,20 +360,17 @@ export default function HomePage() {
               className="pointer-events-none absolute -bottom-10 -right-10 size-40 rounded-full bg-red-500/10 blur-[60px]"
             />
             <div>
-              <h3 className="mb-0.5 text-base font-semibold tracking-tight text-white">
-                连接排障
-              </h3>
-              <p className="text-[12px] leading-snug text-slate-400">
-                观察活动连接，并按需关闭单个或全部连接。
-              </p>
+              <h3 className="mb-0.5 text-base font-semibold tracking-tight text-white">连接排障</h3>
+              <p className="text-[12px] leading-snug text-slate-400">观察活动连接，并按需关闭单个或全部连接。</p>
             </div>
             <div className="my-2 flex flex-1 items-center justify-center">
-              <div className="audit-pulse scale-100" />
+              <div
+                className="relative size-[52px] rounded-full border border-red-400/[0.22] bg-red-400/[0.08] before:absolute before:left-1/2 before:top-1/2 before:size-3 before:-translate-x-1/2 before:-translate-y-1/2 before:rounded-full before:bg-red-400/[0.92] before:shadow-[0_0_14px_rgba(248,113,113,0.5)] before:content-[''] after:absolute after:left-1/2 after:top-1/2 after:size-[34px] after:-translate-x-1/2 after:-translate-y-1/2 after:rounded-full after:border after:border-red-400/[0.28] after:content-['']"
+                aria-hidden="true"
+              />
             </div>
             <div className="relative z-10 rounded-xl border border-red-500/20 bg-red-500/10 p-2 text-center backdrop-blur-md">
-              <strong className="block text-sm font-bold leading-none text-red-400">
-                128 Active
-              </strong>
+              <strong className="block text-sm font-bold leading-none text-red-400">128 Active</strong>
             </div>
           </article>
 
@@ -470,12 +383,8 @@ export default function HomePage() {
               className="pointer-events-none absolute -bottom-16 -right-16 size-56 rounded-full bg-indigo-400/10 blur-[72px]"
             />
             <div className="relative z-10 shrink-0">
-              <h3 className="mb-0.5 text-base font-semibold tracking-tight text-white">
-                规则视图
-              </h3>
-              <p className="text-[12px] leading-snug text-slate-400">
-                快速查看规则总数、命中分布和常用规则类型。
-              </p>
+              <h3 className="mb-0.5 text-base font-semibold tracking-tight text-white">规则视图</h3>
+              <p className="text-[12px] leading-snug text-slate-400">快速查看规则总数、命中分布和常用规则类型。</p>
             </div>
             <div className="relative z-10 mt-2.5 flex min-h-0 flex-1 flex-col gap-2">
               <div className="flex min-h-0 flex-1 flex-col justify-center rounded-2xl border border-white/10 bg-black/30 p-3">
@@ -488,15 +397,12 @@ export default function HomePage() {
                       规则总数
                     </div>
                   </div>
-                  <div
-                    className="rule-stack flex h-14 w-[4.5rem] shrink-0 items-end gap-1 opacity-80"
-                    aria-hidden="true"
-                  >
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
+                  <div className="flex h-14 w-[4.5rem] shrink-0 items-end gap-1.5 opacity-80" aria-hidden="true">
+                    <span className="h-3.5 flex-1 rounded-t-full rounded-b-sm bg-gradient-to-b from-sky-400/85 to-sky-400/15 opacity-35" />
+                    <span className="h-[26px] flex-1 rounded-t-full rounded-b-sm bg-gradient-to-b from-sky-400/85 to-sky-400/15 opacity-50" />
+                    <span className="h-11 flex-1 rounded-t-full rounded-b-sm bg-gradient-to-b from-sky-400/85 to-sky-400/15" />
+                    <span className="h-5 flex-1 rounded-t-full rounded-b-sm bg-gradient-to-b from-sky-400/85 to-sky-400/15 opacity-40" />
+                    <span className="h-8 flex-1 rounded-t-full rounded-b-sm bg-gradient-to-b from-sky-400/85 to-sky-400/15 opacity-65" />
                   </div>
                 </div>
               </div>
@@ -507,15 +413,10 @@ export default function HomePage() {
                       <span className="size-1.5 rounded-full bg-emerald-400" />
                       DIRECT
                     </span>
-                    <span className="text-[10px] font-bold text-white">
-                      1.2k
-                    </span>
+                    <span className="text-[10px] font-bold text-white">1.2k</span>
                   </div>
                   <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/5">
-                    <div
-                      className="h-full rounded-full bg-emerald-400"
-                      style={{ width: '28%' }}
-                    />
+                    <div className="h-full rounded-full bg-emerald-400" style={{ width: "28%" }} />
                   </div>
                 </div>
                 <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-2">
@@ -524,15 +425,10 @@ export default function HomePage() {
                       <span className="size-1.5 rounded-full bg-sky-400" />
                       PROXY
                     </span>
-                    <span className="text-[10px] font-bold text-white">
-                      2.8k
-                    </span>
+                    <span className="text-[10px] font-bold text-white">2.8k</span>
                   </div>
                   <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/5">
-                    <div
-                      className="h-full rounded-full bg-sky-400"
-                      style={{ width: '65%' }}
-                    />
+                    <div className="h-full rounded-full bg-sky-400" style={{ width: "65%" }} />
                   </div>
                 </div>
                 <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-2">
@@ -541,20 +437,15 @@ export default function HomePage() {
                       <span className="size-1.5 rounded-full bg-red-400" />
                       REJECT
                     </span>
-                    <span className="text-[10px] font-bold text-white">
-                      285
-                    </span>
+                    <span className="text-[10px] font-bold text-white">285</span>
                   </div>
                   <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/5">
-                    <div
-                      className="h-full rounded-full bg-red-400"
-                      style={{ width: '7%' }}
-                    />
+                    <div className="h-full rounded-full bg-red-400" style={{ width: "7%" }} />
                   </div>
                 </div>
               </div>
               <div className="flex shrink-0 flex-wrap gap-1.5">
-                {['DOMAIN-SUFFIX', 'IP-CIDR', 'GEOIP', 'MATCH'].map((tag) => (
+                {["DOMAIN-SUFFIX", "IP-CIDR", "GEOIP", "MATCH"].map((tag) => (
                   <span
                     key={tag}
                     className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[9px] text-white"
@@ -578,9 +469,7 @@ export default function HomePage() {
               <div className="mb-1.5 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
                 模式
               </div>
-              <h3 className="mb-0.5 text-base font-semibold tracking-tight text-white">
-                运行模式
-              </h3>
+              <h3 className="mb-0.5 text-base font-semibold tracking-tight text-white">运行模式</h3>
               <p className="text-[12px] leading-snug text-slate-400">
                 菜单栏一键切换 Rule / Global / Direct，也可用快捷键直达。
               </p>
@@ -589,12 +478,8 @@ export default function HomePage() {
               <div className="flex min-h-0 flex-1 items-center rounded-xl border border-sky-400/25 bg-sky-400/10 px-3 py-2 shadow-[0_0_24px_rgba(56,189,248,0.08)]">
                 <div className="flex w-full items-center justify-between gap-3">
                   <div>
-                    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-sky-300">
-                      RULE
-                    </div>
-                    <div className="mt-0.5 text-[13px] font-medium text-white">
-                      规则匹配
-                    </div>
+                    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-sky-300">RULE</div>
+                    <div className="mt-0.5 text-[13px] font-medium text-white">规则匹配</div>
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
                     <span className="rounded-full border border-sky-400/30 bg-black/30 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-300">
@@ -607,12 +492,8 @@ export default function HomePage() {
               <div className="flex min-h-0 flex-1 items-center rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
                 <div className="flex w-full items-center justify-between gap-3">
                   <div>
-                    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-white">
-                      GLOBAL
-                    </div>
-                    <div className="mt-0.5 text-[13px] font-medium text-white">
-                      全局代理
-                    </div>
+                    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-white">GLOBAL</div>
+                    <div className="mt-0.5 text-[13px] font-medium text-white">全局代理</div>
                   </div>
                   <ShortcutKey>⌃⌘2</ShortcutKey>
                 </div>
@@ -620,12 +501,8 @@ export default function HomePage() {
               <div className="flex min-h-0 flex-1 items-center rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
                 <div className="flex w-full items-center justify-between gap-3">
                   <div>
-                    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-white">
-                      DIRECT
-                    </div>
-                    <div className="mt-0.5 text-[13px] font-medium text-white">
-                      全局直连
-                    </div>
+                    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-white">DIRECT</div>
+                    <div className="mt-0.5 text-[13px] font-medium text-white">全局直连</div>
                   </div>
                   <ShortcutKey>⌃⌘3</ShortcutKey>
                 </div>
@@ -638,52 +515,44 @@ export default function HomePage() {
             className={`${bentoCard} md:col-span-1 md:row-span-2 lg:col-span-2 lg:col-start-3 lg:row-span-2 lg:row-start-3`}
           >
             <div className="mb-2 flex shrink-0 items-center justify-between gap-2">
-              <h3 className="text-base font-semibold tracking-tight text-white">
-                节点切换
-              </h3>
+              <h3 className="text-base font-semibold tracking-tight text-white">节点切换</h3>
               <ShortcutKey>⌘⌥1</ShortcutKey>
             </div>
             <div className="flex min-h-0 flex-1 flex-col gap-1">
               {[
-                { name: 'HK-Premium', ms: '24ms', active: true },
-                { name: 'TW-Taipei', ms: '31ms', active: false },
-                { name: 'SG-Direct', ms: '48ms', active: false },
-                { name: 'KR-Seoul', ms: '56ms', active: false },
-                { name: 'JP-Low', ms: '89ms', active: false },
-                { name: 'MY-Burst', ms: '112ms', active: false },
-                { name: 'US-Global', ms: '162ms', active: false },
-                { name: 'DE-Edge', ms: '189ms', active: false },
+                { name: "HK-Premium", ms: "24ms", active: true },
+                { name: "TW-Taipei", ms: "31ms", active: false },
+                { name: "SG-Direct", ms: "48ms", active: false },
+                { name: "KR-Seoul", ms: "56ms", active: false },
+                { name: "JP-Low", ms: "89ms", active: false },
+                { name: "MY-Burst", ms: "112ms", active: false },
+                { name: "US-Global", ms: "162ms", active: false },
+                { name: "DE-Edge", ms: "189ms", active: false },
               ].map((node, i) => (
                 <div
                   key={node.name}
                   className={
                     node.active
-                      ? 'flex min-h-0 flex-1 items-center justify-between rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-2.5'
-                      : 'flex min-h-0 flex-1 items-center justify-between rounded-lg border border-white/5 bg-white/5 px-2.5'
+                      ? "flex min-h-0 flex-1 items-center justify-between rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-2.5"
+                      : "flex min-h-0 flex-1 items-center justify-between rounded-lg border border-white/5 bg-white/5 px-2.5"
                   }
-                  style={
-                    node.active
-                      ? undefined
-                      : { opacity: Math.max(0.65, 0.85 - i * 0.03) }
-                  }
+                  style={node.active ? undefined : { opacity: Math.max(0.65, 0.85 - i * 0.03) }}
                 >
                   <div className="flex items-center gap-2 overflow-hidden">
                     <span
                       className={
                         node.active
-                          ? 'size-1.5 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]'
-                          : 'size-1.5 shrink-0 rounded-full bg-white/20'
+                          ? "size-1.5 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]"
+                          : "size-1.5 shrink-0 rounded-full bg-white/20"
                       }
                     />
-                    <span className="truncate text-xs font-medium text-white">
-                      {node.name}
-                    </span>
+                    <span className="truncate text-xs font-medium text-white">{node.name}</span>
                   </div>
                   <span
                     className={
                       node.active
-                        ? 'shrink-0 text-[10px] font-bold text-emerald-300'
-                        : 'shrink-0 text-[10px] font-bold text-slate-500'
+                        ? "shrink-0 text-[10px] font-bold text-emerald-300"
+                        : "shrink-0 text-[10px] font-bold text-slate-500"
                     }
                   >
                     {node.ms}
@@ -697,15 +566,11 @@ export default function HomePage() {
           <article
             className={`${bentoCard} justify-between md:col-span-1 md:row-span-1 lg:col-span-1 lg:col-start-5 lg:row-span-1 lg:row-start-3`}
           >
-            <h3 className="text-base font-semibold tracking-tight text-white">
-              系统代理
-            </h3>
+            <h3 className="text-base font-semibold tracking-tight text-white">系统代理</h3>
             <div className="mt-auto flex items-end justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-300">
-                已启用
-              </span>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-300">已启用</span>
               <div
-                className="proxy-toggle"
+                className="relative h-6 w-11 rounded-full border border-sky-400/[0.22] bg-sky-400/[0.12] after:absolute after:right-0.5 after:top-0.5 after:size-[18px] after:rounded-full after:bg-gradient-to-br after:from-sky-400 after:to-indigo-400 after:shadow-[0_0_16px_rgba(56,189,248,0.4)] after:content-['']"
                 aria-hidden="true"
               />
             </div>
@@ -719,9 +584,7 @@ export default function HomePage() {
               <div className="absolute inset-0 rounded-full bg-emerald-400/20 blur-md" />
               <ShieldCheck className="relative size-5 text-emerald-300" />
             </div>
-            <h3 className="text-[13px] font-semibold tracking-tight text-white">
-              TUN 与权限
-            </h3>
+            <h3 className="text-[13px] font-semibold tracking-tight text-white">TUN 与权限</h3>
           </article>
 
           {/* 8. 日志检索 2×1 */}
@@ -729,9 +592,7 @@ export default function HomePage() {
             className={`${bentoCard} justify-between md:col-span-2 md:row-span-1 lg:col-span-2 lg:col-start-7 lg:row-span-1 lg:row-start-3`}
           >
             <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-[13px] font-semibold tracking-tight text-white">
-                日志检索
-              </h3>
+              <h3 className="text-[13px] font-semibold tracking-tight text-white">日志检索</h3>
               <div className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2 py-1 font-mono text-[10px] text-slate-500">
                 <span className="opacity-70">⌕</span>
                 <span>筛选: mihomo</span>
@@ -739,15 +600,9 @@ export default function HomePage() {
             </div>
             <div className="mt-auto rounded-xl border border-white/5 bg-black/50 p-2.5">
               <div className="grid gap-0.5 font-mono text-[10px] leading-tight opacity-80 sm:text-[11px]">
-                <span className="text-emerald-300/90">
-                  14:22:01 connected HK-Premium-01
-                </span>
-                <span className="text-slate-500">
-                  14:22:05 rule matched api.github.com
-                </span>
-                <span className="text-rose-300/85">
-                  14:22:10 latency spike detected
-                </span>
+                <span className="text-emerald-300/90">14:22:01 connected HK-Premium-01</span>
+                <span className="text-slate-500">14:22:05 rule matched api.github.com</span>
+                <span className="text-rose-300/85">14:22:10 latency spike detected</span>
               </div>
             </div>
           </article>
@@ -763,9 +618,7 @@ export default function HomePage() {
             <div className="relative z-10 flex h-full min-h-0 flex-col gap-2">
               <div className="flex shrink-0 items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h3 className="text-[13px] font-semibold tracking-tight text-white">
-                    配置与内核
-                  </h3>
+                  <h3 className="text-[13px] font-semibold tracking-tight text-white">配置与内核</h3>
                   <p className="mt-0.5 text-[10px] leading-snug text-slate-500">
                     导入配置，并在 mihomo / smart 间切换。
                   </p>
@@ -786,12 +639,8 @@ export default function HomePage() {
                       M
                     </div>
                     <div className="min-w-0">
-                      <div className="truncate font-mono text-[12px] font-semibold leading-none text-white">
-                        mihomo
-                      </div>
-                      <div className="mt-1 text-[9px] uppercase tracking-[0.14em] text-sky-300">
-                        当前
-                      </div>
+                      <div className="truncate font-mono text-[12px] font-semibold leading-none text-white">mihomo</div>
+                      <div className="mt-1 text-[9px] uppercase tracking-[0.14em] text-sky-300">当前</div>
                     </div>
                   </div>
                   <span className="size-2 shrink-0 rounded-full bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.8)]" />
@@ -802,21 +651,15 @@ export default function HomePage() {
                       S
                     </div>
                     <div className="min-w-0">
-                      <div className="truncate font-mono text-[12px] font-semibold leading-none text-white">
-                        smart
-                      </div>
-                      <div className="mt-1 text-[9px] uppercase tracking-[0.14em] text-slate-500">
-                        可切换
-                      </div>
+                      <div className="truncate font-mono text-[12px] font-semibold leading-none text-white">smart</div>
+                      <div className="mt-1 text-[9px] uppercase tracking-[0.14em] text-slate-500">可切换</div>
                     </div>
                   </div>
                   <span className="size-2 shrink-0 rounded-full bg-white/25" />
                 </div>
               </div>
               <div className="flex shrink-0 items-center justify-between gap-2 rounded-xl border border-white/10 bg-black/30 px-2.5 py-1.5">
-                <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                  切换后重启
-                </span>
+                <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-500">切换后重启</span>
                 <span className="text-[10px] font-bold text-sky-300">重启</span>
               </div>
             </div>
@@ -832,12 +675,8 @@ export default function HomePage() {
             />
             <div className="relative z-10 flex h-full flex-col gap-2.5">
               <div>
-                <h3 className="mb-0.5 text-base font-semibold tracking-tight text-white">
-                  远程管理
-                </h3>
-                <p className="max-w-none text-[11px] leading-snug text-slate-400">
-                  轻松接管局域网或云端服务端。
-                </p>
+                <h3 className="mb-0.5 text-base font-semibold tracking-tight text-white">远程管理</h3>
+                <p className="max-w-none text-[11px] leading-snug text-slate-400">轻松接管局域网或云端服务端。</p>
               </div>
               <div className="mt-auto flex w-full flex-col gap-2 rounded-xl border border-white/10 bg-white/5 p-2.5">
                 <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-2">
@@ -849,9 +688,7 @@ export default function HomePage() {
                       <div className="truncate font-mono text-[12px] font-medium leading-none text-white">
                         192.168.31.10:9090
                       </div>
-                      <div className="mt-1 truncate text-[10px] text-slate-500">
-                        Home NAS / Docker
-                      </div>
+                      <div className="mt-1 truncate text-[10px] text-slate-500">Home NAS / Docker</div>
                     </div>
                   </div>
                   <span
@@ -868,9 +705,7 @@ export default function HomePage() {
                       <div className="truncate font-mono text-[12px] font-medium leading-none text-white">
                         47.76.120.8:9090
                       </div>
-                      <div className="mt-1 truncate text-[10px] text-slate-500">
-                        Singapore VPS / mihomo
-                      </div>
+                      <div className="mt-1 truncate text-[10px] text-slate-500">Singapore VPS / mihomo</div>
                     </div>
                   </div>
                   <span
@@ -889,15 +724,15 @@ export default function HomePage() {
             另含
           </span>
           {[
-            'SSID 策略',
-            '快捷键',
-            '状态栏样式',
-            '面板固定',
-            '开机/内核自启',
-            '端口编辑',
-            'Geo / 缓存清理',
-            '终端代理命令',
-            '外观与语言',
+            "SSID 策略",
+            "快捷键",
+            "状态栏样式",
+            "面板固定",
+            "开机/内核自启",
+            "端口编辑",
+            "Geo / 缓存清理",
+            "终端代理命令",
+            "外观与语言",
           ].map((tag) => (
             <span
               key={tag}
@@ -916,19 +751,12 @@ export default function HomePage() {
       </section>
 
       {/* Quick start */}
-      <section
-        id="quick-start"
-        className="relative scroll-mt-28 border-y border-white/[0.06] py-20 lg:py-24"
-      >
+      <section id="quick-start" className="relative scroll-mt-28 border-y border-white/[0.06] py-20 lg:py-24">
         <div className="mx-auto max-w-[1200px] px-6 sm:px-8">
           <div className="mb-12 flex flex-col items-start justify-between gap-6 lg:mb-14 lg:flex-row lg:items-end">
             <div className="max-w-xl">
-              <p className="text-xs font-semibold tracking-[0.16em] text-sky-300/90">
-                首次接管流量
-              </p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-white sm:text-4xl">
-                快速开始
-              </h2>
+              <p className="text-xs font-semibold tracking-[0.16em] text-sky-300/90">首次接管流量</p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-white sm:text-4xl">快速开始</h2>
               <p className="mt-3 text-sm leading-6 text-slate-400">
                 第一次接管流量，按下面六步顺序操作即可。完整说明见文档。
               </p>
@@ -950,11 +778,9 @@ export default function HomePage() {
               >
                 <div className="mb-4 flex items-center gap-3">
                   <span className="flex size-8 items-center justify-center rounded-full border border-sky-400/25 bg-sky-400/10 font-mono text-xs font-bold text-sky-300">
-                    {String(index + 1).padStart(2, '0')}
+                    {String(index + 1).padStart(2, "0")}
                   </span>
-                  <h3 className="text-sm font-semibold text-white">
-                    {step.title}
-                  </h3>
+                  <h3 className="text-sm font-semibold text-white">{step.title}</h3>
                 </div>
                 <p className="text-sm leading-6 text-slate-400">{step.body}</p>
               </li>
@@ -968,12 +794,7 @@ export default function HomePage() {
         <div className="mx-auto flex max-w-[1200px] flex-col gap-10 px-6 py-12 sm:px-8 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-xs">
             <div className="flex items-center gap-2.5 font-semibold text-white">
-              <Image
-                src="/clashbar-logo.png"
-                alt=""
-                width={28}
-                height={28}
-              />
+              <Image src="/clashbar-logo.png" alt="" width={28} height={28} />
               ClashBar
             </div>
             <p className="mt-3 text-sm leading-6 text-slate-500">
@@ -984,11 +805,11 @@ export default function HomePage() {
             <FooterCol
               title="产品"
               links={[
-                { label: '功能', href: '#features' },
-                { label: '快速开始', href: '#quick-start' },
+                { label: "功能", href: "#features" },
+                { label: "快速开始", href: "#quick-start" },
                 {
-                  label: '下载',
-                  href: 'https://github.com/Sitoi/ClashBar/releases',
+                  label: "下载",
+                  href: "https://github.com/Sitoi/ClashBar/releases",
                   external: true,
                 },
               ]}
@@ -996,35 +817,33 @@ export default function HomePage() {
             <FooterCol
               title="文档"
               links={[
-                { label: '文档首页', href: '/docs' },
-                { label: '快速开始', href: '/docs/quick-start' },
-                { label: '功能总览', href: '/docs/features' },
-                { label: '日常使用', href: '/docs/daily-use' },
-                { label: '常见问题', href: '/docs/troubleshooting' },
-                { label: '关于', href: '/docs/about' },
+                { label: "快速开始", href: "/docs/quick-start" },
+                { label: "功能总览", href: "/docs/features" },
+                { label: "日常使用", href: "/docs/daily-use" },
+                { label: "常见问题", href: "/docs/troubleshooting" },
               ]}
             />
             <FooterCol
               title="社区"
               links={[
                 {
-                  label: 'GitHub',
-                  href: 'https://github.com/Sitoi/ClashBar',
+                  label: "GitHub",
+                  href: "https://github.com/Sitoi/ClashBar",
                   external: true,
                 },
                 {
-                  label: 'Releases',
-                  href: 'https://github.com/Sitoi/ClashBar/releases',
+                  label: "Releases",
+                  href: "https://github.com/Sitoi/ClashBar/releases",
                   external: true,
                 },
                 {
-                  label: 'Telegram',
-                  href: 'https://t.me/clashbars',
+                  label: "Telegram",
+                  href: "https://t.me/clashbars",
                   external: true,
                 },
                 {
-                  label: '问题反馈',
-                  href: 'https://github.com/Sitoi/ClashBar/issues',
+                  label: "问题反馈",
+                  href: "https://github.com/Sitoi/ClashBar/issues",
                   external: true,
                 },
               ]}
@@ -1038,67 +857,36 @@ export default function HomePage() {
         </div>
       </footer>
     </main>
-  )
+  );
 }
 
-function SectionHeading({
-  eyebrow,
-  title,
-  description,
-}: {
-  eyebrow: string
-  title: string
-  description: string
-}) {
+function SectionHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
   return (
     <div className="mx-auto mb-12 max-w-2xl text-center lg:mb-14">
-      <p className="text-xs font-semibold tracking-[0.16em] text-sky-300/90">
-        {eyebrow}
-      </p>
-      <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-white sm:text-4xl">
-        {title}
-      </h2>
-      <p className="mt-3.5 text-sm leading-6 text-slate-400 sm:text-[15px]">
-        {description}
-      </p>
+      <p className="text-xs font-semibold tracking-[0.16em] text-sky-300/90">{eyebrow}</p>
+      <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-white sm:text-4xl">{title}</h2>
+      <p className="mt-3.5 text-sm leading-6 text-slate-400 sm:text-[15px]">{description}</p>
     </div>
-  )
+  );
 }
 
-function FooterCol({
-  title,
-  links,
-}: {
-  title: string
-  links: { label: string; href: string; external?: boolean }[]
-}) {
+function FooterCol({ title, links }: { title: string; links: { label: string; href: string; external?: boolean }[] }) {
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-        {title}
-      </p>
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{title}</p>
       <ul className="mt-4 space-y-2.5">
         {links.map((link) => (
           <li key={link.label}>
             {link.external ? (
-              <a
-                href={link.href}
-                className="text-sm text-slate-400 transition hover:text-white"
-              >
+              <a href={link.href} className="text-sm text-slate-400 transition hover:text-white">
                 {link.label}
               </a>
-            ) : link.href.startsWith('/') ? (
-              <Link
-                href={link.href}
-                className="text-sm text-slate-400 transition hover:text-white"
-              >
+            ) : link.href.startsWith("/") ? (
+              <Link href={link.href} className="text-sm text-slate-400 transition hover:text-white">
                 {link.label}
               </Link>
             ) : (
-              <a
-                href={link.href}
-                className="text-sm text-slate-400 transition hover:text-white"
-              >
+              <a href={link.href} className="text-sm text-slate-400 transition hover:text-white">
                 {link.label}
               </a>
             )}
@@ -1106,5 +894,5 @@ function FooterCol({
         ))}
       </ul>
     </div>
-  )
+  );
 }

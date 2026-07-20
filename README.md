@@ -68,7 +68,7 @@
 
 | 客户端                 |     体积 |
 | ---------------------- | -------: |
-| ClashBar.app (No Core) |   2.7 MB |
+| ClashBar.app (No Core) |     3 MB |
 | ClashBar.app           |  14.2 MB |
 | ClashMac.app           |  75.2 MB |
 | Clash Verge.app        | 128.4 MB |

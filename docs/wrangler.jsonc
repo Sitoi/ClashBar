@@ -13,7 +13,7 @@
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "clashbar-docs"
+      "service": "clashbar"
     }
   ],
   "images": {

@@ -7,11 +7,9 @@
 # test & build
 /coverage
 /.next/
-/.open-next/
 /out/
 /build
 *.tsbuildinfo
-.wrangler
 
 # misc
 .DS_Store
@@ -26,8 +24,12 @@ yarn-error.log*
 .env*.local
 .vercel
 next-env.d.ts
-.dev-verify/
+# OpenNext
+.open-next
 
+# wrangler files
+.wrangler
 .dev.vars*
 !.dev.vars.example
+
 !.env.example

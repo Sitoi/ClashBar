@@ -14,10 +14,10 @@ export default function Layout({ children }: LayoutProps<'/'>) {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_100%_30%,rgba(99,102,241,0.10),transparent_50%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_35%_at_0%_70%,rgba(56,189,248,0.08),transparent_50%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_55%_40%_at_80%_90%,rgba(129,140,248,0.08),transparent_55%)]" />
-        <div className="clashbar-drift absolute -left-[20rem] top-[-12rem] size-[46rem] rounded-full bg-sky-400/[0.10] blur-[120px]" />
-        <div className="clashbar-drift absolute -right-[18rem] top-[18%] size-[40rem] rounded-full bg-indigo-500/[0.11] blur-[130px]" />
-        <div className="clashbar-drift absolute -left-[14rem] top-[52%] size-[36rem] rounded-full bg-cyan-400/[0.07] blur-[120px]" />
-        <div className="clashbar-drift absolute -right-[12rem] top-[78%] size-[34rem] rounded-full bg-violet-500/[0.08] blur-[120px]" />
+        <div className="absolute -left-[20rem] top-[-12rem] size-[46rem] animate-clashbar-drift rounded-full bg-sky-400/[0.10] blur-[120px] motion-reduce:animate-none" />
+        <div className="absolute -right-[18rem] top-[18%] size-[40rem] animate-clashbar-drift rounded-full bg-indigo-500/[0.11] blur-[130px] motion-reduce:animate-none" />
+        <div className="absolute -left-[14rem] top-[52%] size-[36rem] animate-clashbar-drift rounded-full bg-cyan-400/[0.07] blur-[120px] motion-reduce:animate-none" />
+        <div className="absolute -right-[12rem] top-[78%] size-[34rem] animate-clashbar-drift rounded-full bg-violet-500/[0.08] blur-[120px] motion-reduce:animate-none" />
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:64px_64px] opacity-40 [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_75%)]" />
       </div>
 

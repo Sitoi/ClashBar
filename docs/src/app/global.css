@@ -1,0 +1,39 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+
+/* Tailwind v4 theme tokens — only animation registry for utility classes */
+@theme {
+  --animate-clashbar-float: clashbar-float 6s ease-in-out infinite;
+  --animate-clashbar-float-delayed: clashbar-float 6s ease-in-out -3s infinite;
+  --animate-clashbar-drift: clashbar-drift 14s ease-in-out infinite;
+
+  @keyframes clashbar-float {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0);
+    }
+    50% {
+      transform: translate3d(0, -14px, 0);
+    }
+  }
+
+  @keyframes clashbar-drift {
+    0%,
+    100% {
+      transform: translate3d(-2%, -1%, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(3%, 3%, 0) scale(1.06);
+    }
+  }
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+html > body[data-scroll-locked] {
+  margin-right: 0px !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
