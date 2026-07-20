@@ -39,13 +39,10 @@
   <a href="https://github.com/Sitoi/ClashBar/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">
     <img alt="License" src="https://img.shields.io/github/license/Sitoi/ClashBar?style=flat-square" />
   </a>
-  <a href="https://t.me/clashbars" target="_blank" rel="noopener noreferrer">
-    <img alt="Telegram" src="https://img.shields.io/badge/Telegram-@clashbars-26A5E4?style=flat-square&logo=telegram&logoColor=white" />
-  </a>
 </p>
 
 <p>
-  🌐 <a href="https://clashbar.sitoi.cn"><strong>文档站</strong></a>
+  🌐 <a href="https://clashbar.sitoi.workers.dev"><strong>文档站</strong></a>
   ·
   📦 <a href="https://github.com/Sitoi/ClashBar/releases"><strong>Releases</strong></a>
   ·
@@ -110,7 +107,7 @@ brew uninstall --zap --cask clashbar
 4. 🎛️ 选择模式：`Rule` / `Global` / `Direct`
 5. 📶 切换节点并测速，确认可用后再开系统代理
 
-更多说明见文档站：📖 [快速开始](https://clashbar.sitoi.cn/docs/quick-start) · [功能说明](https://clashbar.sitoi.cn/docs/features) · [故障排查](https://clashbar.sitoi.cn/docs/troubleshooting)
+更多说明见文档站：📖 [快速开始](https://clashbar.sitoi.workers.dev/docs/quick-start) · [功能说明](https://clashbar.sitoi.workers.dev/docs/features) · [故障排查](https://clashbar.sitoi.workers.dev/docs/troubleshooting)
 
 ## 🗺️ 功能一览
 
@@ -136,7 +133,7 @@ make dist WITH_CORE=1      # app + dmg
 
 ## 🙌 社区
 
-- 🌐 文档：<https://clashbar.sitoi.cn>
+- 🌐 文档：<https://clashbar.sitoi.workers.dev>
 - 💬 Telegram：<https://t.me/clashbars>
 - 🐛 Issue / PR：欢迎反馈与贡献
 
