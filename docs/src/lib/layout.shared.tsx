@@ -15,23 +15,8 @@ export function baseOptions(): BaseLayoutProps {
         </span>
       ),
     },
-    links: [
-      {
-        text: "快速开始",
-        url: "/docs/quick-start",
-        active: "nested-url",
-      },
-      {
-        text: "功能总览",
-        url: "/docs/features",
-        active: "nested-url",
-      },
-      {
-        text: "关于",
-        url: "/docs/about",
-        active: "nested-url",
-      },
-    ],
+    // 文档入口统一由侧栏提供；顶栏再列一遍会在移动端抽屉里重复
+    links: [],
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
   };
 }
