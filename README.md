@@ -66,13 +66,13 @@
 
 ### 📏 体积对比（macOS Finder 显示值，仅供参考）
 
-| 客户端 | 体积 |
-| --- | ---: |
-| ClashBar.app (No Core) | 2.7 MB |
-| ClashBar.app | 14.2 MB |
-| ClashMac.app | 75.2 MB |
-| Clash Verge.app | 128.4 MB |
-| Clash Party.app | 496.7 MB |
+| 客户端                 |     体积 |
+| ---------------------- | -------: |
+| ClashBar.app (No Core) |   2.7 MB |
+| ClashBar.app           |  14.2 MB |
+| ClashMac.app           |  75.2 MB |
+| Clash Verge.app        | 128.4 MB |
+| Clash Party.app        | 496.7 MB |
 
 ## 📦 安装
 
@@ -94,6 +94,7 @@ brew uninstall --zap --cask clashbar
 ```
 
 > [!IMPORTANT]
+>
 > - ⚠️ 同一时间只让一个 mihomo / Clash 系客户端接管系统代理。
 > - 📂 系统代理依赖打包后的 `.app` 与登录项授权；请放到 `/Applications` 后再使用。
 > - 🔑 首次开启系统代理或开机启动时，在 **系统设置 → 通用 → 登录项** 允许 ClashBar。
@@ -111,13 +112,13 @@ brew uninstall --zap --cask clashbar
 
 ## 🗺️ 功能一览
 
-| 页面 | 内容 |
-| --- | --- |
-| 🧭 Proxy | 配置、模式、系统代理、节点切换、延迟与 Provider |
-| 📚 Rules | 规则统计、筛选、Provider 更新 |
-| 🌐 Connections | 连接过滤与关闭 |
-| 🪵 Logs | 级别过滤、关键词检索 |
-| ⚙️ System | 语言、状态栏、端口、`allow-lan` / `ipv6` 等 |
+| 页面           | 内容                                            |
+| -------------- | ----------------------------------------------- |
+| 🧭 Proxy       | 配置、模式、系统代理、节点切换、延迟与 Provider |
+| 📚 Rules       | 规则统计、筛选、Provider 更新                   |
+| 🌐 Connections | 连接过滤与关闭                                  |
+| 🪵 Logs        | 级别过滤、关键词检索                            |
+| ⚙️ System      | 语言、状态栏、端口、`allow-lan` / `ipv6` 等     |
 
 📁 运行时数据目录：`~/Library/Application Support/clashbar`  
 🧩 内置内核会复制到：`~/Library/Application Support/clashbar/core/mihomo`

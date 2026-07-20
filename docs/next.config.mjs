@@ -117,3 +117,5 @@ function rewriteFumadocsLoaders(nextConfig) {
 }
 
 export default rewriteFumadocsLoaders(withMDX(config))
+
+import('@opennextjs/cloudflare').then(m => m.initOpenNextCloudflareForDev());

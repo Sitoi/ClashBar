@@ -27,3 +27,7 @@ yarn-error.log*
 .vercel
 next-env.d.ts
 .dev-verify/
+
+.dev.vars*
+!.dev.vars.example
+!.env.example
