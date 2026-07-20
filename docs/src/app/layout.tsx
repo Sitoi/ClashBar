@@ -11,6 +11,10 @@ export const metadata: Metadata = {
     template: '%s | ClashBar',
   },
   description: 'ClashBar：面向 macOS 菜单栏的 Mihomo 客户端。',
+  icons: {
+    icon: [{ url: '/clashbar-logo.ico', type: 'image/x-icon' }],
+    shortcut: '/clashbar-logo.ico',
+  },
 };
 
 export default function Layout({ children }: LayoutProps<'/'>) {
