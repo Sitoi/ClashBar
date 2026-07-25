@@ -24,6 +24,8 @@
 "ui.action.show_hidden_proxy_groups" = "Show hidden proxy groups";
 "ui.action.hide_hidden_proxy_groups" = "Hide hidden proxy groups";
 "ui.action.sort_nodes_by_latency" = "Sort Nodes by Latency";
+"ui.action.show_delay_history" = "Show Last 4 Latency Tests";
+"ui.action.hide_delay_history" = "Show Latest Latency Only";
 "ui.action.sort_nodes_default" = "Default Node Order";
 "ui.action.refresh" = "Refresh";
 "ui.action.expand" = "Expand";

@@ -24,6 +24,8 @@
 "ui.action.show_hidden_proxy_groups" = "显示 hidden 代理组";
 "ui.action.hide_hidden_proxy_groups" = "隐藏 hidden 代理组";
 "ui.action.sort_nodes_by_latency" = "节点按延迟排序";
+"ui.action.show_delay_history" = "显示最近 4 次测速";
+"ui.action.hide_delay_history" = "仅显示最新测速";
 "ui.action.sort_nodes_default" = "节点默认排序";
 "ui.action.refresh" = "刷新";
 "ui.action.expand" = "展开";

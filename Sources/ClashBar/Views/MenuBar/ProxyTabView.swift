@@ -45,6 +45,7 @@ struct ProxyTabView: TranslatingView {
 
     @AppStorage("clashbar.proxy.group.sort_nodes_by_latency") var sortGroupNodesByLatency: Bool = false
     @AppStorage("clashbar.proxy.group.hide_hidden") var hideHiddenProxyGroups: Bool = true
+    @AppStorage("clashbar.proxy.group.show_delay_history") var showDelayHistory: Bool = false
     @AppStorage("clashbar.proxy.providers.collapsed") var isProxyProvidersCollapsed: Bool = false
 
     @State var copiedProxyCommandTarget: ProxyCommandCopyTarget?

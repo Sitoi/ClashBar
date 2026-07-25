@@ -235,6 +235,22 @@ extension ProxyTabView {
                                 : "ui.action.hide_hidden_proxy_groups"))
 
                     self.compactTopIcon(
+                        showDelayHistory ? "chart.bar.fill" : "chart.bar",
+                        label: tr(
+                            showDelayHistory
+                                ? "ui.action.hide_delay_history"
+                                : "ui.action.show_delay_history"),
+                        toneOverride: nativeIndigo)
+                    {
+                        showDelayHistory.toggle()
+                    }
+                    .help(
+                        tr(
+                            showDelayHistory
+                                ? "ui.action.hide_delay_history"
+                                : "ui.action.show_delay_history"))
+
+                    self.compactTopIcon(
                         "gauge",
                         label: tr("ui.action.test_latency"),
                         toneOverride: nativeTeal)
@@ -305,7 +321,10 @@ extension ProxyTabView {
 
                     Group {
                         if delayValue != nil {
-                            delayBadge(samples: delaySamples, fallbackText: delayText)
+                            delayBadge(
+                                samples: delaySamples,
+                                fallbackText: delayText,
+                                showHistory: showDelayHistory)
                         } else {
                             Text(delayText)
                                 .font(.app(size: T.FontSize.caption, weight: .regular))
@@ -573,6 +592,7 @@ private struct ProxyGroupPopoverNodeItem: View {
 
     @State private var isHovered = false
     @State private var isTestButtonHovered = false
+    @AppStorage("clashbar.proxy.group.show_delay_history") private var showDelayHistory = false
 
     private var delayValue: Int? {
         self.delaySamples.last
@@ -681,7 +701,10 @@ private struct ProxyGroupPopoverNodeItem: View {
     @ViewBuilder
     var delayMetricView: some View {
         if self.delayValue != nil {
-            self.delayBadge(samples: self.delaySamples, fallbackText: self.delayText)
+            self.delayBadge(
+                samples: self.delaySamples,
+                fallbackText: self.delayText,
+                showHistory: self.showDelayHistory)
         } else {
             Text(self.delayText)
                 .font(.app(size: T.FontSize.caption, weight: .regular))
@@ -693,10 +716,10 @@ private struct ProxyGroupPopoverNodeItem: View {
 }
 
 extension View {
-    fileprivate func delayBadge(samples: [Int], fallbackText: String) -> some View {
+    fileprivate func delayBadge(samples: [Int], fallbackText: String, showHistory: Bool) -> some View {
         let value = samples.last ?? 0
         return HStack(alignment: .center, spacing: 5) {
-            LatencySignalBars(samples: samples)
+            LatencySignalBars(samples: showHistory ? samples : Array(samples.suffix(1)), showHistory: showHistory)
             Text(value == 0 ? fallbackText : "\(value)")
                 .font(.system(size: T.FontSize.caption, weight: .medium, design: .monospaced))
                 .foregroundStyle(self.nativePrimaryLabel)
@@ -707,18 +730,26 @@ extension View {
 
 private struct LatencySignalBars: View {
     let samples: [Int]
+    var showHistory = true
 
-    private static let barCount = ProxyDelayHistory.limit
     private static let barWidth: CGFloat = 2
     private static let barSpacing: CGFloat = 1.5
     private static let heights: [CGFloat] = [4, 7, 10, 13]
 
+    private var barCount: Int {
+        self.showHistory ? ProxyDelayHistory.limit : 1
+    }
+
+    private var heights: [CGFloat] {
+        self.showHistory ? Self.heights : [Self.heights.last ?? 13]
+    }
+
     var body: some View {
         HStack(alignment: .bottom, spacing: Self.barSpacing) {
-            ForEach(0..<Self.barCount, id: \.self) { index in
+            ForEach(0..<self.barCount, id: \.self) { index in
                 RoundedRectangle(cornerRadius: 0.75, style: .continuous)
                     .fill(self.barColor(at: index))
-                    .frame(width: Self.barWidth, height: Self.heights[index])
+                    .frame(width: Self.barWidth, height: self.heights[index])
             }
         }
         .frame(height: Self.heights.last, alignment: .bottom)
@@ -727,7 +758,7 @@ private struct LatencySignalBars: View {
 
     private func barColor(at index: Int) -> Color {
         // Align samples to the right (newest under the tallest bar).
-        let offset = Self.barCount - self.samples.count
+        let offset = self.barCount - self.samples.count
         let sampleIndex = index - offset
         guard sampleIndex >= 0, sampleIndex < self.samples.count else {
             return Color(nsColor: .quaternaryLabelColor).opacity(0.35)
