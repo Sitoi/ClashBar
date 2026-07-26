@@ -550,11 +550,12 @@ private struct FrozenPopoverNodesList<Row: View>: View {
                 .padding(.horizontal, T.space6)
                 .padding(.vertical, T.space4)
         } else {
-            VStack(spacing: 0) {
+            LazyVStack(spacing: 0) {
                 ForEach(self.frozenNodes, id: \.self) { node in
                     self.row(node)
                 }
             }
+            .frame(minWidth: 260, maxWidth: .infinity)
         }
     }
 }
