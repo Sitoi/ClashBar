@@ -3,6 +3,7 @@ import Foundation
 enum AppLanguage: String, CaseIterable, Identifiable {
     case zhHans = "zh-Hans"
     case en
+    case ru
 
     var id: String {
         rawValue
@@ -14,7 +15,15 @@ enum AppLanguage: String, CaseIterable, Identifiable {
             "zh_Hans_CN"
         case .en:
             "en_US_POSIX"
+        case .ru:
+            "ru_RU"
         }
+    }
+
+    var localizationKey: String {
+        "ui.language." + rawValue
+            .replacingOccurrences(of: "-", with: "_")
+            .lowercased()
     }
 }
 

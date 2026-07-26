@@ -391,10 +391,9 @@ struct SystemTabView: TranslatingView {
                 self.settingsSelectionRow(.init(
                     title: self.tr("ui.settings.language"),
                     symbol: "character.book.closed",
-                    valueText: self.appViewModel.uiLanguage == .zhHans ? self.tr("ui.language.zh_hans") : self
-                        .tr("ui.language.en"),
+                    valueText: self.tr(self.appViewModel.uiLanguage.localizationKey),
                     options: AppLanguage.allCases,
-                    optionTitle: { $0 == .zhHans ? self.tr("ui.language.zh_hans") : self.tr("ui.language.en") },
+                    optionTitle: { self.tr($0.localizationKey) },
                     isSelected: { self.appViewModel.uiLanguage == $0 },
                     onSelect: self.appViewModel.setUILanguage))
                 self.settingsSelectionRow(.init(
