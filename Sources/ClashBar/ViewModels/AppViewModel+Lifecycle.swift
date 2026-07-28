@@ -24,29 +24,51 @@ extension AppViewModel {
             shouldResumeCoreAfterNetworkRecovery = false
         }
         coreActionState = .starting
-        defer { coreActionState = .idle }
+        var deferredAlert: (() -> Void)?
+        defer {
+            coreActionState = .idle
+            deferredAlert?()
+        }
         var settingsOverlay = currentEditableSettingsSnapshot()
         settingsOverlay = self.overlayApplyingPendingCoreFeatureRecovery(settingsOverlay)
         preserveLocalSettingsOnNextSync = true
         do {
             guard let configPath = await resolveSelectedConfigPath() else {
                 let message = tr("log.start.no_config")
-                self.reportCoreStartFailure(message: message, trigger: trigger, markFailedOnManual: false)
+                self.appendLog(level: "error", message: message)
+                if trigger == .auto {
+                    self.startupErrorMessage = message
+                    self.statusText = "Stopped"
+                    self.apiStatus = .unknown
+                }
+                deferredAlert = {
+                    self.presentCoreFailureAlert(
+                        title: self.tr("app.core.alert.start_failed.title"),
+                        message: message,
+                        dedupeKey: "core-start-failed")
+                }
                 return
             }
 
             settingsOverlay = try await prepareTunOverlayForCoreStartup(settingsOverlay)
 
-            guard await self.validateConfigBeforeCoreLaunch(configPath: configPath) else {
+            if let validationDetails = await self.configValidationFailureDetails(configPath: configPath) {
                 preserveLocalSettingsOnNextSync = false
+                let fileName = URL(fileURLWithPath: configPath).lastPathComponent
+                self.appendLog(
+                    level: "error",
+                    message: tr("log.config.validate_failed", fileName, validationDetails))
                 if trigger == .auto {
-                    let fileName = URL(fileURLWithPath: configPath).lastPathComponent
                     startupErrorMessage = tr("app.config.validation_failed.startup", fileName)
                     statusText = "Stopped"
                     apiStatus = .unknown
                 } else {
                     statusText = "Failed"
                     apiStatus = .failed
+                }
+                deferredAlert = {
+                    self.presentConfigValidationFailedAlert(
+                        fileName: fileName, details: validationDetails)
                 }
                 return
             }
@@ -68,7 +90,21 @@ extension AppViewModel {
         } catch {
             preserveLocalSettingsOnNextSync = false
             let message = tr("log.start.failed", self.coreErrorMessage(error))
-            self.reportCoreStartFailure(message: message, trigger: trigger, markFailedOnManual: true)
+            self.appendLog(level: "error", message: message)
+            if trigger == .auto {
+                self.startupErrorMessage = message
+                self.statusText = "Stopped"
+                self.apiStatus = .unknown
+            } else {
+                self.statusText = "Failed"
+                self.apiStatus = .failed
+            }
+            deferredAlert = {
+                self.presentCoreFailureAlert(
+                    title: self.tr("app.core.alert.start_failed.title"),
+                    message: message,
+                    dedupeKey: "core-start-failed")
+            }
         }
     }
 
@@ -115,17 +151,36 @@ extension AppViewModel {
         guard !self.isRemoteTarget else { return }
         guard !isCoreActionProcessing else { return }
         coreActionState = .restarting
-        defer { coreActionState = .idle }
+        var deferredAlert: (() -> Void)?
+        defer {
+            coreActionState = .idle
+            deferredAlert?()
+        }
         preserveLocalSettingsOnNextSync = true
         cancelProviderRefresh(reason: "restart requested")
         do {
             guard let configPath = await resolveSelectedConfigPath() else {
-                self.reportCoreRestartFailure(message: tr("log.start.no_config"))
+                let message = tr("log.start.no_config")
+                self.appendLog(level: "error", message: message)
+                deferredAlert = {
+                    self.presentCoreFailureAlert(
+                        title: self.tr("app.core.alert.restart_failed.title"),
+                        message: message,
+                        dedupeKey: "core-restart-failed")
+                }
                 return
             }
 
-            guard await self.validateConfigBeforeCoreLaunch(configPath: configPath) else {
+            if let validationDetails = await self.configValidationFailureDetails(configPath: configPath) {
                 preserveLocalSettingsOnNextSync = false
+                let fileName = URL(fileURLWithPath: configPath).lastPathComponent
+                self.appendLog(
+                    level: "error",
+                    message: tr("log.config.validate_failed", fileName, validationDetails))
+                deferredAlert = {
+                    self.presentConfigValidationFailedAlert(
+                        fileName: fileName, details: validationDetails)
+                }
                 return
             }
 
@@ -149,7 +204,14 @@ extension AppViewModel {
                     autoTestGroupLatencies: false))
         } catch {
             preserveLocalSettingsOnNextSync = false
-            self.reportCoreRestartFailure(message: tr("log.restart.failed", self.coreErrorMessage(error)))
+            let message = tr("log.restart.failed", self.coreErrorMessage(error))
+            self.appendLog(level: "error", message: message)
+            deferredAlert = {
+                self.presentCoreFailureAlert(
+                    title: self.tr("app.core.alert.restart_failed.title"),
+                    message: message,
+                    dedupeKey: "core-restart-failed")
+            }
         }
     }
 
