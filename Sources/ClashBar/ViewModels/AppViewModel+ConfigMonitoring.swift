@@ -31,7 +31,12 @@ extension AppViewModel {
         self.configDirectoryDebounceTask?.cancel()
         self.configDirectoryDebounceTask = Task { [weak self] in
             guard await (try? Task.sleep(nanoseconds: delayNanoseconds)) != nil else { return }
-            await self?.handleConfigDirectoryChangesIfNeeded()
+            guard let self, !Task.isCancelled else { return }
+            // 已越过防抖窗口 —— 与令牌解绑, 从此不再被后续文件事件 cancel。
+            // 否则 handleConfigDirectoryChangesIfNeeded() 里的整核重启 + 系统代理恢复
+            // 会被下一个 FSEvent 杀掉, 表现为「系统代理操作失败(cancelled)」。
+            self.configDirectoryDebounceTask = nil
+            await self.handleConfigDirectoryChangesIfNeeded()
         }
     }
 
