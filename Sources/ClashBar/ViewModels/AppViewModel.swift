@@ -331,7 +331,7 @@ final class AppViewModel: ObservableObject {
     }
 
     var isModeSwitchEnabled: Bool {
-        (self.isRemoteTarget || self.coreRepository.isRunning) && self.apiStatus == .healthy
+        (self.isRemoteTarget || self.coreRepository.isRunning) && self.apiStatus != .failed
     }
 
     var isTunToggleEnabled: Bool {

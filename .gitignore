@@ -20,3 +20,4 @@ Fix*.md
 .codegraph
 .cursor
 .pnpm-store/
+.memsearch/
