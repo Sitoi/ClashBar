@@ -442,6 +442,26 @@ extension AppViewModel {
             tunEnabled: (first?.tunEnabled ?? false) || (second?.tunEnabled ?? false))
     }
 
+    private func executeWithTimeout<T: Sendable>(
+        nanoseconds: UInt64,
+        operation: @escaping @Sendable () async throws -> T) async throws -> T
+    {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask {
+                try await operation()
+            }
+            group.addTask {
+                try await Task.sleep(nanoseconds: nanoseconds)
+                throw URLError(.timedOut)
+            }
+            guard let result = try await group.next() else {
+                throw URLError(.timedOut)
+            }
+            group.cancelAll()
+            return result
+        }
+    }
+
     private func prepareCoreFeatureRecoveryBeforeCoreTransition(
         fallbackRecovery: CoreFeatureRecoveryState,
         transitionKind: CoreTransitionKind,
@@ -464,7 +484,9 @@ extension AppViewModel {
         if runtimeRunningBeforeTransition, recovery.tunEnabled {
             if transitionKind == .stop, disableRuntimeTunBeforeStop {
                 do {
-                    try await self.applyTunRuntimeChange(enabled: false)
+                    try await self.executeWithTimeout(nanoseconds: 3_000_000_000) {
+                        try await self.applyTunRuntimeChange(enabled: false)
+                    }
                 } catch {
                     self.appendLog(
                         level: "error",
@@ -480,7 +502,9 @@ extension AppViewModel {
         defer { self.isProxySyncing = false }
 
         do {
-            try await self.applySystemProxy(enabled: false, host: self.controllerHost(), ports: .disabled)
+            try await self.executeWithTimeout(nanoseconds: 3_000_000_000) {
+                try await self.applySystemProxy(enabled: false, host: self.controllerHost(), ports: .disabled)
+            }
             self.isSystemProxyEnabled = false
             self.systemProxyActiveDisplay = nil
             self.clearSystemProxyOpenFailureHint()

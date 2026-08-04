@@ -37,9 +37,15 @@ struct BuildProxyGroupsPresentationUseCase {
             sortIndexMap[name] = index
         }
 
+        let knownGroupTypes: Set<String> = ["selector", "urltest", "url-test", "fallback", "loadbalance", "relay"]
+
         let groups = proxiesWithHealthcheckConfig
             .enumerated()
-            .filter { !$0.element.all.isEmpty }
+            .filter { item in
+                if !item.element.all.isEmpty { return true }
+                guard let type = item.element.type?.lowercased() else { return false }
+                return knownGroupTypes.contains(type)
+            }
             .sorted { lhs, rhs in
                 let lhsOrder = sortIndexMap[lhs.element.name] ?? .max
                 let rhsOrder = sortIndexMap[rhs.element.name] ?? .max
@@ -55,7 +61,8 @@ struct BuildProxyGroupsPresentationUseCase {
         var delaySamples: [String: [Int]] = [:]
         var nodeTypes: [String: String] = [:]
         for proxy in response.proxies.values {
-            if proxy.all.isEmpty, let type = proxy.type.trimmedNonEmpty {
+            let isGroup = proxy.type.map { knownGroupTypes.contains($0.lowercased()) } ?? false
+            if !isGroup && proxy.all.isEmpty, let type = proxy.type.trimmedNonEmpty {
                 nodeTypes[proxy.name] = type
             }
             if !proxy.delayHistory.isEmpty {
