@@ -4,11 +4,11 @@
 
 # ClashBar
 
-Native macOS menu bar proxy client built with `SwiftUI + AppKit`, powered by `mihomo`.  
-Lightweight, stable—manage profiles, proxies, rules, connections, and system proxy directly from your menu bar. ✨
+原生 macOS 菜单栏代理客户端，基于 `SwiftUI + AppKit`，由 `mihomo` 驱动。  
+轻量、稳定，在菜单栏完成配置、节点、规则、连接与系统代理管理。 ✨
 
 <p align="center">
-  English | <a href="README_zh.md">简体中文</a> | <a href="README_ru.md">Русский</a>
+  <a href="README.md">English</a> | 简体中文 | <a href="README_ru.md">Русский</a>
 </p>
 
 <p>
@@ -46,7 +46,7 @@ Lightweight, stable—manage profiles, proxies, rules, connections, and system p
 </p>
 
 <p>
-  🌐 <a href="https://clashbar.sitoi.workers.dev"><strong>Documentation</strong></a>
+  🌐 <a href="https://clashbar.sitoi.workers.dev"><strong>文档站</strong></a>
   ·
   📦 <a href="https://github.com/Sitoi/ClashBar/releases"><strong>Releases</strong></a>
   ·
@@ -60,17 +60,17 @@ Lightweight, stable—manage profiles, proxies, rules, connections, and system p
   <img src="./docs/public/clashbar-light.png" width="49%" alt="ClashBar Light" />
 </p>
 
-## ✨ Features
+## ✨ 特点
 
-- 🪶 **Lightweight**: Under 15 MB with embedded Core; under 3 MB without Core
-- 🧭 **Menu Bar First**: Profile import/update, proxy switching, latency testing, rules & connection diagnostics
-- 🔐 **System Integration**: System proxy, launch at startup, Keychain for sensitive data
-- 📊 **Observable**: Real-time traffic, active connections, memory usage, and log filtering
-- 🌍 **Internationalization**: English / Simplified Chinese (`zh-Hans`)
+- 🪶 **轻量**：含 Core 约 15 MB 内；去掉 Core 约 3 MB 内
+- 🧭 **菜单栏优先**：配置导入/更新、节点切换、延迟测试、规则与连接排障
+- 🔐 **系统集成**：系统代理、开机启动、Keychain 敏感信息
+- 📊 **可观测**：实时流量、连接、内存、日志过滤
+- 🌍 **中英双语**：简体中文 / English
 
-### 📏 Size Comparison (macOS Finder reported size, for reference only)
+### 📏 体积对比（macOS Finder 显示值，仅供参考）
 
-| Client | Size |
+| 客户端                 |     体积 |
 | ---------------------- | -------: |
 | ClashBar.app (No Core) |     3 MB |
 | ClashBar.app           |  14.2 MB |
@@ -78,78 +78,78 @@ Lightweight, stable—manage profiles, proxies, rules, connections, and system p
 | Clash Verge.app        | 128.4 MB |
 | Clash Party.app        | 496.7 MB |
 
-## 📦 Installation
+## 📦 安装
 
-**Requirements:** macOS 13+ 🍎
+**要求：** macOS 13+ 🍎
 
 ```sh
 brew tap Sitoi/tap
 brew install --cask clashbar
 ```
 
-Or download `.dmg` from [Releases](https://github.com/Sitoi/ClashBar/releases) and drag `ClashBar.app` into `/Applications`.
+或从 [Releases](https://github.com/Sitoi/ClashBar/releases) 下载 `.dmg`，将 `ClashBar.app` 拖入 `/Applications`。
 
-Uninstall:
+卸载：
 
 ```sh
 brew uninstall --cask clashbar
-# Clean configuration & data files as well
+# 同时清除数据
 brew uninstall --zap --cask clashbar
 ```
 
 > [!IMPORTANT]
 >
-> - ⚠️ Keep only ONE mihomo / Clash-based client managing system proxy at any given time.
-> - 📂 System proxy functionality relies on the packaged `.app` and Login Items authorization; please move it to `/Applications` before use.
-> - 🔑 When enabling system proxy or launch at startup for the first time, allow ClashBar in **System Settings → General → Login Items**.
-> - 🔄 If toggling proxy fails or behaves unexpectedly, disable and re-enable ClashBar background item in Login Items, or click `Restart` kernel in the app.
+> - ⚠️ 同一时间只让一个 mihomo / Clash 系客户端接管系统代理。
+> - 📂 系统代理依赖打包后的 `.app` 与登录项授权；请放到 `/Applications` 后再使用。
+> - 🔑 首次开启系统代理或开机启动时，在 **系统设置 → 通用 → 登录项** 允许 ClashBar。
+> - 🔄 开关异常时，先在登录项中关闭再打开 ClashBar 后台项目，或在应用内 `Restart` 内核。
 
-## 🚀 Quick Start
+## 🚀 快速上手
 
-1. 🖱️ Click the menu bar icon to open the panel
-2. 📥 Select or import configuration in the Proxy tab
-3. ▶️ Click `Start` / `Restart` to launch the core
-4. 🎛️ Select mode: `Rule` / `Global` / `Direct`
-5. 📶 Switch proxies and test latency; verify connectivity before turning on System Proxy
+1. 🖱️ 点击菜单栏图标打开面板
+2. 📥 在 Proxy 选择或导入配置
+3. ▶️ `Start` / `Restart` 启动内核
+4. 🎛️ 选择模式：`Rule` / `Global` / `Direct`
+5. 📶 切换节点并测速，确认可用后再开系统代理
 
-For more detailed guides, visit the documentation site: 📖 [Quick Start](https://clashbar.sitoi.workers.dev/docs/quick-start) · [Features](https://clashbar.sitoi.workers.dev/docs/features) · [Troubleshooting](https://clashbar.sitoi.workers.dev/docs/troubleshooting)
+更多说明见文档站：📖 [快速开始](https://clashbar.sitoi.workers.dev/docs/quick-start) · [功能说明](https://clashbar.sitoi.workers.dev/docs/features) · [故障排查](https://clashbar.sitoi.workers.dev/docs/troubleshooting)
 
-## 🗺️ Feature Overview
+## 🗺️ 功能一览
 
-| Page | Content |
+| 页面           | 内容                                            |
 | -------------- | ----------------------------------------------- |
-| 🧭 Proxy | Profiles, modes, system proxy, node switching, latency testing & providers |
-| 📚 Rules | Rule statistics, filtering, provider updates |
-| 🌐 Connections | Connection filtering and termination |
-| 🪵 Logs | Log level filtering, keyword search |
-| ⚙️ System | Language, status bar, ports, `allow-lan` / `ipv6`, etc. |
+| 🧭 Proxy       | 配置、模式、系统代理、节点切换、延迟与 Provider |
+| 📚 Rules       | 规则统计、筛选、Provider 更新                   |
+| 🌐 Connections | 连接过滤与关闭                                  |
+| 🪵 Logs        | 级别过滤、关键词检索                            |
+| ⚙️ System      | 语言、状态栏、端口、`allow-lan` / `ipv6` 等     |
 
-📁 Runtime data directory: `~/Library/Application Support/clashbar`  
-🧩 Embedded core binary is copied to: `~/Library/Application Support/clashbar/core/mihomo`
+📁 运行时数据目录：`~/Library/Application Support/clashbar`  
+🧩 内置内核会复制到：`~/Library/Application Support/clashbar/core/mihomo`
 
-## 🛠️ Development & Building
+## 🛠️ 开发构建
 
 ```sh
-# Prerequisites: Xcode / Swift 6.2+, macOS 13+
-make build                 # Build dist/ClashBar.app (without embedded Core by default)
-make build WITH_CORE=1     # Build with embedded mihomo core
-make dist WITH_CORE=1      # Create app + dmg bundle
+# 依赖：Xcode / Swift 6.2+、macOS 13+
+make build                 # 产出 dist/ClashBar.app（默认不含 Core）
+make build WITH_CORE=1     # 打包内置 mihomo
+make dist WITH_CORE=1      # app + dmg
 ```
 
-## 🙌 Community
+## 🙌 社区
 
-- 🌐 Documentation: <https://clashbar.sitoi.workers.dev>
-- 💬 Telegram: <https://t.me/clashbars>
-- 🐛 Issues / PRs: Feedback and contributions are welcome!
+- 🌐 文档：<https://clashbar.sitoi.workers.dev>
+- 💬 Telegram：<https://t.me/clashbars>
+- 🐛 Issue / PR：欢迎反馈与贡献
 
-## 👥 Contributors
+## 👥 贡献者
 
 [![Contributors](https://contrib.rocks/image?repo=Sitoi/ClashBar)](https://github.com/Sitoi/ClashBar/graphs/contributors)
 
-## 🙏 Acknowledgements
+## 🙏 致谢
 
-Thanks to [MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo) for providing the underlying core capabilities.
+感谢 [MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo) 提供内核能力。
 
-## ⭐ Star History
+## ⭐ Star 趋势
 
 [![Star History Chart](https://api.star-history.com/svg?repos=Sitoi/ClashBar&type=date&legend=top-left)](https://www.star-history.com/#Sitoi/ClashBar&type=date&legend=top-left)
