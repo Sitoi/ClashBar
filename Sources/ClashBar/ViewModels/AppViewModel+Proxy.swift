@@ -74,15 +74,18 @@ extension AppViewModel {
         }
     }
 
-    func copyProxyCommand() {
+    @discardableResult
+    func copyProxyCommand() -> Bool {
         self.copyLocalProxyCommand()
     }
 
-    func copyLocalProxyCommand() {
+    @discardableResult
+    func copyLocalProxyCommand() -> Bool {
         self.copyProxyCommand(host: "127.0.0.1")
     }
 
-    func copyManagedEndpointProxyCommand() {
+    @discardableResult
+    func copyManagedEndpointProxyCommand() -> Bool {
         self.copyProxyCommand(host: self.managedEndpointProxyCommandHost())
     }
 
@@ -105,13 +108,16 @@ extension AppViewModel {
         self.managedEndpointProxyCommandHost()
     }
 
-    private func copyProxyCommand(host: String) {
+    private func copyProxyCommand(host: String) -> Bool {
         let ports = currentSystemProxyPortsFromState()
         let httpPort = ports.httpPort ?? ports.socksPort ?? effectiveMixedPort()
         let socksPort = ports.socksPort ?? ports.httpPort ?? httpPort
         let script = BuildTerminalProxyCommandUseCase().execute(host: host, httpPort: httpPort, socksPort: socksPort)
-        copyTextToPasteboard(script)
-        appendLog(level: "info", message: tr("log.proxy_export.copied"))
+        let copied = copyTextToPasteboard(script)
+        if copied {
+            appendLog(level: "info", message: tr("log.proxy_export.copied"))
+        }
+        return copied
     }
 
     func switchProxy(group: String, target: String) async {
@@ -370,10 +376,11 @@ extension AppViewModel {
         self.copyAndLog(self.formattedLogEntry(log), message: tr("log.logs.copied_entry"))
     }
 
-    func copyTextToPasteboard(_ text: String) {
+    @discardableResult
+    func copyTextToPasteboard(_ text: String) -> Bool {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
+        return pasteboard.setString(text, forType: .string)
     }
 
     func formattedLogEntry(_ log: AppErrorLogEntry) -> String {

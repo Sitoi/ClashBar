@@ -100,6 +100,13 @@
 "ui.quick.ssid.disable_auto_switch" = "Disable Wi-Fi Auto Switch";
 "ui.quick.ssid.usage_hint" = "After enabling, right-click a config file to bind.";
 "ui.banner.ssid_strategy.title" = "ClashBar Config Auto Switch";
+"ui.banner.quick_action.title" = "ClashBar Quick Action";
+"ui.banner.copy_proxy.success" = "Proxy command copied";
+"ui.banner.copy_proxy.failure" = "Failed to copy proxy command";
+"ui.banner.tun.enabled" = "TUN mode enabled";
+"ui.banner.tun.disabled" = "TUN mode disabled";
+"ui.banner.tun.failure" = "Failed to switch TUN mode";
+"ui.banner.check_logs" = "Check the logs for details";
 "ui.system_proxy.remote_target_warning" = "System proxy currently points to a remote core. Make sure the remote endpoint remains reachable.";
 
 "ui.section.proxy_providers" = "Proxy Providers";

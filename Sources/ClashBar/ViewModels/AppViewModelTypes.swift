@@ -178,12 +178,32 @@ struct MenuBarDisplay: Equatable {
     let isRunning: Bool
 }
 
+enum StatusItemBannerStyle: Equatable {
+    case success
+    case error
+}
+
 struct StatusItemBanner: Equatable, Identifiable {
     let id = UUID()
+    let style: StatusItemBannerStyle
     let symbolName: String
     let title: String
     let primaryDetail: String
     let secondaryDetail: String?
+
+    init(
+        style: StatusItemBannerStyle = .success,
+        symbolName: String,
+        title: String,
+        primaryDetail: String,
+        secondaryDetail: String?)
+    {
+        self.style = style
+        self.symbolName = symbolName
+        self.title = title
+        self.primaryDetail = primaryDetail
+        self.secondaryDetail = secondaryDetail
+    }
 }
 
 struct CoreFeatureRecoveryState {

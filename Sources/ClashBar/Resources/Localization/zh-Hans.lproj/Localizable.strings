@@ -102,6 +102,13 @@
 "ui.quick.ssid.disable_auto_switch" = "关闭 Wi-Fi 自动切换";
 "ui.quick.ssid.usage_hint" = "开启后右键配置文件绑定";
 "ui.banner.ssid_strategy.title" = "ClashBar 配置自动切换";
+"ui.banner.quick_action.title" = "ClashBar 快捷操作";
+"ui.banner.copy_proxy.success" = "代理命令已复制";
+"ui.banner.copy_proxy.failure" = "复制代理命令失败";
+"ui.banner.tun.enabled" = "TUN 模式已开启";
+"ui.banner.tun.disabled" = "TUN 模式已关闭";
+"ui.banner.tun.failure" = "TUN 模式切换失败";
+"ui.banner.check_logs" = "请查看日志了解详情";
 "ui.system_proxy.remote_target_warning" = "系统代理当前指向远程内核，请确认远程地址可达。";
 
 "ui.section.proxy_providers" = "代理提供者";

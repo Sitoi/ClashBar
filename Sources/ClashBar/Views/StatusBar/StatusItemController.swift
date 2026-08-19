@@ -60,7 +60,7 @@ private struct StatusItemBannerRootView: View {
 
                 Spacer(minLength: 0)
 
-                self.successBadge
+                self.resultBadge
                     .frame(width: 48, alignment: .trailing)
             }
 
@@ -163,23 +163,28 @@ private struct StatusItemBannerRootView: View {
         }
     }
 
-    private var successBadge: some View {
+    private var resultBadge: some View {
         ZStack {
             Circle()
-                .stroke(self.nativePositive.opacity(0.9), lineWidth: 2.2)
+                .stroke(self.resultColor.opacity(0.9), lineWidth: 2.2)
                 .background(
                     Circle()
-                        .fill(self.nativePositive.opacity(0.12)))
+                        .fill(self.resultColor.opacity(0.12)))
 
-            Image(systemName: "checkmark")
+            Image(systemName: self.banner.style == .success ? "checkmark" : "xmark")
                 .font(.app(size: T.FontSize.subheadline, weight: .bold))
-                .foregroundStyle(self.nativePositive.opacity(T.Opacity.solid))
+                .foregroundStyle(self.resultColor.opacity(T.Opacity.solid))
         }
         .frame(width: 26, height: 26)
     }
 
+    private var resultColor: Color {
+        self.banner.style == .success ? self.nativePositive : self.nativeCritical
+    }
+
     private var panelTint: Color {
-        self.nativeAccent.opacity(self.isDarkAppearance ? 0.04 : 0.025)
+        let color = self.banner.style == .success ? self.nativeAccent : self.nativeCritical
+        return color.opacity(self.isDarkAppearance ? 0.04 : 0.025)
     }
 
     private var logoBackground: some ShapeStyle {

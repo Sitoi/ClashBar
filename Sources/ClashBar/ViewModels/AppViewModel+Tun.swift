@@ -13,9 +13,10 @@ enum TunModeError: LocalizedError {
 
 @MainActor
 extension AppViewModel {
-    func toggleTunMode(_ enabled: Bool) async {
-        guard !isTunSyncing else { return }
-        guard enabled != isTunEnabled else { return }
+    @discardableResult
+    func toggleTunMode(_ enabled: Bool) async -> Bool {
+        guard !isTunSyncing else { return false }
+        guard enabled != isTunEnabled else { return true }
 
         isTunSyncing = true
         defer { isTunSyncing = false }
@@ -25,7 +26,7 @@ extension AppViewModel {
                 try await self.ensureTunPermissions(requestIfMissing: true)
             }
 
-            guard self.isRemoteTarget || self.isRuntimeRunning else { return }
+            guard self.isRemoteTarget || self.isRuntimeRunning else { return false }
             try await self.patchTunConfig(enable: enabled)
 
             let config = try await fetchRuntimeConfigSnapshot()
@@ -37,14 +38,17 @@ extension AppViewModel {
                 appendLog(
                     level: "info",
                     message: tr("log.tun.toggled", enabled ? tr("log.tun.enabled") : tr("log.tun.disabled")))
+                return true
             } else {
                 appendLog(
                     level: "error",
                     message: tr("log.tun.toggle_failed", tr("app.tun.error.runtime_state_mismatch")))
+                return false
             }
         } catch {
             appendLog(level: "error", message: tr("log.tun.toggle_failed", self.tunErrorMessage(error)))
             await self.refreshTunStatusFromRuntimeConfig()
+            return false
         }
     }
 
