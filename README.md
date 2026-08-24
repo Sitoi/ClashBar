@@ -148,4 +148,4 @@ make dist WITH_CORE=1      # app + dmg
 
 ## ⭐ Star 趋势
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Sitoi/ClashBar&type=date&legend=top-left)](https://www.star-history.com/#Sitoi/ClashBar&type=date&legend=top-left)
+[![Star History Chart](https://star-history.dera.page/svg?repos=Sitoi/ClashBar&type=date&legend=top-left)](https://star-history.dera.page/#Sitoi/ClashBar&type=date&legend=top-left)
