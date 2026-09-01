@@ -52,7 +52,6 @@
 "ui.action.open_core_directory" = "打开内核目录";
 "ui.action.enable_tun" = "开启 TUN 模式";
 "ui.action.disable_tun" = "关闭 TUN 模式";
-"ui.action.reload_config" = "重新加载配置";
 "ui.action.upgrade_core" = "升级 Core";
 
 "ui.mode.rule" = "规则";
@@ -105,6 +104,7 @@
 "ui.quick.ssid.usage_hint" = "开启后右键配置文件绑定";
 "ui.banner.ssid_strategy.title" = "ClashBar 配置自动切换";
 "ui.banner.copied.title" = "终端代理命令已复制";
+"ui.banner.mode.title" = "运行模式";
 "ui.system_proxy.remote_target_warning" = "系统代理当前指向远程内核，请确认远程地址可达。";
 
 "ui.section.proxy_providers" = "代理提供者";
