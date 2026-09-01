@@ -168,7 +168,10 @@ final class AppViewModel: ObservableObject {
         set { self.proxyStore.isProxySyncing = newValue }
     }
 
-    @Published var isTunEnabled: Bool = false
+    @Published var isTunEnabled: Bool = false {
+        didSet { self.refreshMenuBarDisplaySnapshotIfNeeded() }
+    }
+
     @Published var isTunSyncing: Bool = false
 
     @Published var apiStatus: APIHealth = .unknown {
@@ -205,7 +208,8 @@ final class AppViewModel: ObservableObject {
         mode: .iconOnly,
         symbolName: "bolt.slash.circle",
         speedLines: nil,
-        isRunning: false)
+        isRunning: false,
+        isTunEnabled: false)
 
     @Published var settingsAllowLan: Bool = false
     @Published var settingsIPv6: Bool = false
@@ -303,7 +307,8 @@ final class AppViewModel: ObservableObject {
             mode: mode,
             symbolName: mode == .speedOnly ? nil : self.menuBarSymbolName,
             speedLines: mode == .iconOnly ? nil : self.menuBarSpeedLines,
-            isRunning: self.isRuntimeRunning)
+            isRunning: self.isRuntimeRunning,
+            isTunEnabled: self.isTunEnabled)
     }
 
     func compactMenuBarRate(_ bytesPerSecond: Int64) -> String {

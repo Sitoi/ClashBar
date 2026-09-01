@@ -176,6 +176,7 @@ struct MenuBarDisplay: Equatable {
     let symbolName: String?
     let speedLines: MenuBarSpeedLines?
     let isRunning: Bool
+    let isTunEnabled: Bool
 }
 
 struct StatusItemBanner: Equatable, Identifiable {

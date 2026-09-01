@@ -14,10 +14,15 @@ enum BrandIcon {
         "Assets.xcassets/BrandSleep.imageset/icon-sleep.png",
         "Resources/Assets.xcassets/BrandSleep.imageset/icon-sleep.png",
     ]
+    private static let tunRelativePaths = [
+        "Assets.xcassets/BrandTun.imageset/icon-tun.png",
+        "Resources/Assets.xcassets/BrandTun.imageset/icon-tun.png",
+    ]
 
     static let image: NSImage? = loadImage(relativePaths: logoRelativePaths)
     static let runImage: NSImage? = loadImage(relativePaths: runRelativePaths)
     static let sleepImage: NSImage? = loadImage(relativePaths: sleepRelativePaths)
+    static let tunImage: NSImage? = loadImage(relativePaths: tunRelativePaths)
 
     private static func loadImage(relativePaths: [String]) -> NSImage? {
         for bundle in AppResourceBundleLocator.candidateBundles() {

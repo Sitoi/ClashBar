@@ -57,6 +57,46 @@ enum MihomoConfigValidationError: LocalizedError {
     }
 }
 
+/// Caps how much core output reaches the app so a spinning mihomo (dead TUN fd
+/// re-logging `batch read packet: ...` at ~160k lines/s) cannot pile up unbounded
+/// main-actor tasks and file writes. Collapses consecutive duplicates, caps the
+/// line rate per window, and reports how many lines it dropped.
+/// Unlocked like `LineAccumulator`: one instance per pipe, and `readabilityHandler`
+/// is already serial per handle.
+private final class LogFloodGate: @unchecked Sendable {
+    private let maxLinesPerWindow = 200
+    private let windowNanoseconds: UInt64 = 1_000_000_000
+    private var windowStart: UInt64 = 0
+    private var emitted = 0
+    private var dropped = 0
+    private var lastLine: String?
+
+    /// ponytail: the drop notice rides out with the next accepted line instead of
+    /// on a timer, so a flood that stops dead reports on the core's next log line.
+    func accept(_ lines: [String], now: UInt64 = DispatchTime.now().uptimeNanoseconds) -> [String] {
+        var accepted: [String] = []
+        for line in lines {
+            if now &- self.windowStart >= self.windowNanoseconds {
+                if self.dropped > 0 {
+                    accepted.append("[mihomo log] dropped \(self.dropped) flooding lines")
+                }
+                self.windowStart = now
+                self.emitted = 0
+                self.dropped = 0
+                self.lastLine = nil
+            }
+            guard line != self.lastLine, self.emitted < self.maxLinesPerWindow else {
+                self.dropped += 1
+                continue
+            }
+            self.lastLine = line
+            self.emitted += 1
+            accepted.append(line)
+        }
+        return accepted
+    }
+}
+
 private final class LineAccumulator: @unchecked Sendable {
     private var carry = Data()
 
@@ -621,6 +661,7 @@ final class MihomoProcessManager: MihomoControlling, @unchecked Sendable {
 
     private func wireLogPipe(_ handle: FileHandle) {
         let accumulator = LineAccumulator()
+        let gate = LogFloodGate()
         handle.readabilityHandler = { [weak self] readable in
             let data = readable.availableData
             if data.isEmpty {
@@ -629,7 +670,7 @@ final class MihomoProcessManager: MihomoControlling, @unchecked Sendable {
                 }
                 return
             }
-            for line in accumulator.append(data) {
+            for line in gate.accept(accumulator.append(data)) {
                 self?.onLog?(line)
             }
         }

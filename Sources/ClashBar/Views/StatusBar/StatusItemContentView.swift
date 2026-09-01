@@ -32,6 +32,8 @@ final class StatusItemContentView: NSView {
         source: BrandIcon.runImage, size: brandIconRenderSize)
     private lazy var sleepBrandStatusIconImage: NSImage? = Self.makeBrandStatusIconImage(
         source: BrandIcon.sleepImage, size: brandIconRenderSize)
+    private lazy var tunBrandStatusIconImage: NSImage? = Self.makeBrandStatusIconImage(
+        source: BrandIcon.tunImage, size: brandIconRenderSize)
     private static let brandIconRenderScales: [CGFloat] = [1, 2, 3]
 
     var usesBrandIcon: Bool {
@@ -63,7 +65,8 @@ final class StatusItemContentView: NSView {
             mode: .iconOnly,
             symbolName: "bolt.slash.circle",
             speedLines: nil,
-            isRunning: false)
+            isRunning: false,
+            isTunEnabled: false)
         switch display.mode {
         case .iconOnly:
             return self.statusItemHorizontalPadding * 2 + self.iconSize
@@ -86,7 +89,9 @@ final class StatusItemContentView: NSView {
         self.cachedDownLine = display.speedLines?.down ?? ""
 
         let shouldShowIcon = display.mode != .speedOnly
-        if shouldShowIcon, let brandIcon = self.brandStatusIconImage(isRunning: display.isRunning) {
+        if shouldShowIcon, let brandIcon = self.brandStatusIconImage(
+            isRunning: display.isRunning, isTunEnabled: display.isTunEnabled)
+        {
             if self.iconView.image !== brandIcon {
                 self.iconView.image = brandIcon
             }
@@ -165,8 +170,12 @@ final class StatusItemContentView: NSView {
         }
     }
 
-    private func brandStatusIconImage(isRunning: Bool) -> NSImage? {
-        isRunning ? self.runBrandStatusIconImage : self.sleepBrandStatusIconImage
+    private func brandStatusIconImage(isRunning: Bool, isTunEnabled: Bool) -> NSImage? {
+        guard isRunning else { return self.sleepBrandStatusIconImage }
+        // Fall back to the run icon so toggling TUN never swaps brand art for an SF Symbol.
+        return isTunEnabled
+            ? (self.tunBrandStatusIconImage ?? self.runBrandStatusIconImage)
+            : self.runBrandStatusIconImage
     }
 
     private func makeSpeedTemplateImage(upLine: String, downLine: String) -> NSImage {

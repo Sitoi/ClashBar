@@ -24,9 +24,9 @@
 "ui.action.show_hidden_proxy_groups" = "显示 hidden 代理组";
 "ui.action.hide_hidden_proxy_groups" = "隐藏 hidden 代理组";
 "ui.action.sort_nodes_by_latency" = "节点按延迟排序";
-"ui.action.show_delay_history" = "显示最近 4 次测速";
-"ui.action.hide_delay_history" = "仅显示最新测速";
 "ui.action.sort_nodes_default" = "节点默认排序";
+"ui.action.show_latency_history" = "显示最近 4 次延迟";
+"ui.action.hide_latency_history" = "只显示最新延迟";
 "ui.action.refresh" = "刷新";
 "ui.action.expand" = "展开";
 "ui.action.collapse" = "折叠";
@@ -104,6 +104,7 @@
 "ui.quick.ssid.disable_auto_switch" = "关闭 Wi-Fi 自动切换";
 "ui.quick.ssid.usage_hint" = "开启后右键配置文件绑定";
 "ui.banner.ssid_strategy.title" = "ClashBar 配置自动切换";
+"ui.banner.copied.title" = "终端代理命令已复制";
 "ui.system_proxy.remote_target_warning" = "系统代理当前指向远程内核，请确认远程地址可达。";
 
 "ui.section.proxy_providers" = "代理提供者";
