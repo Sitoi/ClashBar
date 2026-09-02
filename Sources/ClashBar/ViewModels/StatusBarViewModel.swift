@@ -53,6 +53,7 @@ final class StatusBarViewModel: ObservableObject {
             mode: baseline.mode,
             symbolName: baseline.symbolName,
             speedLines: speedLines,
-            isRunning: baseline.isRunning)
+            isRunning: baseline.isRunning,
+            isTunEnabled: baseline.isTunEnabled)
     }
 }

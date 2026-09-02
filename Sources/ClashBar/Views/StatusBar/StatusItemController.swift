@@ -5,13 +5,6 @@ import SwiftUI
 // swiftlint:disable:next type_name
 private typealias T = MenuBarLayoutTokens
 
-private struct StatusItemRenderKey: Equatable {
-    let mode: StatusBarDisplayMode
-    let symbolName: String?
-    let speedLines: MenuBarSpeedLines?
-    let isRunning: Bool
-}
-
 private final class FloatingPanel: NSPanel {
     override var canBecomeKey: Bool {
         true
@@ -225,9 +218,9 @@ final class StatusItemController: NSObject {
     private var bannerCancellable: AnyCancellable?
     private var refreshWorkItem: DispatchWorkItem?
     private var pendingDisplay: MenuBarDisplay?
-    private var pendingRenderKey: StatusItemRenderKey?
+    private var pendingRenderKey: MenuBarDisplay?
     private var lastDisplayRefreshAt: Date = .distantPast
-    private var lastRenderedKey: StatusItemRenderKey?
+    private var lastRenderedKey: MenuBarDisplay?
     private var globalEventMonitor: Any?
     private var screenParametersObserver: Any?
     private var lockedPanelOriginX: CGFloat?
@@ -484,7 +477,7 @@ final class StatusItemController: NSObject {
         self.lastDisplayRefreshAt = Date()
     }
 
-    private func refreshDisplay(_ display: MenuBarDisplay, renderKey: StatusItemRenderKey) {
+    private func refreshDisplay(_ display: MenuBarDisplay, renderKey: MenuBarDisplay) {
         guard renderKey != self.lastRenderedKey else { return }
 
         self.statusContentView.apply(display: display)
@@ -536,29 +529,15 @@ final class StatusItemController: NSObject {
         }
     }
 
-    private func renderKey(for display: MenuBarDisplay) -> StatusItemRenderKey {
-        let shouldTrackSymbol = !self.statusContentView.usesBrandIcon
-        let symbolName = shouldTrackSymbol ? display.symbolName : nil
-        switch display.mode {
-        case .iconOnly:
-            return StatusItemRenderKey(
-                mode: .iconOnly,
-                symbolName: symbolName,
-                speedLines: nil,
-                isRunning: display.isRunning)
-        case .iconAndSpeed:
-            return StatusItemRenderKey(
-                mode: .iconAndSpeed,
-                symbolName: symbolName,
-                speedLines: display.speedLines,
-                isRunning: display.isRunning)
-        case .speedOnly:
-            return StatusItemRenderKey(
-                mode: .speedOnly,
-                symbolName: nil,
-                speedLines: display.speedLines,
-                isRunning: display.isRunning)
-        }
+    private func renderKey(for display: MenuBarDisplay) -> MenuBarDisplay {
+        // Brand art ignores symbolName, so don't let it churn the render key.
+        guard self.statusContentView.usesBrandIcon else { return display }
+        return MenuBarDisplay(
+            mode: display.mode,
+            symbolName: nil,
+            speedLines: display.speedLines,
+            isRunning: display.isRunning,
+            isTunEnabled: display.isTunEnabled)
     }
 
     private func startGlobalMonitor() {

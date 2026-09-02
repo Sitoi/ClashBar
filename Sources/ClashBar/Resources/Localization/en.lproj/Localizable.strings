@@ -25,6 +25,8 @@
 "ui.action.hide_hidden_proxy_groups" = "Hide hidden proxy groups";
 "ui.action.sort_nodes_by_latency" = "Sort Nodes by Latency";
 "ui.action.sort_nodes_default" = "Default Node Order";
+"ui.action.show_latency_history" = "Show Last 4 Latencies";
+"ui.action.hide_latency_history" = "Show Latest Latency Only";
 "ui.action.refresh" = "Refresh";
 "ui.action.expand" = "Expand";
 "ui.action.collapse" = "Collapse";
@@ -48,7 +50,6 @@
 "ui.action.open_core_directory" = "Open Core Directory";
 "ui.action.enable_tun" = "Enable TUN Mode";
 "ui.action.disable_tun" = "Disable TUN Mode";
-"ui.action.reload_config" = "Reload Config";
 "ui.action.upgrade_core" = "Upgrade Core";
 
 "ui.mode.rule" = "Rule";
@@ -100,6 +101,8 @@
 "ui.quick.ssid.disable_auto_switch" = "Disable Wi-Fi Auto Switch";
 "ui.quick.ssid.usage_hint" = "After enabling, right-click a config file to bind.";
 "ui.banner.ssid_strategy.title" = "ClashBar Config Auto Switch";
+"ui.banner.copied.title" = "Terminal Proxy Command Copied";
+"ui.banner.mode.title" = "Proxy Mode";
 "ui.system_proxy.remote_target_warning" = "System proxy currently points to a remote core. Make sure the remote endpoint remains reachable.";
 
 "ui.section.proxy_providers" = "Proxy Providers";

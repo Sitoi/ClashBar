@@ -31,6 +31,10 @@ extension AppViewModel {
         self.configDirectoryDebounceTask?.cancel()
         self.configDirectoryDebounceTask = Task { [weak self] in
             guard await (try? Task.sleep(nanoseconds: delayNanoseconds)) != nil else { return }
+            // ponytail: release the debounce slot before handling. The core writes into the config
+            // directory while restarting, and that FS event would otherwise cancel *this* task
+            // mid-restart, surfacing as URLError.cancelled on the system-proxy restore.
+            self?.configDirectoryDebounceTask = nil
             await self?.handleConfigDirectoryChangesIfNeeded()
         }
     }

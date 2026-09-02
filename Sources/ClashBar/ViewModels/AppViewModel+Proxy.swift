@@ -112,6 +112,12 @@ extension AppViewModel {
         let script = BuildTerminalProxyCommandUseCase().execute(host: host, httpPort: httpPort, socksPort: socksPort)
         copyTextToPasteboard(script)
         appendLog(level: "info", message: tr("log.proxy_export.copied"))
+        // Copying is otherwise invisible when triggered by ⌘C with the panel closed.
+        self.statusItemBanner = StatusItemBanner(
+            symbolName: "doc.on.clipboard.fill",
+            title: tr("ui.banner.copied.title"),
+            primaryDetail: "\(host):\(httpPort)",
+            secondaryDetail: nil)
     }
 
     func switchProxy(group: String, target: String) async {

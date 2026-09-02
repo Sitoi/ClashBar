@@ -219,6 +219,22 @@ extension ProxyTabView {
                                 : "ui.action.sort_nodes_by_latency"))
 
                     self.compactTopIcon(
+                        showLatencyHistory ? "chart.bar.xaxis" : "chart.bar",
+                        label: tr(
+                            showLatencyHistory
+                                ? "ui.action.hide_latency_history"
+                                : "ui.action.show_latency_history"),
+                        toneOverride: nativeTeal)
+                    {
+                        showLatencyHistory.toggle()
+                    }
+                    .help(
+                        tr(
+                            showLatencyHistory
+                                ? "ui.action.hide_latency_history"
+                                : "ui.action.show_latency_history"))
+
+                    self.compactTopIcon(
                         hideHiddenProxyGroups ? "eye.slash" : "eye",
                         label: tr(
                             hideHiddenProxyGroups
@@ -305,7 +321,10 @@ extension ProxyTabView {
 
                     Group {
                         if delayValue != nil {
-                            delayBadge(samples: delaySamples, fallbackText: delayText)
+                            delayBadge(
+                                samples: delaySamples,
+                                fallbackText: delayText,
+                                showsHistory: showLatencyHistory)
                         } else {
                             Text(delayText)
                                 .font(.app(size: T.FontSize.caption, weight: .regular))
@@ -573,6 +592,7 @@ private struct ProxyGroupPopoverNodeItem: View {
 
     @State private var isHovered = false
     @State private var isTestButtonHovered = false
+    @AppStorage("clashbar.proxy.group.show_latency_history") private var showLatencyHistory: Bool = false
 
     private var delayValue: Int? {
         self.delaySamples.last
@@ -681,7 +701,10 @@ private struct ProxyGroupPopoverNodeItem: View {
     @ViewBuilder
     var delayMetricView: some View {
         if self.delayValue != nil {
-            self.delayBadge(samples: self.delaySamples, fallbackText: self.delayText)
+            self.delayBadge(
+                samples: self.delaySamples,
+                fallbackText: self.delayText,
+                showsHistory: self.showLatencyHistory)
         } else {
             Text(self.delayText)
                 .font(.app(size: T.FontSize.caption, weight: .regular))
@@ -693,10 +716,10 @@ private struct ProxyGroupPopoverNodeItem: View {
 }
 
 extension View {
-    fileprivate func delayBadge(samples: [Int], fallbackText: String) -> some View {
+    fileprivate func delayBadge(samples: [Int], fallbackText: String, showsHistory: Bool) -> some View {
         let value = samples.last ?? 0
         return HStack(alignment: .center, spacing: 5) {
-            LatencySignalBars(samples: samples)
+            LatencySignalBars(samples: samples, showsHistory: showsHistory)
             Text(value == 0 ? fallbackText : "\(value)")
                 .font(.system(size: T.FontSize.caption, weight: .medium, design: .monospaced))
                 .foregroundStyle(self.nativePrimaryLabel)
@@ -707,15 +730,21 @@ extension View {
 
 private struct LatencySignalBars: View {
     let samples: [Int]
+    let showsHistory: Bool
 
     private static let barCount = ProxyDelayHistory.limit
     private static let barWidth: CGFloat = 2
     private static let barSpacing: CGFloat = 1.5
     private static let heights: [CGFloat] = [4, 7, 10, 13]
 
+    /// Samples are right-aligned, so the last bar is both the tallest and the newest.
+    private var firstVisibleIndex: Int {
+        self.showsHistory ? 0 : Self.barCount - 1
+    }
+
     var body: some View {
         HStack(alignment: .bottom, spacing: Self.barSpacing) {
-            ForEach(0..<Self.barCount, id: \.self) { index in
+            ForEach(self.firstVisibleIndex..<Self.barCount, id: \.self) { index in
                 RoundedRectangle(cornerRadius: 0.75, style: .continuous)
                     .fill(self.barColor(at: index))
                     .frame(width: Self.barWidth, height: Self.heights[index])

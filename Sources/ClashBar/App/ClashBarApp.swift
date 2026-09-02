@@ -5,76 +5,139 @@ import SwiftUI
 struct ClashBarApp: App {
     @NSApplicationDelegateAdaptor(ClashBarAppDelegate.self) private var appDelegate
 
-    private var session: AppViewModel {
-        self.appDelegate.appViewModel
-    }
-
     var body: some Scene {
         Settings { EmptyView() }
             .commands {
-                CommandGroup(replacing: .appSettings) {
-                    Button(self.tr("ui.tab.system")) {
-                        self.appDelegate.showSettingsPanel()
-                    }
-                    .keyboardShortcut(",", modifiers: .command)
-                }
+                AppCommands(session: self.appDelegate.appViewModel, appDelegate: self.appDelegate)
+            }
+    }
+}
 
-                CommandMenu(self.tr("ui.menu.quick")) {
-                    Button(self.tr("ui.quick.system_proxy")) {
-                        Task { await self.session.toggleSystemProxy(!self.session.isSystemProxyEnabled) }
-                    }
-                    .keyboardShortcut("S", modifiers: .command)
+/// Menu commands have to live in a `Commands` type that observes the session. `App` itself has
+/// no observation, so building them inline froze every `.disabled(...)` and label at their
+/// launch-time values — the core always looked stopped and ⌘E stayed permanently disabled.
+private struct AppCommands: Commands {
+    @ObservedObject var session: AppViewModel
+    let appDelegate: ClashBarAppDelegate
 
-                    Button(self.session.isTunEnabled ? self.tr("ui.action.disable_tun") : self
-                        .tr("ui.action.enable_tun"))
-                    {
-                        Task { await self.session.toggleTunMode(!self.session.isTunEnabled) }
-                    }
-                    .keyboardShortcut("E", modifiers: .command)
-                    .disabled(!self.session.isTunToggleEnabled)
+    var body: some Commands {
+        CommandGroup(replacing: .appSettings) {
+            Button(self.tr("ui.tab.system")) {
+                self.appDelegate.showSettingsPanel()
+            }
+            .keyboardShortcut(",", modifiers: .command)
+        }
 
-                    Divider()
-
-                    // ponytail: ⌘C shadows Edit > Copy while the app is frontmost; ⌘⇧C if that bites
-                    Button(self.tr("ui.quick.copy_terminal")) { self.session.copyLocalProxyCommand() }
-                        .keyboardShortcut("C", modifiers: .command)
-
-                    Button(self.tr("ui.quick.copy_terminal_current_endpoint")) {
-                        self.session.copyManagedEndpointProxyCommand()
-                    }
-                    .keyboardShortcut("C", modifiers: [.command, .option])
-
-                    Divider()
-
-                    Button(self.tr("ui.action.reload_config")) {
-                        Task { await self.session.reloadConfig() }
-                    }
-                    .keyboardShortcut("R", modifiers: .command)
-
-                    Divider()
-
-                    Button(self.session.primaryCoreActionLabel) {
-                        Task { await self.session.performPrimaryCoreAction() }
-                    }
-                    .keyboardShortcut("R", modifiers: [.command, .shift])
-                    .disabled(!self.session.isPrimaryCoreActionEnabled || self.session.isRemoteTarget)
-
-                    Button(self.tr("ui.action.stop")) {
-                        Task { await self.session.stopCore() }
-                    }
-                    .keyboardShortcut(".", modifiers: [.command, .shift])
-                    .disabled(self.session.isRemoteTarget || self.session.isCoreActionProcessing)
-                }
-
-                CommandMenu("Panel") {
-                    ForEach(Self.panelShortcuts, id: \.tab) { entry in
-                        Button(self.tr(entry.key)) { self.session.setActiveMenuTab(entry.tab) }
-                            .keyboardShortcut(entry.shortcut, modifiers: [.command, .option])
-                    }
-                    Button(self.tr("ui.tab.system")) { self.session.setActiveMenuTab(.system) }
-                        .keyboardShortcut("5", modifiers: [.command, .option])
+        CommandMenu(self.tr("ui.menu.quick")) {
+            Button(self.tr("ui.quick.system_proxy")) {
+                Task {
+                    let target = !self.session.isSystemProxyEnabled
+                    await self.session.toggleSystemProxy(target)
+                    guard self.session.isSystemProxyEnabled == target else { return }
+                    self.showBanner(
+                        symbol: "network",
+                        title: self.tr("ui.quick.system_proxy"),
+                        detail: self.tr(target ? "log.system_proxy.enabled" : "log.system_proxy.disabled"))
                 }
             }
+            .keyboardShortcut("s", modifiers: .command)
+
+            Button(self.session.isTunEnabled ? self.tr("ui.action.disable_tun") : self.tr("ui.action.enable_tun")) {
+                Task {
+                    let target = !self.session.isTunEnabled
+                    await self.session.toggleTunMode(target)
+                    guard self.session.isTunEnabled == target else { return }
+                    self.showBanner(
+                        symbol: "point.3.connected.trianglepath.dotted",
+                        title: self.tr("ui.quick.tun_mode"),
+                        detail: self.tr(target ? "log.tun.enabled" : "log.tun.disabled"))
+                }
+            }
+            .keyboardShortcut("e", modifiers: .command)
+            .disabled(!self.session.isTunToggleEnabled)
+
+            Divider()
+
+            ForEach(Self.modeShortcuts, id: \.mode) { entry in
+                Button(self.tr(entry.key)) {
+                    Task {
+                        await self.session.switchMode(to: entry.mode)
+                        guard self.session.currentMode == entry.mode else { return }
+                        self.showBanner(
+                            symbol: entry.symbol,
+                            title: self.tr("ui.banner.mode.title"),
+                            detail: self.tr(entry.key))
+                    }
+                }
+                .keyboardShortcut(entry.shortcut, modifiers: [.control, .command])
+                .disabled(!self.session.isModeSwitchEnabled)
+            }
+
+            Divider()
+
+            // ponytail: KeyEquivalent folds the shift needed to type the character into the
+            // shortcut, so an uppercase "R" here silently means ⌘⇧R. Keep every letter lowercase.
+            Button(self.tr("ui.quick.copy_terminal")) { self.session.copyLocalProxyCommand() }
+                .keyboardShortcut("c", modifiers: .command)
+
+            Button(self.tr("ui.quick.copy_terminal_current_endpoint")) {
+                self.session.copyManagedEndpointProxyCommand()
+            }
+            .keyboardShortcut("c", modifiers: [.command, .option])
+
+            Divider()
+
+            Button(self.session.primaryCoreActionLabel) {
+                let title = self.session.primaryCoreActionLabel
+                let symbol = self.session.primaryCoreActionIconName
+                Task {
+                    await self.session.performPrimaryCoreAction()
+                    guard self.session.isRuntimeRunning else { return }
+                    self.showBanner(symbol: symbol, title: title, detail: self.session.selectedConfigName)
+                }
+            }
+            .keyboardShortcut("r", modifiers: [.command, .shift])
+            .disabled(!self.session.isPrimaryCoreActionEnabled || self.session.isRemoteTarget)
+
+            Button(self.tr("ui.action.stop")) {
+                Task {
+                    await self.session.stopCore()
+                    guard !self.session.isRuntimeRunning else { return }
+                    self.showBanner(
+                        symbol: "stop.fill",
+                        title: self.tr("ui.action.stop"),
+                        detail: self.session.selectedConfigName)
+                }
+            }
+            .keyboardShortcut(".", modifiers: [.command, .shift])
+            .disabled(self.session.isRemoteTarget || self.session.isCoreActionProcessing)
+        }
+
+        CommandMenu("Panel") {
+            ForEach(Self.panelShortcuts, id: \.tab) { entry in
+                Button(self.tr(entry.key)) { self.session.setActiveMenuTab(entry.tab) }
+                    .keyboardShortcut(entry.shortcut, modifiers: [.command, .option])
+            }
+            Button(self.tr("ui.tab.system")) { self.session.setActiveMenuTab(.system) }
+                .keyboardShortcut("5", modifiers: [.command, .option])
+        }
+    }
+
+    private static let modeShortcuts: [(mode: CoreMode, key: String, symbol: String, shortcut: KeyEquivalent)] = [
+        (.rule, "ui.mode.rule", "shield.lefthalf.filled", "1"),
+        (.global, "ui.mode.global", "globe", "2"),
+        (.direct, "ui.mode.direct", "bolt.fill", "3"),
+    ]
+
+    /// Menu-bar shortcuts fire with no window on screen, so every one of them confirms itself the
+    /// way ⌘C already did — otherwise a working shortcut looks like a dead key.
+    @MainActor
+    private func showBanner(symbol: String, title: String, detail: String) {
+        self.session.statusItemBanner = StatusItemBanner(
+            symbolName: symbol,
+            title: title,
+            primaryDetail: detail,
+            secondaryDetail: nil)
     }
 
     private static let panelShortcuts: [(tab: RootTab, key: String, shortcut: KeyEquivalent)] = [
