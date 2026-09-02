@@ -1,3 +1,36 @@
+## v0.3.3
+
+![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.3.3-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
+
+> 本次更新集中在 **内核日志洪泛治理与菜单栏快捷键可用性**：修复 mihomo TUN 句柄失效后日志刷屏导致 ClashBar 内存涨到 3.2 GB、CPU 占用 230% 的问题，在日志管道源头加入限流与重复折叠；同时修复菜单命令状态冻结（`⌘E` 永久灰掉）和大写快捷键被隐式附加 `⇧` 的问题，补齐 `⌃⌘1/2/3` 模式切换，并为所有快捷键操作补上状态栏横幅反馈。此外菜单栏图标在 TUN 模式下有了独立形态，代理页新增延迟历史显示开关，文档站也上线了自动生成的更新日志页面。
+
+### 📝 更新日志 (Changelog)
+
+**✨ 新增功能 (New Features)**
+
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **模式切换快捷键**：新增 `⌃⌘1` / `⌃⌘2` / `⌃⌘3` 分别切换到 Rule / Global / Direct 模式，内核不可用时自动置灰。
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **快捷键操作横幅反馈**：菜单栏快捷键在面板关闭时触发也会给出确认——系统代理开关、TUN 开关、模式切换、内核启动/重启/停止、复制终端代理命令成功后都会弹出状态栏横幅，不再出现「按了没反应」的错觉。
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **菜单栏 TUN 图标**：新增 BrandTun 品牌图标，内核运行且 TUN 开启时替换为 TUN 形态图标，一眼区分当前是否走 TUN；缺图时回退到运行图标，避免品牌图与 SF Symbol 互跳。
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **延迟历史显示开关**：代理组标题栏新增开关，可在「最近 4 次延迟信号条」与「仅最新一次延迟」之间切换，状态本地持久化；代理组行与节点弹窗同步生效。
+- ![Feature](https://img.shields.io/badge/Feature-10B981?style=flat-square) **文档站更新日志页**：文档站新增 Changelog 页面，直接解析仓库 `CHANGELOG.md` 生成版本时间线，无需手工同步两份内容。
+
+**🚀 优化改进 (Improvements)**
+
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **移除「重新加载配置」菜单项**：删除快捷操作菜单中的重载配置入口与 `⌘R` 快捷键，配置变更已由文件监听自动处理，文档同步更新。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **状态栏渲染去重简化**：删除与 `MenuBarDisplay` 逐字段重复的 `StatusItemRenderKey`，渲染键直接复用显示模型，仅在使用品牌图标时忽略 symbolName，减少一层等价类型。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **品牌图标资源瘦身**：重新压缩运行 / 休眠状态图标资源，单张体积减少约 60%。
+- ![Optimize](https://img.shields.io/badge/Optimize-3B82F6?style=flat-square) **文档站工程重构与部署**：文档站迁移到 `src/` 目录结构、改用 OpenNext + Cloudflare Workers 部署，移除自定义 MDX loader 与 shim，补充站点图标、缓存头与中间件配置。
+
+**🐞 修复问题 (Bug Fixes)**
+
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **核心日志洪泛导致内存与 CPU 失控** (#102, #88)：修复 mihomo TUN 文件描述符失效后以约 16 万行/秒重复输出 `batch read packet` 错误，日志管道逐行回调、逐行创建主线程任务，导致任务队列与字符串无限堆积、ClashBar 占用 3.2 GB 内存和 230% CPU 的问题；现在在日志管道源头加入背压闸门（1 秒窗口内折叠连续重复行并限流 200 行，丢弃数量随下一条日志一并报出），下游日志缓冲与写盘队列随之自动有界，写盘频率从约 4000 次/秒降至约 5 次/秒。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **菜单命令状态冻结、`⌘E` 永久不可用**：修复菜单命令内联在 `App` 中导致不观察应用状态，`.disabled(...)` 与按钮标题被冻结在启动时刻的问题；此前 TUN 开关与内核启停命令会一直保持启动瞬间的禁用状态，与面板中实际可用的开关互相矛盾。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **快捷键被隐式附加 `⇧`**：修复快捷键使用大写字母定义时系统会把输入该字符所需的 `⇧` 折进组合键的问题（`⌘R` 实际变成 `⌘⇧R`），现统一使用小写字符定义。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **内核重启期间系统代理恢复报错**：修复内核重启时写入配置目录触发的文件事件会取消正在执行的防抖任务，导致系统代理恢复流程抛出 `URLError.cancelled` 的问题。
+- ![Fix](https://img.shields.io/badge/Fix-EF4444?style=flat-square) **延迟信号条显示错位**：修复关闭延迟历史时保留的是最矮的一根信号条而非代表最新延迟的那根的问题。
+
+---
+
 ## v0.3.2
 
 ![macOS](https://img.shields.io/badge/macOS-Supported-000000?style=flat-square&logo=apple) ![Version](https://img.shields.io/badge/Release-v0.3.2-10B981?style=flat-square) ![Core](https://img.shields.io/badge/Core-Mihomo-6366f1?style=flat-square)
