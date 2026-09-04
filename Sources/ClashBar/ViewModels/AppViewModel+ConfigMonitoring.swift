@@ -27,6 +27,14 @@ extension AppViewModel {
         self.pendingConfigChangeRestart = false
     }
 
+    /// Records an app-owned config mutation before the main actor can process its
+    /// filesystem event. The caller remains responsible for applying that change.
+    func synchronizeConfigDirectoryMonitorSnapshot(for fileURL: URL) {
+        let fileName = fileURL.lastPathComponent
+        let signature = Self.configFileSignatureSnapshot(for: [fileURL])[fileName]
+        self.configFileSignatureSnapshot[fileName] = signature
+    }
+
     private func scheduleConfigDirectoryRefresh(delayNanoseconds: UInt64 = 350_000_000) {
         self.configDirectoryDebounceTask?.cancel()
         self.configDirectoryDebounceTask = Task { [weak self] in

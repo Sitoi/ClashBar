@@ -41,7 +41,7 @@ extension AppViewModel {
         do {
             let userAgent = await remoteSubscriptionUserAgent()
             let data = try await downloadRemoteConfigData(from: remoteURL, userAgent: userAgent)
-            try writeConfigData(data, to: targetURL)
+            let change = try await self.writeRemoteConfigDataIfChanged(data, to: targetURL)
 
             let subscription = RemoteConfigSubscription(
                 urlString: remoteURL.absoluteString,
@@ -52,10 +52,7 @@ extension AppViewModel {
             let message = tr("log.config.import_remote.success", fileName)
             appendLog(level: "info", message: message)
 
-            if existsAlready, self.shouldAutoReloadCurrentConfig(updatedFileNames: [fileName]) {
-                await self.reloadConfig()
-            }
-
+            await self.applyRemoteConfigChange(change, fileName: fileName)
             self.presentRemoteConfigImportResultAlert(success: true, message: message)
         } catch {
             let message = tr("log.config.import_remote.failed", fileName, error.localizedDescription)
@@ -75,8 +72,9 @@ extension AppViewModel {
         }
 
         let userAgent = await remoteSubscriptionUserAgent()
-        var updatedFileNames: Set<String> = []
+        var succeededCount = 0
         var failedCount = 0
+        var changedConfigs: [String: RemoteConfigFileChange] = [:]
 
         for fileName in subscriptions.keys.sorted() {
             guard let sub = subscriptions[fileName],
@@ -104,9 +102,12 @@ extension AppViewModel {
                 else {
                     continue
                 }
-                try self.writeConfigData(data, to: targetURL)
+                let change = try await self.writeRemoteConfigDataIfChanged(data, to: targetURL)
                 self.remoteConfigSubscriptions[fileName] = refreshedSubscription
-                updatedFileNames.insert(fileName)
+                succeededCount += 1
+                if change.contentsChanged {
+                    changedConfigs[fileName] = change
+                }
             } catch {
                 guard let refreshedSubscription = self.checkedRemoteConfigSubscription(
                     for: fileName,
@@ -124,11 +125,12 @@ extension AppViewModel {
         }
 
         self.persistRemoteConfigSubscriptions()
-        self.refreshConfigStateAfterMutation()
-        appendLog(level: "info", message: tr("log.config.remote.update_summary", updatedFileNames.count, failedCount))
+        self.refreshRemoteConfigMenuStates()
+        appendLog(level: "info", message: tr("log.config.remote.update_summary", succeededCount, failedCount))
 
-        if self.shouldAutoReloadCurrentConfig(updatedFileNames: updatedFileNames) {
-            await self.reloadConfig()
+        let selectedFileName = self.selectedConfigName
+        if let selectedConfigChange = changedConfigs[selectedFileName] {
+            await self.applyRemoteConfigChange(selectedConfigChange, fileName: selectedFileName)
         }
     }
 
@@ -277,15 +279,11 @@ extension AppViewModel {
                 return
             }
             let targetURL = configDirectory.appendingPathComponent(fileName, isDirectory: false)
-            try self.writeConfigData(data, to: targetURL)
+            let change = try await self.writeRemoteConfigDataIfChanged(data, to: targetURL)
 
             self.remoteConfigSubscriptions[fileName] = refreshedSubscription
             self.persistRemoteConfigSubscriptions()
-            self.refreshConfigStateAfterMutation()
-
-            if self.shouldAutoReloadCurrentConfig(updatedFileNames: [fileName]) {
-                await self.reloadConfig()
-            }
+            await self.applyRemoteConfigChange(change, fileName: fileName)
 
             self.setRemoteConfigMenuState(
                 for: fileName,
@@ -365,6 +363,217 @@ extension AppViewModel {
 
     func writeConfigData(_ data: Data, to targetURL: URL) throws {
         try configRepository.writeConfigData(data, to: targetURL)
+    }
+
+    private struct RemoteConfigFileChange: Sendable {
+        let contentsChanged: Bool
+        let requiresFullRestart: Bool
+
+        static let unchanged = RemoteConfigFileChange(contentsChanged: false, requiresFullRestart: false)
+    }
+
+    /// Compares downloaded bytes before validation and atomic replacement. For a
+    /// changed file, update the monitor snapshot synchronously so this app-owned
+    /// write is applied exactly once by `applyRemoteConfigChange` below.
+    private func writeRemoteConfigDataIfChanged(
+        _ data: Data,
+        to targetURL: URL) async throws -> RemoteConfigFileChange
+    {
+        let change = try await Task.detached(priority: .utility) {
+            let existingData: Data?
+            if FileManager.default.fileExists(atPath: targetURL.path) {
+                existingData = try Data(contentsOf: targetURL)
+            } else {
+                existingData = nil
+            }
+
+            guard existingData != data else {
+                return RemoteConfigFileChange.unchanged
+            }
+            return RemoteConfigFileChange(
+                contentsChanged: true,
+                requiresFullRestart: Self.remoteConfigRequiresFullRestart(
+                    previous: existingData,
+                    updated: data))
+        }.value
+        guard change.contentsChanged else {
+            return .unchanged
+        }
+
+        try await self.validateRemoteConfigData(data, targetURL: targetURL)
+        try self.writeConfigData(data, to: targetURL)
+        self.synchronizeConfigDirectoryMonitorSnapshot(for: targetURL)
+        return change
+    }
+
+    /// Validates the candidate beside the destination so Mihomo resolves relative
+    /// provider paths against the same working directory. Hidden files are ignored
+    /// by the config directory scanner and are always removed after validation.
+    private func validateRemoteConfigData(_ data: Data, targetURL: URL) async throws {
+        let candidateURL = targetURL.deletingLastPathComponent().appendingPathComponent(
+            ".clashbar-validation-\(UUID().uuidString).\(targetURL.pathExtension)",
+            isDirectory: false)
+        try await Task.detached(priority: .utility) {
+            try data.write(to: candidateURL, options: .atomic)
+        }.value
+        defer { try? FileManager.default.removeItem(at: candidateURL) }
+
+        guard let details = await self.configValidationFailureDetails(configPath: candidateURL.path) else {
+            return
+        }
+        throw NSError(
+            domain: "ClashBar.RemoteConfigValidation",
+            code: 422,
+            userInfo: [
+                NSLocalizedDescriptionKey: self.tr(
+                    "log.config.validate_failed",
+                    targetURL.lastPathComponent,
+                    details),
+            ])
+    }
+
+    private func applyRemoteConfigChange(_ change: RemoteConfigFileChange, fileName: String) async {
+        guard change.contentsChanged else { return }
+        guard self.shouldAutoReloadCurrentConfig(updatedFileNames: [fileName]) else { return }
+
+        while self.isCoreActionProcessing {
+            do {
+                try await Task.sleep(for: .milliseconds(250))
+            } catch {
+                return
+            }
+        }
+        guard self.shouldAutoReloadCurrentConfig(updatedFileNames: [fileName]) else { return }
+        guard let selectedConfig = self.configRepository.selectedConfig,
+              selectedConfig.lastPathComponent == fileName
+        else { return }
+
+        if change.requiresFullRestart {
+            guard self.selectedConfigName == fileName else { return }
+            self.appendLog(level: "info", message: self.tr("log.config.remote.restart_required"))
+            // restartCore validates the new file before stopping the running core.
+            await self.restartCore(trigger: .configSwitch)
+            return
+        }
+
+        guard self.selectedConfigName == fileName else { return }
+
+        let actionName = self.tr("log.action_name.reload_config")
+        let expectedTunEnabled = self.isTunEnabled
+        do {
+            self.ensureAPIClient()
+            try await self.clientOrThrow().requestNoResponse(.putConfigs(force: true))
+            try await self.restoreTunAfterConfigReloadIfNeeded(expectedEnabled: expectedTunEnabled)
+            self.appendLog(level: "info", message: self.tr("log.action.success", actionName))
+        } catch {
+            self.appendLog(
+                level: "warning",
+                message: self.tr("log.config.remote.hot_reload_fallback_restart", error.localizedDescription))
+            await self.restartCore(trigger: .configSwitch)
+        }
+    }
+
+    /// Mihomo's config API updates runtime components, but it does not recreate
+    /// the external-controller server. A change to one of these top-level route
+    /// sections must therefore be applied by starting a new core process.
+    private nonisolated static func remoteConfigRequiresFullRestart(
+        previous: Data?,
+        updated: Data) -> Bool
+    {
+        guard let previous,
+              let previousSections = self.mihomoStartupSectionFingerprint(in: previous),
+              let updatedSections = self.mihomoStartupSectionFingerprint(in: updated)
+        else {
+            return true
+        }
+        return previousSections != updatedSections
+    }
+
+    private nonisolated static func mihomoStartupSectionFingerprint(in data: Data) -> [String: String]? {
+        guard let text = String(data: data, encoding: .utf8) else { return nil }
+        let keys: Set<String> = [
+            "external-controller",
+            "external-controller-cors",
+            "external-controller-pipe",
+            "external-controller-routing-mark",
+            "external-controller-tls",
+            "external-controller-unix",
+            "external-doh-server",
+            "external-ui",
+            "external-ui-name",
+            "external-ui-url",
+            "secret",
+            "tls",
+        ]
+        var sections: [String: String] = [:]
+        var activeKey: String?
+        var activeLines: [String] = []
+
+        func commitSection() {
+            guard let activeKey else { return }
+            sections[activeKey] = activeLines.joined(separator: "\n")
+        }
+
+        for rawLine in text.components(separatedBy: .newlines) {
+            guard let line = self.normalizedYAMLLine(rawLine) else { continue }
+            if let first = line.first, !first.isWhitespace,
+               let colon = line.firstIndex(of: ":")
+            {
+                commitSection()
+                let rawKey = String(line[..<colon]).trimmingCharacters(in: .whitespaces)
+                let key = rawKey.trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
+                activeKey = keys.contains(key) ? key : nil
+                activeLines = activeKey == nil ? [] : [line]
+            } else if activeKey != nil {
+                activeLines.append(line)
+            }
+        }
+        commitSection()
+        return sections
+    }
+
+    /// Removes YAML comments without treating a `#` inside a quoted or plain
+    /// non-whitespace-delimited scalar as a comment. Leading indentation remains
+    /// intact because it is semantically significant in YAML.
+    private nonisolated static func normalizedYAMLLine(_ line: String) -> String? {
+        let characters = Array(line)
+        var inSingleQuotes = false
+        var inDoubleQuotes = false
+        var isEscapingDoubleQuote = false
+        var commentStart: Int?
+
+        for index in characters.indices {
+            let character = characters[index]
+            if inDoubleQuotes, character == "\\", !isEscapingDoubleQuote {
+                isEscapingDoubleQuote = true
+                continue
+            }
+            if character == "\"", !inSingleQuotes, !isEscapingDoubleQuote {
+                inDoubleQuotes.toggle()
+            } else if character == "'", !inDoubleQuotes {
+                inSingleQuotes.toggle()
+            } else if character == "#", !inSingleQuotes, !inDoubleQuotes,
+                      index == characters.startIndex || characters[characters.index(before: index)].isWhitespace
+            {
+                commentStart = index
+                break
+            }
+            isEscapingDoubleQuote = false
+        }
+
+        let content = String(characters[..<(commentStart ?? characters.endIndex)])
+        let normalized = self.trimmingTrailingWhitespace(content)
+        return normalized.trimmingCharacters(in: .whitespaces).isEmpty ? nil : normalized
+    }
+
+    private nonisolated static func trimmingTrailingWhitespace(_ value: String) -> String {
+        var endIndex = value.endIndex
+        while endIndex > value.startIndex {
+            let previousIndex = value.index(before: endIndex)
+            guard value[previousIndex].isWhitespace else { break }
+            endIndex = previousIndex
+        }
+        return String(value[..<endIndex])
     }
 
     func confirmOverwriteConfig(named fileName: String) -> Bool {
