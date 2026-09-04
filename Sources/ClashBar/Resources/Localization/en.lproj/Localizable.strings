@@ -363,6 +363,8 @@
 "log.proxy_export.copied" = "Proxy export command copied";
 "log.logs.copied_all" = "Copied all logs (%d entries)";
 "log.config.changed_restart" = "Config changed, restarting core";
+"log.config.remote.restart_required" = "Subscription changed controller settings, restarting core";
+"log.config.remote.hot_reload_fallback_restart" = "Subscription hot reload failed; restarting core: %@";
 "log.providers.fetch_proxy_failed" = "Providers refresh: fetch proxy providers failed: %@";
 "log.providers.fetch_rule_failed" = "Providers refresh: fetch rule providers failed: %@";
 "log.providers.config_reload_success" = "Providers refresh: config force reload success";

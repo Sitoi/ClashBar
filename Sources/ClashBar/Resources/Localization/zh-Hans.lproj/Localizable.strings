@@ -365,6 +365,8 @@
 "log.proxy_export.copied" = "已复制代理导出命令";
 "log.logs.copied_all" = "已复制全部日志（%d 条）";
 "log.config.changed_restart" = "配置已变更，正在重启内核";
+"log.config.remote.restart_required" = "订阅中的控制器设置已变更，正在重启内核";
+"log.config.remote.hot_reload_fallback_restart" = "订阅热重载失败，正在回退为完整重启：%@";
 "log.providers.fetch_proxy_failed" = "Providers 刷新: 获取代理提供者失败: %@";
 "log.providers.fetch_rule_failed" = "Providers 刷新: 获取规则提供者失败: %@";
 "log.providers.config_reload_success" = "Providers 刷新: 强制重载配置成功";
