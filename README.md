@@ -144,6 +144,7 @@ make dist WITH_CORE=1      # app + dmg
 ## 🙏 致谢
 
 感谢 [MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo) 提供内核能力。
+感谢 [Linux DO](https://linux.do/) 社区的支持与帮助 🙏
 
 ## ⭐ Star 趋势
 
