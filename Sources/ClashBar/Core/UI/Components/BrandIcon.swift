@@ -8,10 +8,6 @@ enum BrandIcon {
     static let tunImage: NSImage? = loadIcon(named: "BrandTun", fallbackFileName: "icon-tun.png")
 
     private static func loadIcon(named name: String, fallbackFileName: String) -> NSImage? {
-        if let image = Bundle.module.image(forResource: NSImage.Name(name)) {
-            return image
-        }
-
         for bundle in AppResourceBundleLocator.candidateBundles() {
             if let image = bundle.image(forResource: NSImage.Name(name)) {
                 return image

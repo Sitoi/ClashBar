@@ -217,10 +217,7 @@ final class SSIDMonitorService: NSObject {
         let macOSURL = contentsURL.appendingPathComponent("MacOS", isDirectory: true)
         let resourcesURL = contentsURL.appendingPathComponent("Resources", isDirectory: true)
         let bundledExecutableURL = macOSURL.appendingPathComponent(executableURL.lastPathComponent, isDirectory: false)
-        let resourceBundleURL = Bundle.module.bundleURL
-        let bundledResourceURL = resourcesURL.appendingPathComponent(
-            resourceBundleURL.lastPathComponent,
-            isDirectory: true)
+        let resourceBundleURL = AppResourceBundleLocator.moduleBundle()?.bundleURL
 
         if fileManager.fileExists(atPath: appURL.path) {
             try fileManager.removeItem(at: appURL)
@@ -229,7 +226,10 @@ final class SSIDMonitorService: NSObject {
         try fileManager.createDirectory(at: macOSURL, withIntermediateDirectories: true)
         try fileManager.createDirectory(at: resourcesURL, withIntermediateDirectories: true)
         try fileManager.createSymbolicLink(at: bundledExecutableURL, withDestinationURL: executableURL)
-        if fileManager.fileExists(atPath: resourceBundleURL.path) {
+        if let resourceBundleURL, fileManager.fileExists(atPath: resourceBundleURL.path) {
+            let bundledResourceURL = resourcesURL.appendingPathComponent(
+                resourceBundleURL.lastPathComponent,
+                isDirectory: true)
             try fileManager.createSymbolicLink(at: bundledResourceURL, withDestinationURL: resourceBundleURL)
         }
 

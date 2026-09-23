@@ -4,34 +4,25 @@ enum AppResourceBundleLocator {
     private static let moduleBundleName = "ClashBar_ClashBar.bundle"
 
     static func moduleBundle() -> Bundle? {
-        let spmBundle = Bundle.module
-        if spmBundle.resourceURL != nil {
-            return spmBundle
-        }
         for url in self.candidateModuleBundleURLs() {
             if let bundle = Bundle(url: url) {
                 return bundle
             }
         }
-        return spmBundle
+        return nil
     }
 
     static func candidateBundles() -> [Bundle] {
-        var bundles: [Bundle] = [Bundle.module]
-        if let module = moduleBundle(), module.bundleURL != Bundle.module.bundleURL {
+        var bundles: [Bundle] = []
+        if let module = moduleBundle() {
             bundles.append(module)
         }
-        if !bundles.contains(where: { $0.bundleURL == Bundle.main.bundleURL }) {
-            bundles.append(Bundle.main)
-        }
+        bundles.append(Bundle.main)
         return bundles
     }
 
     static func candidateResourceRoots() -> [URL] {
         var roots: [URL] = []
-        if let spmRoot = Bundle.module.resourceURL {
-            roots.append(spmRoot)
-        }
         if let module = moduleBundle(), let moduleRoot = module.resourceURL {
             roots.append(moduleRoot)
         }
