@@ -114,7 +114,7 @@ extension AppViewModel {
     }
 
     func resetSystemProxyObservedState() {
-        self.systemProxyBackgroundActivityAllowed = nil
+        self.systemProxyHelperInstalled = nil
         self.systemProxyHelperProcessRunning = nil
         self.systemProxyHelperFailureReason = nil
         self.systemProxyHelperFailureMessage = nil
@@ -127,7 +127,7 @@ extension AppViewModel {
         let previousReason = self.systemProxyHelperFailureReason
         let previousMessage = self.systemProxyHelperFailureMessage
 
-        self.systemProxyBackgroundActivityAllowed = snapshot.backgroundActivityAllowed
+        self.systemProxyHelperInstalled = snapshot.helperInstalled
         self.systemProxyHelperProcessRunning = snapshot.processRunning
         self.systemProxyHelperFailureReason = snapshot.failureReason
         self.systemProxyHelperFailureMessage = snapshot.rawMessage
@@ -180,17 +180,8 @@ extension AppViewModel {
 
         Task { [weak self] in
             guard let self else { return }
-
-            let previousHealth = await self.systemProxyService.readHelperHealthSnapshot()
-            await self.systemProxyService.warmUpHelperIfPossible()
             await self.refreshSystemProxyHelperStatus()
-
-            let shouldRefreshProxyStatus = self.isSystemProxyEnabled
-                || previousHealth.registrationState == .requiresApproval
-                || previousHealth.failureReason == .backgroundActivityDisabled
-                || previousHealth.failureReason == .helperNotRegistered
-
-            if shouldRefreshProxyStatus {
+            if self.isSystemProxyEnabled {
                 await self.refreshSystemProxyStatus()
             }
         }
@@ -308,14 +299,10 @@ extension AppViewModel {
         case .invalidPort: return tr("app.system_proxy.error.invalid_port")
         case .helperNotBundled: return tr("app.system_proxy.error.helper_not_bundled")
         case .helperRequiresInstallToApplications: return tr("app.system_proxy.error.helper_install_location")
-        case .helperNeedsApproval: return tr("app.system_proxy.error.helper_needs_approval")
         case .helperStartTimedOut: return tr("app.system_proxy.error.helper_start_timed_out")
-        case let .helperNotRegistered(message):
-            if let message, !message.isEmpty {
-                return tr("app.system_proxy.error.helper_not_registered_with_detail", message)
-            }
-            return tr("app.system_proxy.error.helper_not_registered")
-        case let .helperInvalidSignature(message): return tr("app.system_proxy.error.helper_invalid_signature", message)
+        case .helperAuthorizationCancelled: return tr("app.system_proxy.error.helper_authorization_cancelled")
+        case .helperNotRegistered: return tr("app.system_proxy.error.helper_not_registered")
+        case let .helperInstallFailed(message): return tr("app.system_proxy.error.helper_install_failed", message)
         case let .helperConnectionFailed(message): return tr("app.system_proxy.error.helper_connection_failed", message)
         case let .helperOperationFailed(message): return tr("app.system_proxy.error.helper_operation_failed", message)
         }
@@ -328,10 +315,10 @@ extension AppViewModel {
         case .invalidPort: return tr("app.system_proxy.alert.invalid_port")
         case .helperNotBundled: return tr("app.system_proxy.alert.helper_not_bundled")
         case .helperRequiresInstallToApplications: return tr("app.system_proxy.alert.helper_install_location")
-        case .helperNeedsApproval: return tr("app.system_proxy.alert.background_activity_disabled")
         case .helperNotRegistered: return tr("app.system_proxy.alert.helper_not_registered")
         case .helperStartTimedOut: return tr("app.system_proxy.alert.helper_start_timed_out")
-        case .helperInvalidSignature: return tr("app.system_proxy.alert.helper_invalid_signature")
+        case .helperAuthorizationCancelled: return tr("app.system_proxy.alert.helper_authorization_cancelled")
+        case .helperInstallFailed: return tr("app.system_proxy.alert.helper_install_failed")
         case .helperConnectionFailed: return tr("app.system_proxy.alert.helper_connection_failed")
         case .helperOperationFailed: return tr("app.system_proxy.alert.helper_operation_failed")
         }
@@ -339,14 +326,14 @@ extension AppViewModel {
 
     private func systemProxyFailureReasonMessage(for reason: SystemProxyHelperFailureReason) -> String {
         switch reason {
-        case .backgroundActivityDisabled: tr("app.system_proxy.alert.background_activity_disabled")
         case .helperNotRegistered: tr("app.system_proxy.alert.helper_not_registered")
         case .helperStartTimedOut: tr("app.system_proxy.alert.helper_start_timed_out")
         case .helperConnectionFailed: tr("app.system_proxy.alert.helper_connection_failed")
         case .helperOperationFailed: tr("app.system_proxy.alert.helper_operation_failed")
         case .appNotInApplications: tr("app.system_proxy.alert.helper_install_location")
         case .helperNotBundled: tr("app.system_proxy.alert.helper_not_bundled")
-        case .signatureMismatch: tr("app.system_proxy.alert.helper_invalid_signature")
+        case .helperAuthorizationCancelled: tr("app.system_proxy.alert.helper_authorization_cancelled")
+        case .helperInstallFailed: tr("app.system_proxy.alert.helper_install_failed")
         case .unknown: tr("app.system_proxy.alert.unknown")
         }
     }

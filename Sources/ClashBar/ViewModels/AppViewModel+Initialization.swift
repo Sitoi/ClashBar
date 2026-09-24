@@ -78,7 +78,6 @@ extension AppViewModel {
             await self.applyPendingAppLaunchSettingsOverlayIfNeeded()
             self.seedCoreFeatureRecoveryFromPersistedQuitState()
             if self.hasSystemProxyOpenIntent {
-                await self.systemProxyService.warmUpHelperIfPossible()
                 await self.refreshSystemProxyHelperStatus()
                 await self.refreshSystemProxyStatus()
                 await self.ensureSystemProxyConsistencyOnFirstLaunchIfNeeded()

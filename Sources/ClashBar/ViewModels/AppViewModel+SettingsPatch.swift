@@ -236,11 +236,8 @@ extension AppViewModel {
 
     func tunOverlayPatchBody(enabled: Bool) async -> [String: ConfigPatchValue] {
         var tunBody: [String: ConfigPatchValue] = ["enable": .bool(enabled)]
-        if enabled {
-            let hasConfiguredStack = await self.selectedConfigDeclaresTunStack()
-            if !hasConfiguredStack {
-                tunBody["stack"] = .string("mixed")
-            }
+        if enabled, let stack = await self.preferredTunStack() {
+            tunBody["stack"] = .string(stack)
         }
         return tunBody
     }

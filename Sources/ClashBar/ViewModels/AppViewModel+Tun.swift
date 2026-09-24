@@ -93,6 +93,9 @@ extension AppViewModel {
             persistEditableSettingsSnapshot()
 
             if isTunEnabled {
+                if !self.isRemoteTarget {
+                    defaults.set(stack, forKey: tunStackKey)
+                }
                 appendLog(level: "info", message: tr("log.tun.stack_changed", stack))
             } else {
                 appendLog(
@@ -238,27 +241,31 @@ extension AppViewModel {
 
         if let stack {
             tunBody["stack"] = .string(stack)
-        } else if enable, await !self.selectedConfigDeclaresTunStack() {
-            tunBody["stack"] = .string("mixed")
+        } else if enable, let preferred = await self.preferredTunStack() {
+            tunBody["stack"] = .string(preferred)
         }
 
         try await client.requestNoResponse(.patchConfigs(body: ["tun": .object(tunBody)]))
     }
 
-    func ensureTunMixedStackOnStartupIfNeeded() async {
+    func preferredTunStack() async -> String? {
+        if !self.isRemoteTarget, let saved = defaults.string(forKey: tunStackKey)?.trimmedNonEmpty {
+            return saved
+        }
+        return await self.selectedConfigDeclaresTunStack() ? nil : "mixed"
+    }
+
+    func ensureTunStackOnStartupIfNeeded() async {
         guard self.isRuntimeRunning else { return }
 
         do {
             let config = try await fetchRuntimeConfigSnapshot()
-            guard config.tunEnabled == true else { return }
-            let hasConfiguredStack = await self.selectedConfigDeclaresTunStack()
+            guard config.tunEnabled == true, let stack = await self.preferredTunStack() else { return }
+            guard config.tun?.stack?.caseInsensitiveCompare(stack) != .orderedSame else { return }
 
-            if !hasConfiguredStack {
-                let client = try clientOrThrow()
-                try await client.requestNoResponse(
-                    .patchConfigs(body: ["tun": .object(["stack": .string("mixed")])]))
-                _ = try await fetchRuntimeConfigSnapshot()
-            }
+            let client = try clientOrThrow()
+            try await client.requestNoResponse(.patchConfigs(body: ["tun": .object(["stack": .string(stack)])]))
+            _ = try await fetchRuntimeConfigSnapshot()
         } catch {
             appendLog(level: "error", message: tr("log.tun.startup_check_failed", self.tunErrorMessage(error)))
         }
