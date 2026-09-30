@@ -32,13 +32,23 @@ sudo xattr -r -d com.apple.quarantine /Applications/ClashBar.app
 ## 系统代理开启失败 / 开关没有反应
 
 **现象**：点击系统代理未生效或立即回退。  
-**原因**：权限、Helper、安装位置，或登录项后台项目卡住；也可能被其它客户端抢占。
+**原因**：helper 还没装上、管理员授权被取消、安装位置不对，或被其它客户端抢占。
 
 1. 使用打包后的应用，并位于 `/Applications`。
-2. **系统设置 → 通用 → 登录项**：允许 ClashBar 后台活动；已允许仍异常时，**关闭再打开**一次。
-3. 退出其它 mihomo / Clash 系客户端。
-4. 执行一次 **重启内核**，再开系统代理。
-5. 仍失败时在「日志」中查看关键错误并提交 Issue。
+2. 再开一次系统代理。第一次会要求管理员密码；取消后需要再开一次才会重新询问。
+3. 若系统提示允许后台项目，到 **系统设置 → 通用 → 登录项** 允许该 helper。允许一次即可，更新 app 不用重复。
+4. 退出其它 mihomo / Clash 系客户端。
+5. 执行一次 **重启内核**，再开系统代理。
+6. 仍失败时在「日志」中查看关键错误并提交 Issue。
+
+删除 ClashBar 前，如需卸掉已经安装的 helper：
+
+```bash
+sudo launchctl bootout system/com.clashbar.helper
+sudo rm -f /Library/LaunchDaemons/com.clashbar.helper.plist \
+  /Library/PrivilegedHelperTools/com.clashbar.helper \
+  /Library/PrivilegedHelperTools/com.clashbar.helper.version
+```
 
 ## 配置导入或重载失败
 

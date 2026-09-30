@@ -763,7 +763,7 @@ struct ProxyTabView: TranslatingView {
     var systemProxyCompositeIcon: some View {
         ZStack {
             self.systemProxyCompositeIconLayer(
-                tint: self.systemProxyBackgroundActivityTint,
+                tint: self.systemProxyHelperInstalledTint,
                 alignment: .leading)
             self.systemProxyCompositeIconLayer(
                 tint: self.systemProxyHelperProcessTint,
@@ -784,8 +784,8 @@ struct ProxyTabView: TranslatingView {
             }
     }
 
-    var systemProxyBackgroundActivityTint: Color {
-        switch self.appViewModel.systemProxyBackgroundActivityAllowed {
+    var systemProxyHelperInstalledTint: Color {
+        switch self.appViewModel.systemProxyHelperInstalled {
         case .some(true):
             nativePositive.opacity(T.Opacity.solid)
         case .some(false):
@@ -806,16 +806,16 @@ struct ProxyTabView: TranslatingView {
         }
     }
 
-    var systemProxyBackgroundActivityHelp: String {
-        let value = switch self.appViewModel.systemProxyBackgroundActivityAllowed {
+    var systemProxyHelperInstalledHelp: String {
+        let value = switch self.appViewModel.systemProxyHelperInstalled {
         case .some(true):
-            self.tr("ui.system_proxy.background_activity.allowed")
+            self.tr("ui.system_proxy.helper_install.ready")
         case .some(false):
-            self.tr("ui.system_proxy.background_activity.blocked")
+            self.tr("ui.system_proxy.helper_install.missing")
         case .none:
             self.tr("ui.common.unknown")
         }
-        return "\(self.tr("ui.system_proxy.background_activity")): \(value)"
+        return "\(self.tr("ui.system_proxy.helper_install")): \(value)"
     }
 
     var systemProxyHelperProcessHelp: String {
@@ -831,7 +831,7 @@ struct ProxyTabView: TranslatingView {
     }
 
     var systemProxyCompositeIconHelp: String {
-        "\(self.systemProxyBackgroundActivityHelp)\n\(self.systemProxyHelperProcessHelp)"
+        "\(self.systemProxyHelperInstalledHelp)\n\(self.systemProxyHelperProcessHelp)"
     }
 }
 

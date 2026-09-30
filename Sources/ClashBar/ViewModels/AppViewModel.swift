@@ -144,7 +144,7 @@ final class AppViewModel: ObservableObject {
     @Published var systemProxyEnableIntentInFlight: Bool = false
     @Published var systemProxyHelperFailureReason: SystemProxyHelperFailureReason?
     @Published var systemProxyHelperFailureMessage: String?
-    @Published var systemProxyBackgroundActivityAllowed: Bool?
+    @Published var systemProxyHelperInstalled: Bool?
     @Published var systemProxyHelperProcessRunning: Bool?
     @Published var systemProxyActiveDisplay: String?
     @Published var systemProxyOpenFailureHint: String?
@@ -414,6 +414,7 @@ final class AppViewModel: ObservableObject {
     let editableSettingsSnapshotKey = "clashbar.settings.editable.snapshot.v1"
     let systemProxyEnabledOnQuitKey = "clashbar.system_proxy.enabled_on_quit"
     let systemProxyExceptionsKey = "clashbar.system_proxy.exceptions.v1"
+    let tunStackKey = "clashbar.tun.stack"
     let ssidStrategyRulesKey = "clashbar.ssid.strategy.rules.v1"
     let uiLanguageKey = "clashbar.ui.language"
     let appearanceModeKey = "clashbar.ui.appearance.mode"

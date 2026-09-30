@@ -95,9 +95,9 @@ brew uninstall --zap --cask clashbar
 > [!IMPORTANT]
 >
 > - ⚠️ 同一时间只让一个 mihomo / Clash 系客户端接管系统代理。
-> - 📂 系统代理依赖打包后的 `.app` 与登录项授权；请放到 `/Applications` 后再使用。
-> - 🔑 首次开启系统代理或开机启动时，在 **系统设置 → 通用 → 登录项** 允许 ClashBar。
-> - 🔄 开关异常时，先在登录项中关闭再打开 ClashBar 后台项目，或在应用内 `Restart` 内核。
+> - 📂 系统代理依赖打包后的 `.app`；请放到 `/Applications` 后再使用。
+> - 🔑 第一次开启系统代理时输入管理员密码。helper 会装到系统目录，之后更新 app 不会让它失效。开机启动仍需在登录项中允许 ClashBar。
+> - 🔄 系统代理开关异常时，在应用内重新打开一次；必要时 `Restart` 内核。若系统弹出后台项目提示，在登录项里允许该 helper。
 
 ## 🚀 快速上手
 

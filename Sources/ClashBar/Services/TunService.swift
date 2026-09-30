@@ -79,54 +79,14 @@ struct TunPermissionService {
     }
 
     private func grantPermissionsSynchronously(binaryPath: String) throws {
-        let escapedPath = self.shellQuoted(binaryPath)
-        let shellCommand = "/usr/sbin/chown root:admin \(escapedPath) && /bin/chmod u+s \(escapedPath)"
-        let appleScript = "do shell script \"\(appleScriptEscaped(shellCommand))\" with administrator privileges"
-        try runAppleScriptSynchronously(appleScript)
+        let escapedPath = AdministratorShell.shellQuoted(binaryPath)
+        try AdministratorShell.run(
+            "/usr/sbin/chown root:admin \(escapedPath) && /bin/chmod u+s \(escapedPath)",
+            cancelled: TunPermissionServiceError.authorizationCancelled,
+            failed: TunPermissionServiceError.authorizationFailed)
 
         guard self.hasRequiredPermissions(binaryPath: binaryPath) else {
             throw TunPermissionServiceError.permissionVerificationFailed
         }
-    }
-
-    private func runAppleScriptSynchronously(_ script: String) throws {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-        process.arguments = ["-e", script]
-
-        let stdoutPipe = Pipe()
-        let stderrPipe = Pipe()
-        process.standardOutput = stdoutPipe
-        process.standardError = stderrPipe
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-        } catch {
-            throw TunPermissionServiceError.authorizationFailed(error.localizedDescription)
-        }
-
-        guard process.terminationStatus == 0 else {
-            let stderr = String(data: stderrPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
-                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            let stdout = String(data: stdoutPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
-                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            let message = [stderr, stdout]
-                .first(where: { !$0.isEmpty }) ?? "Unknown authorization error."
-            if message.lowercased().contains("user canceled") {
-                throw TunPermissionServiceError.authorizationCancelled
-            }
-            throw TunPermissionServiceError.authorizationFailed(message)
-        }
-    }
-
-    private func shellQuoted(_ value: String) -> String {
-        "'\(value.replacingOccurrences(of: "'", with: "'\"'\"'"))'"
-    }
-
-    private func appleScriptEscaped(_ value: String) -> String {
-        value
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "\"", with: "\\\"")
     }
 }

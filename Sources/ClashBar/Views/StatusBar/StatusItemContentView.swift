@@ -1,7 +1,7 @@
 import AppKit
 
-final class StatusItemContentView: NSView {
-    private let statusItemHorizontalPadding: CGFloat = 0
+@MainActor
+final class StatusItemContentView {
     private let iconSize: CGFloat = 24
     private let brandIconRenderSize: CGFloat = 24
     private let symbolPointSize: CGFloat = 20
@@ -9,26 +9,14 @@ final class StatusItemContentView: NSView {
     private let textContainerWidth: CGFloat = 43
     private let textLineHeight: CGFloat = 11
 
-    private let iconView: NSImageView = {
-        let imageView = NSImageView()
-        imageView.imageScaling = .scaleNone
-        imageView.translatesAutoresizingMaskIntoConstraints = true
-        return imageView
-    }()
-
-    private let speedImageView: NSImageView = {
-        let imageView = NSImageView()
-        imageView.imageScaling = .scaleNone
-        imageView.translatesAutoresizingMaskIntoConstraints = true
-        return imageView
-    }()
+    private static let renderScales: [CGFloat] = [1, 2, 3]
 
     private var currentDisplay: MenuBarDisplay?
-    private var cachedUpLine: String = ""
-    private var cachedDownLine: String = ""
     private var cachedRunBrandStatusIconImage: NSImage?
     private var cachedSleepBrandStatusIconImage: NSImage?
     private var cachedTunBrandStatusIconImage: NSImage?
+
+    private(set) var image: NSImage?
 
     private var runBrandStatusIconImage: NSImage? {
         if let cached = self.cachedRunBrandStatusIconImage {
@@ -60,30 +48,8 @@ final class StatusItemContentView: NSView {
         return img
     }
 
-    private static let brandIconRenderScales: [CGFloat] = [1, 2, 3]
-
     var usesBrandIcon: Bool {
         self.runBrandStatusIconImage != nil || self.sleepBrandStatusIconImage != nil
-    }
-
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
-        wantsLayer = false
-        self.addSubview(self.iconView)
-        self.addSubview(self.speedImageView)
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func hitTest(_ point: NSPoint) -> NSView? {
-        nil
-    }
-
-    override var intrinsicContentSize: NSSize {
-        CGSize(width: self.requiredWidth, height: NSStatusBar.system.thickness)
     }
 
     var requiredWidth: CGFloat {
@@ -95,105 +61,43 @@ final class StatusItemContentView: NSView {
             isTunEnabled: false)
         switch display.mode {
         case .iconOnly:
-            return self.statusItemHorizontalPadding * 2 + self.iconSize
+            return self.iconSize
         case .iconAndSpeed:
-            return self.statusItemHorizontalPadding * 2 + self.iconSize + self.iconTextSpacing + self.textContainerWidth
+            return self.iconSize + self.iconTextSpacing + self.textContainerWidth
         case .speedOnly:
-            return self.statusItemHorizontalPadding * 2 + self.textContainerWidth
+            return self.textContainerWidth
         }
     }
 
     func apply(display: MenuBarDisplay) {
-        let previousMode = self.currentDisplay?.mode
-        let previousSymbolName = self.currentDisplay?.symbolName
-        let previousIconHidden = self.iconView.isHidden
-        let previousUpLine = self.cachedUpLine
-        let previousDownLine = self.cachedDownLine
-
         self.currentDisplay = display
-        self.cachedUpLine = display.speedLines?.up ?? ""
-        self.cachedDownLine = display.speedLines?.down ?? ""
 
-        let shouldShowIcon = display.mode != .speedOnly
-        if shouldShowIcon, let brandIcon = self.brandStatusIconImage(
-            isRunning: display.isRunning, isTunEnabled: display.isTunEnabled)
-        {
-            if self.iconView.image !== brandIcon {
-                self.iconView.image = brandIcon
-            }
-        } else if let symbolName = display.symbolName {
-            if self.iconView.image == nil ||
-                previousSymbolName != symbolName ||
-                self.currentDisplay?.mode != previousMode
-            {
-                let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "ClashBar")
-                let config = NSImage.SymbolConfiguration(pointSize: self.symbolPointSize, weight: .semibold)
-                self.iconView.image = image?.withSymbolConfiguration(config)
-            }
-        } else {
-            self.iconView.image = nil
-        }
+        let iconImage: NSImage? = display.mode == .speedOnly
+            ? nil
+            : self.iconImage(for: display)
 
-        switch display.mode {
-        case .iconOnly:
-            self.iconView.isHidden = false
-            self.speedImageView.isHidden = true
-        case .iconAndSpeed:
-            self.iconView.isHidden = false
-            self.speedImageView.isHidden = false
-        case .speedOnly:
-            self.iconView.isHidden = true
-            self.speedImageView.isHidden = false
-        }
+        let upLine = display.speedLines?.up ?? ""
+        let downLine = display.speedLines?.down ?? ""
+        let showsSpeed = display.mode != .iconOnly
 
-        let modeChanged = previousMode != display.mode
-        let iconVisibilityChanged = previousIconHidden != self.iconView.isHidden
-        let speedTextChanged = previousUpLine != self.cachedUpLine || previousDownLine != self.cachedDownLine
-
-        if speedTextChanged || modeChanged, display.mode != .iconOnly {
-            self.speedImageView.image = self.makeSpeedTemplateImage(
-                upLine: self.cachedUpLine, downLine: self.cachedDownLine)
-        }
-
-        if modeChanged || iconVisibilityChanged {
-            self.needsLayout = true
-        }
-        if modeChanged {
-            self.invalidateIntrinsicContentSize()
-        }
+        self.image = self.composeImage(
+            iconImage: iconImage,
+            upLine: showsSpeed ? upLine : "",
+            downLine: showsSpeed ? downLine : "",
+            showsIcon: display.mode != .speedOnly,
+            showsSpeed: showsSpeed)
     }
 
-    override func layout() {
-        super.layout()
-
-        let totalHeight = bounds.height
-        let centerY = floor(totalHeight / 2)
-        let iconOriginX = floor(self.statusItemHorizontalPadding)
-
-        if self.iconView.isHidden == false {
-            self.iconView.frame = CGRect(
-                x: iconOriginX,
-                y: floor(centerY - self.iconSize / 2),
-                width: self.iconSize,
-                height: self.iconSize)
-        } else {
-            self.iconView.frame = .zero
+    private func iconImage(for display: MenuBarDisplay) -> NSImage? {
+        if let brandIcon = self.brandStatusIconImage(
+            isRunning: display.isRunning, isTunEnabled: display.isTunEnabled)
+        {
+            return brandIcon
         }
-
-        if self.speedImageView.isHidden == false {
-            let originX = floor(
-                self.statusItemHorizontalPadding +
-                    ((self.currentDisplay?.mode == .iconAndSpeed) ? (self.iconSize + self.iconTextSpacing) : 0))
-            let stackHeight = self.textLineHeight * 2
-            let stackOriginY = floor(centerY - stackHeight / 2)
-            self.speedImageView.frame = CGRect(
-                x: originX,
-                y: stackOriginY,
-                width: self.textContainerWidth,
-                height: stackHeight)
-        } else {
-            self.speedImageView.frame = .zero
-        }
+        guard let symbolName = display.symbolName else { return nil }
+        let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "ClashBar")
+        let config = NSImage.SymbolConfiguration(pointSize: self.symbolPointSize, weight: .semibold)
+        return image?.withSymbolConfiguration(config)
     }
 
     private func brandStatusIconImage(isRunning: Bool, isTunEnabled: Bool) -> NSImage? {
@@ -203,31 +107,42 @@ final class StatusItemContentView: NSView {
             : self.runBrandStatusIconImage
     }
 
-    private func makeSpeedTemplateImage(upLine: String, downLine: String) -> NSImage {
-        let width = self.textContainerWidth
-        let height = self.textLineHeight * 2
-        let pointSize = NSSize(width: width, height: height)
-
-        let image = NSImage(size: pointSize)
-        for scale in Self.brandIconRenderScales {
-            guard let rep = Self.makeSpeedTextRepresentation(
-                upLine: upLine,
-                downLine: downLine,
-                pointSize: pointSize,
-                textLineHeight: self.textLineHeight,
-                scale: scale)
-            else { continue }
-            image.addRepresentation(rep)
-        }
-        image.isTemplate = true
-        return image
+    private struct SpeedLayout {
+        let up: String
+        let down: String
+        let originX: CGFloat
     }
 
-    private static func makeSpeedTextRepresentation(
+    private func composeImage(
+        iconImage: NSImage?,
         upLine: String,
         downLine: String,
+        showsIcon: Bool,
+        showsSpeed: Bool) -> NSImage
+    {
+        let height = NSStatusBar.system.thickness
+        let size = NSSize(width: self.requiredWidth, height: height)
+        let textOriginX = (showsIcon && showsSpeed) ? (self.iconSize + self.iconTextSpacing) : 0
+        let speed = showsSpeed ? SpeedLayout(up: upLine, down: downLine, originX: textOriginX) : nil
+
+        let composed = NSImage(size: size)
+        for scale in Self.renderScales {
+            guard let rep = self.makeRepresentation(
+                iconImage: showsIcon ? iconImage : nil,
+                speed: speed,
+                pointSize: size,
+                scale: scale)
+            else { continue }
+            composed.addRepresentation(rep)
+        }
+        composed.isTemplate = true
+        return composed
+    }
+
+    private func makeRepresentation(
+        iconImage: NSImage?,
+        speed: SpeedLayout?,
         pointSize: NSSize,
-        textLineHeight: CGFloat,
         scale: CGFloat) -> NSBitmapImageRep?
     {
         let pixelWidth = max(1, Int((pointSize.width * scale).rounded(.up)))
@@ -251,7 +166,33 @@ final class StatusItemContentView: NSView {
 
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = context
+        context.imageInterpolation = .high
 
+        if let iconImage {
+            let iconRect = CGRect(
+                x: 0,
+                y: floor((pointSize.height - self.iconSize) / 2),
+                width: self.iconSize,
+                height: self.iconSize)
+            let drawRect = Self.aspectFitRect(imageSize: iconImage.size, in: iconRect)
+            iconImage.draw(
+                in: drawRect,
+                from: .zero,
+                operation: .sourceOver,
+                fraction: 1.0,
+                respectFlipped: true,
+                hints: nil)
+        }
+
+        if let speed, speed.up.isEmpty == false || speed.down.isEmpty == false {
+            self.drawSpeedText(speed, pointSize: pointSize)
+        }
+
+        NSGraphicsContext.restoreGraphicsState()
+        return rep
+    }
+
+    private func drawSpeedText(_ speed: SpeedLayout, pointSize: NSSize) {
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = .right
         paragraph.lineBreakMode = .byTruncatingHead
@@ -261,14 +202,33 @@ final class StatusItemContentView: NSView {
             .paragraphStyle: paragraph,
         ]
 
-        let upRect = CGRect(x: 0, y: textLineHeight, width: pointSize.width, height: textLineHeight)
-        let downRect = CGRect(x: 0, y: 0, width: pointSize.width, height: textLineHeight)
+        let stackHeight = self.textLineHeight * 2
+        let stackOriginY = floor((pointSize.height - stackHeight) / 2)
+        let upRect = CGRect(
+            x: speed.originX,
+            y: stackOriginY + self.textLineHeight,
+            width: self.textContainerWidth,
+            height: self.textLineHeight)
+        let downRect = CGRect(
+            x: speed.originX,
+            y: stackOriginY,
+            width: self.textContainerWidth,
+            height: self.textLineHeight)
 
-        (upLine as NSString).draw(in: upRect, withAttributes: attributes)
-        (downLine as NSString).draw(in: downRect, withAttributes: attributes)
+        (speed.up as NSString).draw(in: upRect, withAttributes: attributes)
+        (speed.down as NSString).draw(in: downRect, withAttributes: attributes)
+    }
 
-        NSGraphicsContext.restoreGraphicsState()
-        return rep
+    private static func aspectFitRect(imageSize: NSSize, in bounds: CGRect) -> CGRect {
+        guard imageSize.width > 0, imageSize.height > 0 else { return bounds }
+        let scale = min(bounds.width / imageSize.width, bounds.height / imageSize.height)
+        let width = imageSize.width * scale
+        let height = imageSize.height * scale
+        return CGRect(
+            x: bounds.minX + (bounds.width - width) / 2,
+            y: bounds.minY + (bounds.height - height) / 2,
+            width: width,
+            height: height)
     }
 
     private static func makeBrandStatusIconImage(source: NSImage?, size: CGFloat) -> NSImage? {
@@ -276,14 +236,12 @@ final class StatusItemContentView: NSView {
         let targetSize = NSSize(width: size, height: size)
         let rendered = NSImage(size: targetSize)
 
-        for scale in Self.brandIconRenderScales {
+        for scale in Self.renderScales {
             guard let representation = self.makeBrandStatusIconRepresentation(
                 source: source,
                 pointSize: targetSize,
                 scale: scale)
-            else {
-                continue
-            }
+            else { continue }
             rendered.addRepresentation(representation)
         }
 
@@ -311,15 +269,11 @@ final class StatusItemContentView: NSView {
             colorSpaceName: .deviceRGB,
             bytesPerRow: 0,
             bitsPerPixel: 0)
-        else {
-            return nil
-        }
+        else { return nil }
 
         representation.size = pointSize
 
-        guard let context = NSGraphicsContext(bitmapImageRep: representation) else {
-            return nil
-        }
+        guard let context = NSGraphicsContext(bitmapImageRep: representation) else { return nil }
 
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = context

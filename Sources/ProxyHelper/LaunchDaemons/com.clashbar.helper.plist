@@ -9,7 +9,7 @@
         <key>com.clashbar.helper</key>
         <true/>
     </dict>
-    <key>BundleProgram</key>
-    <string>Contents/Library/HelperTools/com.clashbar.helper</string>
+    <key>Program</key>
+    <string>/Library/PrivilegedHelperTools/com.clashbar.helper</string>
 </dict>
 </plist>

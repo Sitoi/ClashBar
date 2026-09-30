@@ -331,7 +331,7 @@ extension AppViewModel {
             settingsOverlay,
             syncingKey: options.overlaySyncingKey)
         await validateTunPermissionsOnStartup()
-        await ensureTunMixedStackOnStartupIfNeeded()
+        await ensureTunStackOnStartupIfNeeded()
         await self.verifyTunAfterOverlayIfNeeded(overlay: settingsOverlay)
         enqueueProviderRefresh(trigger: options.providerTrigger)
 
