@@ -141,6 +141,7 @@ extension AppViewModel {
             let response: GroupDelayMeasurement = try await self.clientOrThrow().request(
                 .groupDelay(name: group.name, url: testURL, timeout: timeout))
             self.applyMeasuredNodeDelays(response.values)
+            await self.refreshProxyGroups()
         }
     }
 
