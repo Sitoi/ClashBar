@@ -25,33 +25,21 @@ struct MenuBarHeaderView: TranslatingView {
                     guard let url = URL(string: "https://github.com/Sitoi/ClashBar") else { return }
                     self.openURL(url)
                 } label: {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: T.cornerRadius, style: .continuous)
-                            .fill(nativeControlFill.opacity(T.Opacity.solid))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: T.cornerRadius, style: .continuous)
-                                    .stroke(
-                                        nativeControlBorder.opacity(T.Opacity.solid),
-                                        lineWidth: T.stroke)
-                            }
-
-                        if let brandImage = BrandIcon.image {
-                            Image(nsImage: brandImage)
-                                .resizable()
-                                .interpolation(.high)
-                                .scaledToFit()
-                                .frame(width: self.headerLogoSize, height: self.headerLogoSize)
-                        } else {
-                            Image(systemName: "paperplane.fill")
-                                .renderingMode(.template)
-                                .symbolRenderingMode(.monochrome)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: self.headerLogoSize, height: self.headerLogoSize)
-                                .foregroundStyle(nativeAccent)
-                        }
+                    if let brandImage = BrandIcon.image {
+                        Image(nsImage: brandImage)
+                            .resizable()
+                            .interpolation(.high)
+                            .scaledToFit()
+                            .frame(width: self.headerLogoSize, height: self.headerLogoSize)
+                    } else {
+                        Image(systemName: "paperplane.fill")
+                            .renderingMode(.template)
+                            .symbolRenderingMode(.monochrome)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: self.headerLogoSize, height: self.headerLogoSize)
+                            .foregroundStyle(nativeAccent)
                     }
-                    .frame(width: self.headerLogoSize, height: self.headerLogoSize)
                 }
                 .buttonStyle(.plain)
                 .help(self.tr("ui.action.open_project_homepage"))

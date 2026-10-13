@@ -225,6 +225,7 @@ enum APIError: Error, LocalizedError {
 }
 
 final class MihomoAPIService: MihomoAPITransporting, @unchecked Sendable {
+    private static let defaultWebSocketMaximumMessageSize = 4 * 1024 * 1024
     private let lock = NSLock()
     private let controlSession: URLSession
     private let longRunningSession: URLSession
@@ -291,7 +292,9 @@ final class MihomoAPIService: MihomoAPITransporting, @unchecked Sendable {
 
     func makeWebSocketTask(for endpoint: Endpoint) throws -> URLSessionWebSocketTask {
         let request = try buildWebSocketRequest(for: endpoint)
-        return self.webSocketSession.webSocketTask(with: request)
+        let task = self.webSocketSession.webSocketTask(with: request)
+        task.maximumMessageSize = Self.defaultWebSocketMaximumMessageSize
+        return task
     }
 
     private func send(_ endpoint: Endpoint) async throws -> Data {
