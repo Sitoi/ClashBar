@@ -138,6 +138,16 @@
 "ui.empty.rules" = "暂无规则数据";
 "ui.empty.rules.no_match" = "无匹配规则";
 "ui.empty.connections" = "暂无活动连接";
+"ui.statistics.title" = "统计";
+"ui.statistics.dimension.node" = "节点";
+"ui.statistics.dimension.application" = "应用";
+"ui.statistics.dimension.domain" = "域名";
+"ui.statistics.total" = "合计";
+"ui.statistics.unknown" = "未识别";
+"ui.statistics.empty" = "暂无流量统计";
+"ui.statistics.session" = "本次运行累计";
+"ui.statistics.sampling_hint" = "重启应用或切换内核后清零；采样统计可能漏计短连接。";
+"log.statistics.process_matching_failed" = "启用应用流量识别失败：%@";
 "ui.empty.logs" = "暂无日志";
 
 "ui.placeholder.filter_connection" = "过滤域名、IP...";

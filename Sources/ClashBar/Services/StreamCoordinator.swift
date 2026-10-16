@@ -29,7 +29,7 @@ final class StreamCoordinator {
     func start(
         key: String,
         makeWebSocket: @escaping () throws -> URLSessionWebSocketTask,
-        onPayload: @escaping (Data) -> Void,
+        onPayload: @escaping (Data) async -> Void,
         normalizePayload: @escaping (URLSessionWebSocketTask.Message) -> Data?)
     {
         self.cancel(key: key, resetReconnectState: false)
@@ -87,7 +87,7 @@ final class StreamCoordinator {
 
     private func receiveLoop(
         key: String,
-        onPayload: @escaping (Data) -> Void,
+        onPayload: @escaping (Data) async -> Void,
         normalizePayload: @escaping (URLSessionWebSocketTask.Message) -> Data?,
         restart: @escaping () -> Void) async
     {
@@ -131,7 +131,7 @@ final class StreamCoordinator {
 
             guard let payload = normalizePayload(message) else { continue }
             self.markPayloadReceived(for: key)
-            onPayload(payload)
+            await onPayload(payload)
         }
     }
 

@@ -136,6 +136,16 @@
 "ui.empty.rules" = "No rules data";
 "ui.empty.rules.no_match" = "No matching rules";
 "ui.empty.connections" = "No active connections";
+"ui.statistics.title" = "Statistics";
+"ui.statistics.dimension.node" = "Node";
+"ui.statistics.dimension.application" = "App";
+"ui.statistics.dimension.domain" = "Domain";
+"ui.statistics.total" = "Total";
+"ui.statistics.unknown" = "Unknown";
+"ui.statistics.empty" = "No traffic recorded";
+"ui.statistics.session" = "Current session";
+"ui.statistics.sampling_hint" = "Resets when the app restarts or the core changes. Short connections may be missed.";
+"log.statistics.process_matching_failed" = "Failed to enable app traffic identification: %@";
 "ui.empty.logs" = "No logs";
 
 "ui.placeholder.filter_connection" = "Filter domain, IP...";

@@ -326,6 +326,7 @@ extension AppViewModel {
                 return
             }
             try await self.clientOrThrow().requestNoResponse(.putConfigs(force: false, path: configPath, payload: nil))
+            await self.enableTrafficStatisticsProcessMatching()
             try await self.restoreTunAfterConfigReloadIfNeeded(expectedEnabled: expectedTunEnabled)
             appendLog(level: "info", message: tr("log.action.success", actionName))
         } catch {

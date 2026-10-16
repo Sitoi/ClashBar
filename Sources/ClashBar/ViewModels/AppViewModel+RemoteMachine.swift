@@ -11,6 +11,8 @@ extension AppViewModel {
         self.remoteMachineStore.selectTarget(target)
 
         self.cancelPolling()
+        self.connectionStatisticsService = ConnectionStatisticsService()
+        self.connectionsStore.statistics = .empty
         self.resetTrafficPresentation()
         self.clearAllLogs()
         self.clearProxyPresentation()
