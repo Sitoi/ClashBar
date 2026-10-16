@@ -54,7 +54,7 @@ extension AppViewModel {
         kind: StreamKind,
         preserveReconnectState: Bool = false,
         makeWebSocket: @escaping (MihomoAPIService) throws -> URLSessionWebSocketTask,
-        onPayload: @escaping (Data) -> Void)
+        onPayload: @escaping (Data) async -> Void)
     {
         if kind == .connections {
             currentConnectionsStreamIntervalMilliseconds = nil
@@ -130,15 +130,44 @@ extension AppViewModel {
             })
     }
 
+    func enableTrafficStatisticsProcessMatching() async {
+        guard !self.isRemoteTarget else { return }
+        do {
+            try await self.clientOrThrow().requestNoResponse(
+                .patchConfigs(body: ["find-process-mode": .string("always")]))
+        } catch {
+            self.appendLog(
+                level: "warning",
+                message: self.tr("log.statistics.process_matching_failed", error.localizedDescription))
+        }
+    }
+
     func startConnectionsStream(intervalMilliseconds: Int? = nil) {
-        self.startDecodableStream(
+        let service = self.connectionStatisticsService
+        var needsProcessMatching = true
+        self.startStream(
             kind: .connections,
             makeWebSocket: {
                 try $0.makeWebSocketTask(for: .connections(interval: intervalMilliseconds))
             },
-            onDecoded: { [weak self] (snapshot: ConnectionsSnapshot) in
-                guard let self else { return }
-                self.applyConnectionsSnapshot(snapshot)
+            onPayload: { [weak self] payload in
+                guard !Task.isCancelled, let self else { return }
+                if needsProcessMatching {
+                    needsProcessMatching = false
+                    // The first frame confirms the controller is ready to accept the config patch.
+                    await self.enableTrafficStatisticsProcessMatching()
+                }
+                let connectionsVisible = self.isPanelPresented && self.activeMenuTab == .connections
+                let dimension = connectionsVisible && self.connectionsStore.showsStatistics
+                    ? self.connectionsStore.statisticsDimension : nil
+                guard let update = try? await service.process(
+                    payload,
+                    includeConnections: connectionsVisible && !self.connectionsStore.showsStatistics,
+                    statisticsDimension: dimension),
+                    !Task.isCancelled,
+                    service === self.connectionStatisticsService
+                else { return }
+                self.applyConnectionsUpdate(update)
             })
         currentConnectionsStreamIntervalMilliseconds = intervalMilliseconds
     }
@@ -230,14 +259,28 @@ extension AppViewModel {
         self.lastTrafficDecodeAt = .distantPast
     }
 
-    private func applyConnectionsSnapshot(_ snapshot: ConnectionsSnapshot) {
-        let totalCount = snapshot.totalCount
-        if connectionsStore.connectionsCount != totalCount {
-            connectionsStore.connectionsCount = totalCount
+    private func applyConnectionsUpdate(_ update: ConnectionStatisticsUpdate) {
+        guard self.isPanelPresented else { return }
+
+        if self.activeMenuTab == .proxy || self.activeMenuTab == .connections,
+           self.connectionsStore.connectionsCount != update.totalCount
+        {
+            self.connectionsStore.connectionsCount = update.totalCount
         }
 
-        if connectionsStore.connections != snapshot.connections {
-            connectionsStore.connections = snapshot.connections
+        guard self.activeMenuTab == .connections else { return }
+        if !self.connectionsStore.showsStatistics,
+           let connections = update.connections,
+           self.connectionsStore.connections != connections
+        {
+            self.connectionsStore.connections = connections
+        }
+        if self.connectionsStore.showsStatistics,
+           let statistics = update.statistics,
+           statistics.dimension == self.connectionsStore.statisticsDimension,
+           self.connectionsStore.statistics != statistics
+        {
+            self.connectionsStore.statistics = statistics
         }
     }
 

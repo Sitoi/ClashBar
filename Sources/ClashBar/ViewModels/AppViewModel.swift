@@ -370,6 +370,7 @@ final class AppViewModel: ObservableObject {
     var mediumFrequencyTask: Task<Void, Never>?
     var lowFrequencyTask: Task<Void, Never>?
     let streamCoordinator = StreamCoordinator()
+    var connectionStatisticsService = ConnectionStatisticsService()
     var proxyPortsAutoSaveTask: Task<Void, Never>?
     var settingsFeedbackClearTask: Task<Void, Never>?
     var providerRefreshTask: Task<Void, Never>?

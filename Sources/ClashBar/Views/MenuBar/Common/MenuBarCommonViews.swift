@@ -284,7 +284,9 @@ extension View {
     }
 
     var nativePositive: Color {
-        Color(nsColor: .systemGreen)
+        self.isDarkAppearance
+            ? Color(nsColor: .systemGreen)
+            : Color(red: 0.06, green: 0.32, blue: 0.16)
     }
 
     var nativeWarning: Color {
