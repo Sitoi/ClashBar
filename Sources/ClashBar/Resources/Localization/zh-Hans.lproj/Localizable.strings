@@ -79,6 +79,7 @@
 "ui.quick.switch_config" = "切换配置";
 "ui.quick.system_proxy" = "系统代理";
 "ui.quick.tun_mode" = "TUN 模式";
+"ui.quick.tun_mode_remote" = "远程 TUN";
 "ui.quick.tun_stack_switch_hint" = "双击切换 TUN 协议栈";
 "ui.quick.copy_terminal" = "复制终端命令";
 "ui.quick.copy_terminal_current_endpoint" = "复制当前端点命令";
@@ -199,6 +200,8 @@
 
 "ui.footer.core_mihomo" = "MIHOMO %@";
 "ui.footer.version" = "v%@";
+"ui.footer.resize_height" = "上下拖动调整菜单高度（切换页签后自动适配）";
+"ui.header.move_horizontal" = "按住左右拖动移动菜单（也可使用左右方向键）";
 "ui.footer.version_update_help" = "查看 v%@ 版本说明";
 "ui.footer.version_update_accessibility" = "当前版本 v%@，可更新到 v%@。";
 "ui.footer.core_upgrade.running" = "更新中...";

@@ -22,9 +22,9 @@ struct LogsTabView: TranslatingView {
     var body: some View {
         let logs = self.viewModel.visibleLogs
 
-        return VStack(alignment: .leading, spacing: T.space6) {
+        return MenuBarTabLayout {
             self.logsControlCard(filteredCount: logs.count)
-
+        } content: {
             if logs.isEmpty {
                 emptyCard(self.tr("ui.empty.logs"))
             } else {

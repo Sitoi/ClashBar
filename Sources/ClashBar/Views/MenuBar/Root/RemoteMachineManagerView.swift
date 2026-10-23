@@ -120,7 +120,7 @@ struct RemoteMachineManagerView: TranslatingView {
                 .padding(.horizontal, contentPadding)
                 .padding(.bottom, contentPadding)
             }
-            .scrollIndicators(.hidden)
+            .scrollIndicators(.never)
 
             Button {
                 self.editorMode = .add

@@ -34,9 +34,9 @@ struct ConnectionsTabView: TranslatingView {
     var body: some View {
         let connections = self.viewModel.visibleConnections
 
-        return VStack(alignment: .leading, spacing: T.space6) {
+        return MenuBarTabLayout {
             self.connectionsControlCard
-
+        } content: {
             if connections.isEmpty {
                 emptyCard(self.tr("ui.empty.connections"))
             } else {
@@ -415,6 +415,10 @@ struct ConnectionsTabView: TranslatingView {
             .font: NSFont.monospacedSystemFont(ofSize: size, weight: weight),
         ]
         let width = ceil((text as NSString).size(withAttributes: attributes).width)
+        // Bound unique rule/payload keys across snapshots. / 限制连续快照中新规则和载荷键的缓存数量。
+        if Self.textWidthCache.count >= 512 {
+            Self.textWidthCache.removeAll(keepingCapacity: true)
+        }
         Self.textWidthCache[cacheKey] = width
         return width
     }

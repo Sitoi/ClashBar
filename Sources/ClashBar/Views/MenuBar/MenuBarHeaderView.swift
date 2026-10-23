@@ -132,6 +132,8 @@ struct MenuBarHeaderView: TranslatingView {
     var headerConnectionControl: some View {
         AttachedPopoverMenu(
             expandAnchor: false,
+            placement: .below,
+            opensOnHover: false,
             onWillPresent: {
                 self.remoteMachineStore.checkAllConnectivity()
             },
@@ -163,6 +165,7 @@ struct MenuBarHeaderView: TranslatingView {
                 self.headerPopoverSection(self.tr("ui.machine.local_label"))
                 AttachedPopoverMenuItem(
                     title: self.tr("ui.machine.local"),
+                    subtitle: self.appViewModel.localExternalControllerDisplay,
                     leadingSymbol: "desktopcomputer",
                     leadingTint: self.nativeInfo.opacity(T.Opacity.solid),
                     selected: self.remoteMachineStore.activeTarget.isLocal,
@@ -187,6 +190,7 @@ struct MenuBarHeaderView: TranslatingView {
                     let isSelected = self.remoteMachineStore.activeTargetID == machine.id
                     AttachedPopoverMenuItem(
                         title: machine.name,
+                        subtitle: machine.displayAddress,
                         leadingSymbol: "network",
                         leadingTint: self.machineStatusTint(status),
                         selected: isSelected,
@@ -256,7 +260,12 @@ struct MenuBarHeaderView: TranslatingView {
     }
 
     var headerConnectionDisplayText: String {
-        self.appViewModel.externalControllerDisplay
+        switch self.remoteMachineStore.activeTarget {
+        case .local:
+            self.tr("ui.machine.local")
+        case let .remote(machine):
+            machine.name
+        }
     }
 
     var headerConnectionStatusTint: Color {

@@ -89,9 +89,13 @@ struct ConnectionSummary: Codable, Equatable, Identifiable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let dynamic = try decoder.container(keyedBy: ConnectionAnyCodingKey.self)
 
-        self.id = try container.decode(String.self, forKey: .id)
-        self.upload = try container.decodeIfPresent(Int64.self, forKey: .upload)
-        self.download = try container.decodeIfPresent(Int64.self, forKey: .download)
+        if let id = try? container.decode(String.self, forKey: .id) {
+            self.id = id
+        } else {
+            self.id = try String(container.decode(Int64.self, forKey: .id))
+        }
+        self.upload = try Self.decodeTrafficTotal(in: container, forKey: .upload)
+        self.download = try Self.decodeTrafficTotal(in: container, forKey: .download)
         self.start = try container.decodeIfPresent(String.self, forKey: .start)
         self.startTimestamp = Self.parseTimestamp(self.start)
         self.rule = try container.decodeIfPresent(String.self, forKey: .rule)
@@ -100,6 +104,20 @@ struct ConnectionSummary: Codable, Equatable, Identifiable {
             in: dynamic,
             keys: ["rulePayload", "rule_payload", "rulepayload", "payload"])
         self.chains = ConnectionAnyCodingKey.decodeStringArray(in: dynamic, keys: ["chains", "chain"])
+    }
+
+    private struct TrafficTotal: Decodable {
+        let total: Int64?
+    }
+
+    private static func decodeTrafficTotal(
+        in container: KeyedDecodingContainer<CodingKeys>,
+        forKey key: CodingKeys) throws -> Int64?
+    {
+        if let total = try? container.decode(Int64.self, forKey: key) {
+            return total
+        }
+        return try container.decodeIfPresent(TrafficTotal.self, forKey: key)?.total
     }
 }
 

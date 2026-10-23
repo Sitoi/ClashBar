@@ -5,6 +5,7 @@ import SwiftUI
 final class PopoverLayoutModel: ObservableObject {
     @Published private(set) var maxPanelHeight: CGFloat
     @Published private(set) var resolvedPanelHeight: CGFloat
+    @Published private(set) var userPanelHeight: CGFloat?
 
     let minPanelHeight: CGFloat
     private var requestedPanelHeight: CGFloat
@@ -35,6 +36,21 @@ final class PopoverLayoutModel: ObservableObject {
 
         self.maxPanelHeight = normalized
         self.recalculateResolvedPanelHeight()
+    }
+
+    func resizePanelHeight(to height: CGFloat, minimum: CGFloat) {
+        guard height.isFinite else { return }
+        let lowerBound = min(self.maxPanelHeight, max(self.minPanelHeight, minimum))
+        let clamped = min(self.maxPanelHeight, max(lowerBound, height.rounded(.up)))
+        if self.userPanelHeight != clamped {
+            self.userPanelHeight = clamped
+        }
+        self.requestPanelHeight(clamped)
+    }
+
+    func resumeAutomaticHeight() {
+        guard self.userPanelHeight != nil else { return }
+        self.userPanelHeight = nil
     }
 
     private func recalculateResolvedPanelHeight() {

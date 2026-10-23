@@ -192,82 +192,85 @@ extension ProxyTabView {
             action: action)
     }
 
-    var proxyGroupsSection: some View {
+    var proxyGroupsHeader: some View {
         let groups = rootViewModel.filteredProxyGroups
 
-        return VStack(alignment: .leading, spacing: T.space6) {
-            self.nodesSectionHeader(
-                tr("ui.section.proxy_groups"),
-                symbol: "point.3.connected.trianglepath.dotted",
-                count: "\(groups.count)")
-            {
-                HStack(spacing: T.space6) {
-                    self.compactTopIcon(
-                        sortGroupNodesByLatency ? "timer" : "list.number",
-                        label: tr(
-                            sortGroupNodesByLatency
-                                ? "ui.action.sort_nodes_default"
-                                : "ui.action.sort_nodes_by_latency"),
-                        toneOverride: nativeTeal)
-                    {
-                        sortGroupNodesByLatency.toggle()
-                    }
-                    .help(
-                        tr(
-                            sortGroupNodesByLatency
-                                ? "ui.action.sort_nodes_default"
-                                : "ui.action.sort_nodes_by_latency"))
-
-                    self.compactTopIcon(
-                        showLatencyHistory ? "chart.bar.xaxis" : "chart.bar",
-                        label: tr(
-                            showLatencyHistory
-                                ? "ui.action.hide_latency_history"
-                                : "ui.action.show_latency_history"),
-                        toneOverride: nativeTeal)
-                    {
-                        showLatencyHistory.toggle()
-                    }
-                    .help(
-                        tr(
-                            showLatencyHistory
-                                ? "ui.action.hide_latency_history"
-                                : "ui.action.show_latency_history"))
-
-                    self.compactTopIcon(
-                        hideHiddenProxyGroups ? "eye.slash" : "eye",
-                        label: tr(
-                            hideHiddenProxyGroups
-                                ? "ui.action.show_hidden_proxy_groups"
-                                : "ui.action.hide_hidden_proxy_groups"),
-                        toneOverride: nativeIndigo)
-                    {
-                        hideHiddenProxyGroups.toggle()
-                    }
-                    .help(
-                        tr(
-                            hideHiddenProxyGroups
-                                ? "ui.action.show_hidden_proxy_groups"
-                                : "ui.action.hide_hidden_proxy_groups"))
-
-                    self.compactTopIcon(
-                        "gauge",
-                        label: tr("ui.action.test_latency"),
-                        toneOverride: nativeTeal)
-                    {
-                        await appViewModel.refreshAllGroupLatencies(includeHiddenGroups: !hideHiddenProxyGroups)
-                    }
-                    .help(tr("ui.action.test_latency"))
+        return self.nodesSectionHeader(
+            tr("ui.section.proxy_groups"),
+            symbol: "point.3.connected.trianglepath.dotted",
+            count: "\(groups.count)")
+        {
+            HStack(spacing: T.space6) {
+                self.compactTopIcon(
+                    sortGroupNodesByLatency ? "timer" : "list.number",
+                    label: tr(
+                        sortGroupNodesByLatency
+                            ? "ui.action.sort_nodes_default"
+                            : "ui.action.sort_nodes_by_latency"),
+                    toneOverride: nativeTeal)
+                {
+                    sortGroupNodesByLatency.toggle()
                 }
-            }
+                .help(
+                    tr(
+                        sortGroupNodesByLatency
+                            ? "ui.action.sort_nodes_default"
+                            : "ui.action.sort_nodes_by_latency"))
 
-            if groups.isEmpty {
-                emptyCard(tr("ui.empty.proxy_groups"))
-            } else {
-                VStack(spacing: T.space2) {
-                    ForEach(groups, id: \.name) { group in
-                        self.proxyGroupInlineRow(group)
-                    }
+                self.compactTopIcon(
+                    showLatencyHistory ? "chart.bar.xaxis" : "chart.bar",
+                    label: tr(
+                        showLatencyHistory
+                            ? "ui.action.hide_latency_history"
+                            : "ui.action.show_latency_history"),
+                    toneOverride: nativeTeal)
+                {
+                    showLatencyHistory.toggle()
+                }
+                .help(
+                    tr(
+                        showLatencyHistory
+                            ? "ui.action.hide_latency_history"
+                            : "ui.action.show_latency_history"))
+
+                self.compactTopIcon(
+                    hideHiddenProxyGroups ? "eye.slash" : "eye",
+                    label: tr(
+                        hideHiddenProxyGroups
+                            ? "ui.action.show_hidden_proxy_groups"
+                            : "ui.action.hide_hidden_proxy_groups"),
+                    toneOverride: nativeIndigo)
+                {
+                    hideHiddenProxyGroups.toggle()
+                }
+                .help(
+                    tr(
+                        hideHiddenProxyGroups
+                            ? "ui.action.show_hidden_proxy_groups"
+                            : "ui.action.hide_hidden_proxy_groups"))
+
+                self.compactTopIcon(
+                    "gauge",
+                    label: tr("ui.action.test_latency"),
+                    toneOverride: nativeTeal)
+                {
+                    await appViewModel.refreshAllGroupLatencies(includeHiddenGroups: !hideHiddenProxyGroups)
+                }
+                .help(tr("ui.action.test_latency"))
+            }
+        }
+    }
+
+    @ViewBuilder
+    var proxyGroupsContent: some View {
+        let groups = rootViewModel.filteredProxyGroups
+
+        if groups.isEmpty {
+            emptyCard(tr("ui.empty.proxy_groups"))
+        } else {
+            VStack(spacing: T.space2) {
+                ForEach(groups, id: \.name) { group in
+                    self.proxyGroupInlineRow(group)
                 }
             }
         }

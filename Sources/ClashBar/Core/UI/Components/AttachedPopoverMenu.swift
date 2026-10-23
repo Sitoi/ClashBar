@@ -4,10 +4,17 @@ import SwiftUI
 // swiftlint:disable:next type_name
 private typealias T = MenuBarLayoutTokens
 
+enum AttachedPopoverMenuPlacement {
+    case side
+    case below
+}
+
 struct AttachedPopoverMenu<Label: View, Content: View>: View {
     let width: CGFloat?
     let maxHeight: CGFloat?
     let expandAnchor: Bool
+    let placement: AttachedPopoverMenuPlacement
+    let opensOnHover: Bool
     let onWillPresent: (() -> Void)?
     let label: (_ isHovered: Bool) -> Label
     let content: (_ dismiss: @escaping () -> Void) -> Content
@@ -22,6 +29,8 @@ struct AttachedPopoverMenu<Label: View, Content: View>: View {
         width: CGFloat? = nil,
         maxHeight: CGFloat? = nil,
         expandAnchor: Bool = true,
+        placement: AttachedPopoverMenuPlacement = .side,
+        opensOnHover: Bool = true,
         onWillPresent: (() -> Void)? = nil,
         @ViewBuilder label: @escaping (_ isHovered: Bool) -> Label,
         @ViewBuilder content: @escaping (_ dismiss: @escaping () -> Void) -> Content)
@@ -29,6 +38,8 @@ struct AttachedPopoverMenu<Label: View, Content: View>: View {
         self.width = width
         self.maxHeight = maxHeight
         self.expandAnchor = expandAnchor
+        self.placement = placement
+        self.opensOnHover = opensOnHover
         self.onWillPresent = onWillPresent
         self.label = label
         self.content = content
@@ -41,6 +52,7 @@ struct AttachedPopoverMenu<Label: View, Content: View>: View {
         .buttonStyle(.plain)
         .onHover { hovering in
             self.isAnchorHovered = hovering
+            if hovering, !self.opensOnHover { return }
 
             if hovering, !self.suppressAutoOpen {
                 if self.shouldBuildPopoverContent {
@@ -67,17 +79,24 @@ struct AttachedPopoverMenu<Label: View, Content: View>: View {
             self.popoverOpenTask?.cancel()
             self.popoverOpenTask = nil
         }
-        .background(
-            SideAttachedPopoverHost(
-                anchorHovered: self.$isAnchorHovered,
-                popoverRequested: self.$isPopoverRequested,
-                suppressAutoOpen: self.$suppressAutoOpen,
-                width: self.width,
-                maxHeight: self.maxHeight,
-                onVisibilityChanged: { visible in
-                    self.shouldBuildPopoverContent = visible
-                },
-                content: self.popoverContent))
+        .background {
+            // Allocate the native window only while this menu is open. / 仅在菜单打开期间创建原生窗口。
+            if self.shouldBuildPopoverContent {
+                SideAttachedPopoverHost(
+                    anchorHovered: self.$isAnchorHovered,
+                    popoverRequested: self.$isPopoverRequested,
+                    suppressAutoOpen: self.$suppressAutoOpen,
+                    width: self.width,
+                    maxHeight: self.maxHeight,
+                    placement: self.placement,
+                    onVisibilityChanged: { visible in
+                        if !visible, !self.isPopoverRequested {
+                            self.shouldBuildPopoverContent = false
+                        }
+                    },
+                    content: self.popoverContent)
+            }
+        }
     }
 
     var anchorLabel: some View {
@@ -102,7 +121,7 @@ struct AttachedPopoverMenu<Label: View, Content: View>: View {
                     }
                 }
             }
-            .scrollIndicators(.hidden)
+            .scrollIndicators(.never)
             .frame(width: self.width, alignment: .leading)
             .frame(maxHeight: self.maxHeight)
             .padding(T.space8)
@@ -132,6 +151,10 @@ struct AttachedPopoverMenu<Label: View, Content: View>: View {
     private func activateAnchor() {
         self.popoverOpenTask?.cancel()
         self.popoverOpenTask = nil
+        if !self.opensOnHover, self.shouldBuildPopoverContent {
+            self.dismissPopover()
+            return
+        }
         self.requestOpen()
         self.suppressAutoOpen = false
         self.isAnchorHovered = true
@@ -281,6 +304,7 @@ private struct SideAttachedPopoverHost<Content: View>: NSViewRepresentable {
     @Binding var suppressAutoOpen: Bool
     let width: CGFloat?
     let maxHeight: CGFloat?
+    let placement: AttachedPopoverMenuPlacement
     let onVisibilityChanged: ((Bool) -> Void)?
     let content: Content
 
@@ -293,23 +317,47 @@ private struct SideAttachedPopoverHost<Content: View>: NSViewRepresentable {
             content: self.content)
     }
 
-    func makeNSView(context: Context) -> NSView {
-        NSView(frame: .zero)
+    func makeNSView(context: Context) -> AnchorView {
+        let view = AnchorView(frame: .zero)
+        view.coordinator = context.coordinator
+        return view
     }
 
-    func updateNSView(_ nsView: NSView, context: Context) {
+    func updateNSView(_ nsView: AnchorView, context: Context) {
         context.coordinator.anchorHovered = self.$anchorHovered
         context.coordinator.popoverRequested = self.$popoverRequested
         context.coordinator.suppressAutoOpen = self.$suppressAutoOpen
         context.coordinator.width = self.width
         context.coordinator.maxHeight = self.maxHeight
+        context.coordinator.placement = self.placement
         context.coordinator.onVisibilityChanged = self.onVisibilityChanged
         context.coordinator.hostingController.rootView = self.content
         context.coordinator.sync(anchorView: nsView)
     }
 
-    static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
+    static func dismantleNSView(_ nsView: AnchorView, coordinator: Coordinator) {
+        nsView.coordinator = nil
+        coordinator.onVisibilityChanged = nil
         coordinator.closeNow()
+        coordinator.panel.contentViewController = nil
+        coordinator.panel.close()
+    }
+
+    final class AnchorView: NSView {
+        weak var coordinator: Coordinator?
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            guard self.window != nil else {
+                self.coordinator?.closeNow()
+                return
+            }
+            // Wait for the new anchor's first layout. / 等待新建锚点完成首次布局再定位。
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.window != nil else { return }
+                self.coordinator?.sync(anchorView: self)
+            }
+        }
     }
 
     @MainActor
@@ -319,6 +367,7 @@ private struct SideAttachedPopoverHost<Content: View>: NSViewRepresentable {
         var suppressAutoOpen: Binding<Bool>
         var width: CGFloat?
         var maxHeight: CGFloat?
+        var placement: AttachedPopoverMenuPlacement = .side
         var onVisibilityChanged: ((Bool) -> Void)?
 
         let panel: SideAttachedMenuPanel
@@ -399,12 +448,23 @@ private struct SideAttachedPopoverHost<Content: View>: NSViewRepresentable {
 
             let fitting = self.hostingController.view.fittingSize
             guard let anchorContext = PanelAnchorContext.resolve(for: anchorView) else { return }
-            guard let placement = anchorContext.sideAttachedPlacement(
-                contentSize: fitting,
-                preferredWidth: self.width,
-                maximumHeight: self.maxHeight,
-                screenPadding: 6,
-                edgeOverlap: self.edgeOverlap)
+            let placement: PanelPlacement? = switch self.placement {
+            case .side:
+                anchorContext.sideAttachedPlacement(
+                    contentSize: fitting,
+                    preferredWidth: self.width,
+                    maximumHeight: self.maxHeight,
+                    screenPadding: 6,
+                    edgeOverlap: self.edgeOverlap)
+            case .below:
+                anchorContext.belowAnchorPlacement(
+                    contentSize: fitting,
+                    preferredWidth: self.width,
+                    maximumHeight: self.maxHeight,
+                    screenPadding: 6,
+                    verticalSpacing: T.space4)
+            }
+            guard let placement
             else {
                 return
             }
@@ -459,7 +519,8 @@ private struct SideAttachedPopoverHost<Content: View>: NSViewRepresentable {
             guard self.reportedVisible != visible else { return }
             self.reportedVisible = visible
             guard let onVisibilityChanged else { return }
-            DispatchQueue.main.async {
+            DispatchQueue.main.async { [weak self] in
+                guard self?.reportedVisible == visible else { return }
                 onVisibilityChanged(visible)
             }
         }
@@ -532,6 +593,17 @@ private struct SideAttachedPopoverHost<Content: View>: NSViewRepresentable {
             let triggerRectInWindow = anchorView.convert(anchorView.bounds, to: nil)
             let triggerRect = hostWindow.convertToScreen(triggerRectInWindow)
             let panelRect = self.panel.frame
+
+            if self.placement == .below {
+                let minX = min(triggerRect.minX, panelRect.minX)
+                let maxX = max(triggerRect.maxX, panelRect.maxX)
+                let bridgeRect = NSRect(
+                    x: minX,
+                    y: panelRect.maxY,
+                    width: maxX - minX,
+                    height: max(0, triggerRect.minY - panelRect.maxY))
+                return (triggerRect, panelRect, bridgeRect)
+            }
 
             let bridgeMinY = min(triggerRect.minY - self.bridgeVerticalPadding, panelRect.minY)
             let bridgeMaxY = max(triggerRect.maxY + self.bridgeVerticalPadding, panelRect.maxY)

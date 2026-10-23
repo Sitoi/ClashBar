@@ -69,6 +69,8 @@ extension MenuBarRootView {
 
                 self.footerVersionInfo
                     .fixedSize(horizontal: true, vertical: false)
+
+                self.panelHeightResizeHandle
             }
             .menuRowPadding(vertical: T.space2)
             .background(self.footerSurfaceBackground)

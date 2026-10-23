@@ -223,7 +223,6 @@ final class StatusItemController: NSObject {
     private var lastRenderedKey: MenuBarDisplay?
     private var globalEventMonitor: Any?
     private var screenParametersObserver: Any?
-    private var lockedPanelOriginX: CGFloat?
     private var popoverHostingController: NSHostingController<StatusItemPopoverRootView>?
     private var bannerHostingController: NSHostingController<StatusItemBannerRootView>?
     private var panelStabilizationTask: Task<Void, Never>?
@@ -332,7 +331,6 @@ final class StatusItemController: NSObject {
     @objc
     private func closePopover(_ sender: Any?) {
         self.panel.orderOut(sender)
-        self.lockedPanelOriginX = nil
         self.panelStabilizationTask?.cancel()
         self.panelStabilizationTask = nil
         self.stopGlobalMonitor()
@@ -395,7 +393,7 @@ final class StatusItemController: NSObject {
         button.imagePosition = .imageOnly
         button.target = self
         button.action = #selector(self.togglePopover(_:))
-        button.sendAction(on: [.leftMouseUp])
+        button.sendAction(on: [.leftMouseUp, .rightMouseUp])
     }
 
     private func bindSession() {
@@ -532,13 +530,23 @@ final class StatusItemController: NSObject {
             .leftMouseDown,
             .rightMouseDown,
         ]) { [weak self] _ in
+            let clickLocation = NSEvent.mouseLocation
             DispatchQueue.main.async {
-                guard let self else { return }
-                if !self.appViewModel.isPinned {
-                    self.closePopover(nil)
-                }
+                self?.handleGlobalMouseDown(at: clickLocation)
             }
         }
+    }
+
+    func handleGlobalMouseDown(at screenPoint: NSPoint) {
+        guard self.panel.isVisible, !self.appViewModel.isPinned else { return }
+        // The status item handles its own toggle on mouse-up. / 状态栏图标在松开鼠标时自行切换菜单。
+        if let anchor = self.resolvedStatusItemAnchorContext(for: self.statusItem.button),
+           anchor.anchorFrameOnScreen.contains(screenPoint)
+        {
+            return
+        }
+        guard !self.panel.frame.contains(screenPoint) else { return }
+        self.closePopover(nil)
     }
 
     private func stopGlobalMonitor() {
@@ -609,7 +617,11 @@ final class StatusItemController: NSObject {
         self.panelStabilizationTask?.cancel()
         self.panelStabilizationTask = Task { @MainActor [weak self, weak button] in
             for pass in 0..<11 {
-                try? await Task.sleep(nanoseconds: pass == 0 ? 16_000_000 : 40_000_000)
+                do {
+                    try await Task.sleep(nanoseconds: pass == 0 ? 16_000_000 : 40_000_000)
+                } catch {
+                    return
+                }
 
                 guard
                     let self,
@@ -657,10 +669,9 @@ final class StatusItemController: NSObject {
                 horizontalPadding: self.panelHorizontalPadding,
                 verticalSpacing: self.panelTopSpacing,
                 screenPadding: self.popoverScreenPadding,
-                lockedOriginX: self.lockedPanelOriginX,
+                // Use the live origin so dragging survives height changes. / 使用实际位置，避免调整高度后拖动位置复位。
+                lockedOriginX: self.panel.frame.minX,
                 preserveHorizontalPosition: preserveHorizontalPosition))
-
-        self.lockedPanelOriginX = placement.lockedOriginX
 
         return placement.frame.origin
     }

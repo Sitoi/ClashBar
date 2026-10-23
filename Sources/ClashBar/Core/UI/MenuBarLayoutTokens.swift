@@ -2,6 +2,7 @@ import SwiftUI
 
 enum MenuBarLayoutTokens {
     static let panelWidth: CGFloat = 360
+    static let panelDragHandleHeight: CGFloat = 16
 
     static let space1: CGFloat = 1
     static let space2: CGFloat = 2
@@ -29,6 +30,7 @@ enum MenuBarLayoutTokens {
 
     enum AnimationDuration {
         static let quick: CGFloat = 0.15
+        static let tabSwitch: CGFloat = 0.18
         static let standard: CGFloat = 0.35
     }
 

@@ -51,6 +51,7 @@ struct MenuBarRootView: TranslatingView {
     @EnvironmentObject var remoteMachineStore: RemoteMachineStore
     @EnvironmentObject var popoverLayoutModel: PopoverLayoutModel
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     @StateObject var rootViewModel = ProxyGroupsViewModel()
     @Namespace var segmentedSelectionNamespace
@@ -64,12 +65,34 @@ struct MenuBarRootView: TranslatingView {
     @State var modeAndTabSectionHeight: CGFloat = 0
     @State var footerBarHeight: CGFloat = 0
     @State var currentTabContentHeight: CGFloat = 0
+    @State var currentTabHeaderHeight: CGFloat = 0
+    @State var previousTab: RootTab = .proxy
+    @State var resizeStartHeight: CGFloat?
     @AppStorage("clashbar.proxy.group.hide_hidden") var hideHiddenProxyGroups: Bool = true
     @AppStorage("clashbar.proxy.group.sort_nodes_by_latency") var sortGroupNodesByLatency: Bool =
         false
 
     var contentWidth: CGFloat {
         T.panelWidth - (T.space8 * 2)
+    }
+
+    var tabSelectionAnimation: Animation? {
+        self.reduceMotion ? nil : .easeOut(duration: T.AnimationDuration.tabSwitch)
+    }
+
+    var tabContentAnimation: Animation {
+        .easeOut(duration: self.reduceMotion ? T.AnimationDuration.quick : T.AnimationDuration.tabSwitch)
+    }
+
+    var tabContentTransition: AnyTransition {
+        guard !self.reduceMotion else { return .opacity }
+        let tabs = RootTab.allCases
+        let forward = (tabs.firstIndex(of: self.rootViewModel.currentTab) ?? 0) >
+            (tabs.firstIndex(of: self.previousTab) ?? 0)
+        let offset: CGFloat = forward ? 12 : -12
+        return .asymmetric(
+            insertion: .offset(CGSize(width: offset, height: 0)).combined(with: .opacity),
+            removal: .opacity.animation(.easeOut(duration: T.AnimationDuration.quick)))
     }
 
     func setCurrentTabWithoutAnimation(_ tab: RootTab) {
@@ -92,22 +115,30 @@ struct MenuBarRootView: TranslatingView {
 
     private var panelSections: some View {
         VStack(spacing: 0) {
-            MenuBarHeaderView(
-                showRemoteMachineManager: self.$showRemoteMachineManager,
-                isSwitchingMachine: self.$isSwitchingMachine)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .reportHeight { updateSectionHeight($0, target: .header) }
+            VStack(spacing: 0) {
+                PanelHorizontalDragHandle(label: self.tr("ui.header.move_horizontal"))
+                    .frame(width: 64, height: T.panelDragHandleHeight)
+                    .frame(maxWidth: .infinity)
+                MenuBarHeaderView(
+                    showRemoteMachineManager: self.$showRemoteMachineManager,
+                    isSwitchingMachine: self.$isSwitchingMachine)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .reportHeight { updateSectionHeight($0, target: .header) }
 
             modeAndTabSection
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .reportHeight { updateSectionHeight($0, target: .modeAndTab) }
 
-            ScrollView(.vertical) {
+            ZStack(alignment: .topLeading) {
                 self.measuredTabContent(for: self.rootViewModel.currentTab)
+                    .id(self.rootViewModel.currentTab)
+                    .transition(self.tabContentTransition)
             }
-            .scrollIndicators(.hidden)
             .frame(maxWidth: .infinity, alignment: .topLeading)
             .frame(height: tabScrollAreaHeight, alignment: .top)
+            .clipped()
+            .animation(self.tabContentAnimation, value: self.rootViewModel.currentTab)
 
             footerBar
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -143,6 +174,8 @@ struct MenuBarRootView: TranslatingView {
             }
             .onChange(of: self.rootViewModel.currentTab) { tab in
                 self.currentTabContentHeight = 0
+                self.currentTabHeaderHeight = 0
+                self.popoverLayoutModel.resumeAutomaticHeight()
                 self.appViewModel.setActiveMenuTab(tab)
                 self.refreshDerivedData(for: tab)
             }
@@ -150,6 +183,7 @@ struct MenuBarRootView: TranslatingView {
                 guard self.rootViewModel.currentTab != tab else { return }
                 self.setCurrentTabWithoutAnimation(tab)
                 self.currentTabContentHeight = 0
+                self.currentTabHeaderHeight = 0
                 self.refreshDerivedData(for: tab)
             }
             .onChange(of: resolvedPanelHeight) { _ in
@@ -190,41 +224,23 @@ struct MenuBarRootView: TranslatingView {
         case .logs:
             LogsTabView()
         case .system:
-            SystemTabView()
+            MenuBarTabLayout(spacing: 0) {
+                EmptyView()
+            } content: {
+                SystemTabView()
+            }
         }
     }
 
-    func tabUsesDynamicHeight(_ tab: RootTab) -> Bool {
-        switch tab {
-        case .proxy, .system:
-            true
-        case .rules, .connections, .logs:
-            false
-        }
-    }
-
-    @ViewBuilder
     func measuredTabContent(for tab: RootTab) -> some View {
-        let content = self.tabContent(for: tab)
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-        if self.tabUsesDynamicHeight(tab) {
-            content.reportHeight { updateCurrentTabContentHeight($0, for: tab) }
-        } else {
-            content
-        }
-    }
-
-    @ViewBuilder
-    func tabContent(for tab: RootTab) -> some View {
-        let content = self.tabBody(for: tab)
+        self.tabBody(for: tab)
             .padding(.top, T.space2)
-
-        if self.tabUsesDynamicHeight(tab) {
-            content.fixedSize(horizontal: false, vertical: true)
-        } else {
-            content
-        }
+            .onPreferenceChange(MenuBarTabMetricsKey.self) { metrics in
+                guard tab == self.rootViewModel.currentTab, metrics.contentHeight > 0 else { return }
+                self.currentTabHeaderHeight = metrics.headerHeight + T.space2
+                self.updateCurrentTabContentHeight(
+                    metrics.headerHeight + metrics.contentHeight + T.space2, for: tab)
+            }
     }
 
     var panelBackground: some View {

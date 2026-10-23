@@ -347,15 +347,20 @@ struct ProxyTabView: TranslatingView {
     }
 
     var proxyTabBody: some View {
-        VStack(alignment: .leading, spacing: T.space6) {
-            self.trafficOverview
-            self.proxyQuickRows
-            if !self.proxyStore.sortedProxyProviderNames.isEmpty {
-                proxyProvidersSection
+        MenuBarTabLayout {
+            VStack(alignment: .leading, spacing: T.space6) {
+                self.trafficOverview
+                self.proxyQuickRows
+                self.proxyGroupsHeader
             }
-            proxyGroupsSection
+        } content: {
+            VStack(alignment: .leading, spacing: T.space6) {
+                self.proxyGroupsContent
+                if !self.proxyStore.sortedProxyProviderNames.isEmpty {
+                    self.proxyProvidersSection
+                }
+            }
         }
-        .fixedSize(horizontal: false, vertical: true)
     }
 
     var trafficOverview: some View {
@@ -443,18 +448,7 @@ struct ProxyTabView: TranslatingView {
         let showManagedTargetAction = localTargetDisplay != managedTargetDisplay
 
         return VStack(spacing: 0) {
-            if self.appViewModel.isRemoteTarget {
-                self.quickRowContent(
-                    title: self.tr("ui.quick.switch_config"),
-                    symbol: "doc.text",
-                    foreground: nativePurple)
-                {
-                    Text(self.tr("ui.machine.remote_readonly"))
-                        .font(.app(size: T.FontSize.caption, weight: .regular))
-                        .lineLimit(1)
-                        .foregroundStyle(nativeTertiaryLabel)
-                }
-            } else {
+            if !self.appViewModel.isRemoteTarget {
                 AttachedPopoverMenu(
                     onWillPresent: {
                         self.appViewModel.refreshRemoteConfigMenuStates()
@@ -481,9 +475,8 @@ struct ProxyTabView: TranslatingView {
                         self.configMenuContent(dismiss: dismiss)
                     })
                     .buttonStyle(.plain)
+                self.systemProxyQuickToggleRow
             }
-
-            self.systemProxyQuickToggleRow
 
             self.tunModeQuickToggleRow
 
@@ -494,16 +487,18 @@ struct ProxyTabView: TranslatingView {
                 trailingFitsContent: true)
             {
                 HStack(spacing: T.space2) {
-                    self.proxyCommandActionButton(
-                        title: self.appViewModel.localProxyCommandHostDisplay(),
-                        target: .local,
-                        helpTitle: self.tr("ui.quick.copy_terminal"),
-                        helpDetail: localTargetDisplay)
-                    {
-                        self.appViewModel.copyLocalProxyCommand()
+                    if !self.appViewModel.isRemoteTarget {
+                        self.proxyCommandActionButton(
+                            title: self.appViewModel.localProxyCommandHostDisplay(),
+                            target: .local,
+                            helpTitle: self.tr("ui.quick.copy_terminal"),
+                            helpDetail: localTargetDisplay)
+                        {
+                            self.appViewModel.copyLocalProxyCommand()
+                        }
                     }
 
-                    if showManagedTargetAction {
+                    if showManagedTargetAction || self.appViewModel.isRemoteTarget {
                         self.proxyCommandActionButton(
                             title: self.appViewModel.managedEndpointProxyCommandHostDisplay(),
                             target: .currentEndpoint,
@@ -687,7 +682,9 @@ struct ProxyTabView: TranslatingView {
 
     var tunModeQuickToggleRow: some View {
         self.quickRowContent(
-            title: self.tr("ui.quick.tun_mode"),
+            title: self.appViewModel.isRemoteTarget
+                ? self.tr("ui.quick.tun_mode_remote")
+                : self.tr("ui.quick.tun_mode"),
             symbol: "shield.lefthalf.filled",
             foreground: nativePositive,
             trailingFitsContent: true)

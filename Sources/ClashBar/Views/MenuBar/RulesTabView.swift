@@ -17,49 +17,51 @@ struct RulesTabView: TranslatingView {
         let visibleRules = output.rules
         let providerLookup = output.providerLookup
 
-        return VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 0) {
-                HStack(spacing: T.space8) {
-                    self.rulesStatChip(title: self.tr("ui.rule.stats.rules"), value: "\(self.proxyStore.rulesCount)")
-                    self.rulesStatChip(
-                        title: self.tr("ui.rule.stats.sets"),
-                        value: "\(self.proxyStore.providerRuleCount)")
-                }
+        return MenuBarTabLayout(spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 0) {
+                    HStack(spacing: T.space8) {
+                        self.rulesStatChip(title: self.tr("ui.rule.stats.rules"), value: "\(self.proxyStore.rulesCount)")
+                        self.rulesStatChip(
+                            title: self.tr("ui.rule.stats.sets"),
+                            value: "\(self.proxyStore.providerRuleCount)")
+                    }
 
-                Spacer(minLength: 0)
-                HStack(spacing: T.space4) {
-                    self.rulesGroupToggle
-                    self.rulesRefreshButton
+                    Spacer(minLength: 0)
+                    HStack(spacing: T.space4) {
+                        self.rulesGroupToggle
+                        self.rulesRefreshButton
+                    }
                 }
-            }
-            .padding(.vertical, T.space6)
-            .overlay(alignment: .bottom) { self.hairline }
-
-            self.rulesControlCard
+                .padding(.vertical, T.space6)
                 .overlay(alignment: .bottom) { self.hairline }
 
-            HStack(spacing: 0) {
-                Color.clear.frame(width: 24)
-                Text(self.tr("ui.rules.column.target_type"))
-                    .font(.app(size: T.FontSize.caption, weight: .medium))
-                    .foregroundStyle(nativeTertiaryLabel)
-                    .frame(width: 120, alignment: .leading)
-                    .padding(.trailing, T.space6)
-                Text(self.tr("ui.rules.column.policy"))
-                    .font(.app(size: T.FontSize.caption, weight: .medium))
-                    .foregroundStyle(nativeTertiaryLabel)
-                    .padding(.leading, T.space6)
-                    .frame(width: 90, alignment: .leading)
-                Text(self.tr("ui.rules.column.stats"))
-                    .font(.app(size: T.FontSize.caption, weight: .medium))
-                    .foregroundStyle(nativeTertiaryLabel)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-            }
-            .textCase(.uppercase)
-            .padding(.horizontal, T.space4)
-            .padding(.vertical, T.space6)
-            .overlay(alignment: .bottom) { self.hairline }
+                self.rulesControlCard
+                    .overlay(alignment: .bottom) { self.hairline }
 
+                HStack(spacing: 0) {
+                    Color.clear.frame(width: 24)
+                    Text(self.tr("ui.rules.column.target_type"))
+                        .font(.app(size: T.FontSize.caption, weight: .medium))
+                        .foregroundStyle(nativeTertiaryLabel)
+                        .frame(width: 120, alignment: .leading)
+                        .padding(.trailing, T.space6)
+                    Text(self.tr("ui.rules.column.policy"))
+                        .font(.app(size: T.FontSize.caption, weight: .medium))
+                        .foregroundStyle(nativeTertiaryLabel)
+                        .padding(.leading, T.space6)
+                        .frame(width: 90, alignment: .leading)
+                    Text(self.tr("ui.rules.column.stats"))
+                        .font(.app(size: T.FontSize.caption, weight: .medium))
+                        .foregroundStyle(nativeTertiaryLabel)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+                .textCase(.uppercase)
+                .padding(.horizontal, T.space4)
+                .padding(.vertical, T.space6)
+                .overlay(alignment: .bottom) { self.hairline }
+            }
+        } content: {
             if visibleRules.isEmpty {
                 self.rulesEmptyState
             } else if self.viewModel.groupByPolicy {
@@ -95,13 +97,14 @@ struct RulesTabView: TranslatingView {
     var rulesControlCard: some View {
         self.tabControlCard {
             HStack(spacing: T.space4) {
-                ScrollView(.horizontal, showsIndicators: false) {
+                ScrollView(.horizontal) {
                     HStack(spacing: T.space4) {
                         ForEach(RulesTypeFilter.allCases) { filter in
                             self.ruleTypeChip(filter)
                         }
                     }
                 }
+                .scrollIndicators(.never)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 self.fractionSummaryBadge(

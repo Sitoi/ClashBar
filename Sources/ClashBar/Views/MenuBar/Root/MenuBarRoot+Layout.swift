@@ -13,22 +13,22 @@ extension MenuBarRootView {
         topHeaderHeight + modeAndTabSectionHeight + footerBarHeight
     }
 
-    private var fallbackTabScrollAreaHeight: CGFloat {
-        max(0, popoverLayoutModel.resolvedPanelHeight - self.fixedSectionHeight)
-    }
-
-    private var availableTabScrollAreaHeight: CGFloat {
-        max(0, popoverLayoutModel.maxPanelHeight - self.fixedSectionHeight)
+    var minimumPanelHeight: CGFloat {
+        min(popoverLayoutModel.maxPanelHeight,
+            max(popoverLayoutModel.minPanelHeight, self.fixedSectionHeight + self.currentTabHeaderHeight + 64))
     }
 
     var tabScrollAreaHeight: CGFloat {
-        guard self.hasResolvedCurrentTabLayout else { return self.fallbackTabScrollAreaHeight }
-        return min(max(1, self.currentTabContentHeight), self.availableTabScrollAreaHeight)
+        max(0, self.resolvedPanelHeight - self.fixedSectionHeight)
     }
 
     var resolvedPanelHeight: CGFloat {
+        if let userPanelHeight = popoverLayoutModel.userPanelHeight {
+            return min(popoverLayoutModel.maxPanelHeight, max(self.minimumPanelHeight, userPanelHeight))
+        }
         guard self.hasResolvedCurrentTabLayout else { return popoverLayoutModel.resolvedPanelHeight }
-        return max(1, min(self.fixedSectionHeight + self.tabScrollAreaHeight, popoverLayoutModel.maxPanelHeight))
+        return min(popoverLayoutModel.maxPanelHeight,
+                   max(self.minimumPanelHeight, self.fixedSectionHeight + self.currentTabContentHeight))
     }
 
     enum SectionHeightTarget {

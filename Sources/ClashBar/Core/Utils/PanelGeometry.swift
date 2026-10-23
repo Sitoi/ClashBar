@@ -1,5 +1,16 @@
 import AppKit
 
+enum PanelGeometry {
+    // Share the horizontal limits between placement and dragging. / 定位与拖动使用相同的横向边界。
+    static func clampedHorizontalOrigin(
+        _ proposedX: CGFloat, panelWidth: CGFloat, visibleFrame: CGRect, padding: CGFloat) -> CGFloat
+    {
+        let minX = visibleFrame.minX + padding
+        let maxX = max(minX, visibleFrame.maxX - padding - panelWidth)
+        return min(max(proposedX, minX), maxX)
+    }
+}
+
 enum PanelAttachmentSide: Equatable {
     case left
     case right
@@ -62,12 +73,10 @@ struct PanelAnchorContext {
         options: MenuBarDropdownPlacementOptions)
         -> PanelPlacement
     {
-        let minX = self.visibleFrame.minX + options.horizontalPadding
-        let maxX = self.visibleFrame.maxX - options.horizontalPadding - panelSize.width
-
         let centeredX = self.anchorFrameOnScreen.midX - panelSize.width / 2
         let stableX = options.preserveHorizontalPosition ? (options.lockedOriginX ?? centeredX) : centeredX
-        let clampedX = min(max(stableX, minX), maxX)
+        let clampedX = PanelGeometry.clampedHorizontalOrigin(
+            stableX, panelWidth: panelSize.width, visibleFrame: self.visibleFrame, padding: options.horizontalPadding)
 
         let anchorTopY = self.statusBarBottomY - options.verticalSpacing
         let minY = self.visibleFrame.minY + options.screenPadding
@@ -76,6 +85,32 @@ struct PanelAnchorContext {
         return PanelPlacement(
             frame: CGRect(origin: CGPoint(x: clampedX, y: clampedY), size: panelSize),
             lockedOriginX: clampedX,
+            attachmentSide: nil)
+    }
+
+    func belowAnchorPlacement(
+        contentSize: CGSize,
+        preferredWidth: CGFloat?,
+        maximumHeight: CGFloat?,
+        screenPadding: CGFloat,
+        verticalSpacing: CGFloat)
+        -> PanelPlacement
+    {
+        let minX = self.visibleFrame.minX + screenPadding
+        let minY = self.visibleFrame.minY + screenPadding
+        let panelWidth = min(max(1, preferredWidth ?? contentSize.width), self.visibleFrame.width - screenPadding * 2)
+        let anchorBottomY = self.anchorFrameOnScreen.minY - verticalSpacing
+        let availableHeight = max(1, anchorBottomY - minY)
+        let preferredHeight = min(
+            contentSize.height,
+            maximumHeight.map { $0 + screenPadding * 2 } ?? contentSize.height)
+        let panelHeight = min(max(40, preferredHeight), availableHeight)
+        let maxX = self.visibleFrame.maxX - screenPadding - panelWidth
+        let originX = max(minX, min(self.anchorFrameOnScreen.minX, maxX))
+
+        return PanelPlacement(
+            frame: CGRect(x: originX, y: anchorBottomY - panelHeight, width: panelWidth, height: panelHeight),
+            lockedOriginX: nil,
             attachmentSide: nil)
     }
 
