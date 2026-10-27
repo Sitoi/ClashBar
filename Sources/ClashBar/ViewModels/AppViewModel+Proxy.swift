@@ -176,10 +176,19 @@ extension AppViewModel {
         let timeout = proxyGroup?.timeout.flatMap { $0 > 0 ? $0 : nil } ?? defaultHealthcheckTimeoutMilliseconds
 
         await runRefresh {
-            let response: DelayMeasurement = try await self.clientOrThrow().request(
-                .proxyDelay(name: node, url: testURL, timeout: timeout))
-            guard let value = response.value else { return }
-            self.applyMeasuredNodeDelays([node: value])
+            let measured: Int
+            do {
+                let response: DelayMeasurement = try await self.clientOrThrow().request(
+                    .proxyDelay(name: node, url: testURL, timeout: timeout))
+                measured = response.value ?? 0
+            } catch let APIError.statusCode(code, _) where code >= 500 {
+                // 5xx 表示内核对该节点测速失败（超时 504 / 不可达 503），
+                // 是节点状态而非 API 故障：记为 0 让界面立即显示「超时」，
+                // 而不是静默丢弃结果、继续展示上一次成功的旧延迟。
+                // 其余错误（API 连不上等）仍交给 runRefresh 走降级路径。
+                measured = 0
+            }
+            self.applyMeasuredNodeDelays([node: measured])
         }
     }
 
