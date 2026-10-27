@@ -474,6 +474,15 @@ extension AppViewModel {
                 merged[name] = Array(existing.suffix(ProxyDelayHistory.limit))
                 continue
             }
+            // 内核已判定该节点失败（最新样本为 0）时，必须如实采用 API 序列。
+            // 否则 mergeDelaySeries 在两序列无重叠时会偏向保留本地旧序列，
+            // 把断档前最后一次成功的延迟值永远钉在界面上（节点实际早已超时，
+            // 且全 0 的 API 序列此后永远无法通过重叠校验翻案）。
+            // 断档的典型来源：面板关闭期间暂停轮询 + 内核重启清空 history。
+            if apiSamples.last == 0 {
+                merged[name] = apiSamples
+                continue
+            }
             merged[name] = Self.mergeDelaySeries(api: apiSamples, previous: existing)
         }
         return merged
