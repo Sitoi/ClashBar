@@ -284,42 +284,94 @@ struct SSIDSection: Codable, Equatable {
 
 // MARK: - 元信息
 
-/// 远端 `meta.json`，用于冲突判定与无变化跳过。
+/// bundle 内单个配置文件的清单项。
+///
+/// 字段声明严格：清单是解包时的校验依据，缺字段宁可当作「元信息损坏」抛错，
+/// 不能默认成空值让校验形同虚设。
+struct SyncedConfigEntry: Codable, Equatable {
+    var name: String
+    var sha256: String
+    var bytes: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case name
+        case sha256
+        case bytes
+    }
+
+    init(name: String, sha256: String, bytes: Int) {
+        self.name = name
+        self.sha256 = sha256
+        self.bytes = bytes
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.name = try container.decode(String.self, forKey: .name)
+        self.sha256 = try container.decode(String.self, forKey: .sha256)
+        self.bytes = try container.decode(Int.self, forKey: .bytes)
+    }
+}
+
+/// 远端 `meta.json`：下载缓存探测 + 冲突判定 + bundle 完整性校验。
+///
+/// 现在它是 `bundle.zip` 之外唯一的小文件（~500B），同步时先取它决定要不要下全量。
+/// 它不再充当「伪事务的提交标记」——zip 本身就原子。
 struct SyncMetadata: Codable, Equatable {
     var schemaVersion: Int
     var deviceName: String
     var updatedAt: Date
-    var configSha256: String
-    var settingsSha256: String
     var appVersion: String
     var platform: String
+    /// `bundle.zip` 的 sha256。为空表示旧的扁平布局（≤0.3.6）
+    var bundleSha256: String
+    var bundleBytes: Int
+    /// bundle 内的配置清单，按名字排序
+    var configs: [SyncedConfigEntry]
+    var settingsSha256: String
+    /// 旧布局里的配置哈希，仅用于识别/读取旧远端
+    var legacyConfigSha256: String
+
+    /// 旧布局：配置是 `config/<name>.yaml` 扁平文件，没有 bundle
+    var isLegacyLayout: Bool {
+        self.bundleSha256.isEmpty
+    }
 
     private enum CodingKeys: String, CodingKey {
         case schemaVersion
         case deviceName
         case updatedAt
-        case configSha256
-        case settingsSha256
         case appVersion
         case platform
+        case bundleSha256
+        case bundleBytes
+        case configs
+        case settingsSha256
+        case legacyConfigSha256 = "configSha256"
     }
 
     init(
         schemaVersion: Int = SyncPayload.currentSchemaVersion,
         deviceName: String,
         updatedAt: Date,
-        configSha256: String,
-        settingsSha256: String,
         appVersion: String,
-        platform: String)
+        platform: String,
+        bundleSha256: String,
+        bundleBytes: Int,
+        configs: [SyncedConfigEntry],
+        settingsSha256: String,
+        legacyConfigSha256: String = "")
     {
         self.schemaVersion = schemaVersion
         self.deviceName = deviceName
         self.updatedAt = updatedAt
-        self.configSha256 = configSha256
-        self.settingsSha256 = settingsSha256
         self.appVersion = appVersion
         self.platform = platform
+        self.bundleSha256 = bundleSha256
+        self.bundleBytes = bundleBytes
+        self.configs = configs
+        self.settingsSha256 = settingsSha256
+        self.legacyConfigSha256 = legacyConfigSha256
     }
 
     init(from decoder: Decoder) throws {
@@ -328,10 +380,15 @@ struct SyncMetadata: Codable, Equatable {
             ?? SyncPayload.currentSchemaVersion
         self.deviceName = try container.decodeIfPresent(String.self, forKey: .deviceName) ?? ""
         self.updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? .distantPast
-        self.configSha256 = try container.decodeIfPresent(String.self, forKey: .configSha256) ?? ""
-        self.settingsSha256 = try container.decodeIfPresent(String.self, forKey: .settingsSha256) ?? ""
         self.appVersion = try container.decodeIfPresent(String.self, forKey: .appVersion) ?? ""
         self.platform = try container.decodeIfPresent(String.self, forKey: .platform) ?? ""
+        self.bundleSha256 = try container.decodeIfPresent(String.self, forKey: .bundleSha256) ?? ""
+        self.bundleBytes = try container.decodeIfPresent(Int.self, forKey: .bundleBytes) ?? 0
+        self.configs = try container.decodeIfPresent([SyncedConfigEntry].self, forKey: .configs) ?? []
+        self.settingsSha256 = try container.decodeIfPresent(String.self, forKey: .settingsSha256) ?? ""
+        self.legacyConfigSha256 = try container.decodeIfPresent(
+            String.self,
+            forKey: .legacyConfigSha256) ?? ""
     }
 }
 

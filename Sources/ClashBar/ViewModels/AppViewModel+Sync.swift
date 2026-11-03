@@ -60,19 +60,28 @@ extension AppViewModel {
     // MARK: 快照收集
 
     /// 汇总当前配置与设置，生成待同步快照。
+    ///
+    /// 只收集"非订阅派生"的配置：订阅内容由各平台自行按 URL 拉取，纳入同步只会让
+    /// 设备之间用过期的节点列表互相覆盖。判定依据就是 `remoteConfigSubscriptions` 的 key。
     func makeSyncSnapshot(at date: Date = Date()) throws -> LocalSyncSnapshot {
         let directory = self.workingDirectoryManager.configDirectoryURL
-        let fileName = self.resolvedSyncConfigFileName()
-        let url = directory.appendingPathComponent(fileName, isDirectory: false)
+        let subscriptionNames = Set(self.remoteConfigSubscriptions.keys)
 
-        guard let data = try? Data(contentsOf: url), !data.isEmpty else {
-            throw SyncError.configFileMissing(fileName)
-        }
+        let configs = try ConfigDirectoryManager
+            .scanConfigFiles(in: directory)
+            .filter { !subscriptionNames.contains($0.lastPathComponent) }
+            .map { url -> LocalConfigFile in
+                let name = try SyncService.normalizeConfigFileName(url.lastPathComponent)
+                guard let data = try? Data(contentsOf: url) else {
+                    throw SyncError.configFileMissing(name)
+                }
+                return LocalConfigFile(name: name, data: data)
+            }
 
         let payload = SyncPayload(
             updatedAt: date,
             updatedBy: SyncService.defaultDeviceName,
-            selectedConfig: fileName,
+            selectedConfig: self.resolvedSyncConfigFileName(),
             core: Self.coreSection(from: self.currentEditableSettingsSnapshot()),
             subscriptions: self.syncSubscriptionSections(),
             systemProxy: SystemProxySection(
@@ -85,7 +94,7 @@ extension AppViewModel {
                 SSIDSection(ssid: $0.ssid, configFileName: $0.configFileName)
             })
 
-        return LocalSyncSnapshot(configFileName: fileName, configData: data, payload: payload)
+        return LocalSyncSnapshot(configs: configs, payload: payload)
     }
 
     private func resolvedSyncConfigFileName() -> String {
@@ -93,7 +102,7 @@ extension AppViewModel {
         if !name.isEmpty, name != "-", name.hasSuffix(".yaml") || name.hasSuffix(".yml") {
             return name
         }
-        return "ClashBar.yaml"
+        return SyncService.defaultConfigFileName
     }
 
     private func syncSubscriptionSections() -> [SubscriptionSection] {
@@ -172,9 +181,20 @@ extension AppViewModel {
 
         // 配置文件已由 SyncService 写入磁盘，刷新文件列表并重载核心
         self.reloadConfigFileList()
-        if self.selectedConfigName != payload.selectedConfig {
-            self.defaults.set(payload.selectedConfig, forKey: self.selectedConfigKey)
+
+        // 只有目标文件确实存在时才切换选中项：`selectedConfig` 可能是一个尚未在本机
+        // 下载的订阅配置（订阅只同步 URL），直接写 defaults 会让 UI 指向不存在的文件。
+        let target = payload.selectedConfig.trimmed
+        guard !target.isEmpty,
+              let matched = self.configService.availableConfigs.first(where: {
+                  $0.lastPathComponent == target
+              })
+        else {
+            return
         }
+        self.configService.selectConfig(matched)
+        _ = self.syncSelectedConfigSelection(matched)
+        self.syncConfigDisplayState()
     }
 
     // MARK: 操作
@@ -222,17 +242,15 @@ extension AppViewModel {
 
         do {
             let snapshot = try self.makeSyncSnapshot()
-            let outcome = try await service.sync(snapshot)
-            switch outcome.action {
-            case .pulled:
-                if let result = try? await service.pull() {
-                    await self.applySyncPayload(result.payload)
-                    await self.reloadConfig()
-                }
-            case .pushed, .upToDate:
-                break
+            let result = try await service.sync(snapshot)
+            // 拉取分支已带回 payload，无需再请求一次远端
+            if let payload = result.pulledPayload {
+                await self.applySyncPayload(payload)
+                await self.reloadConfig()
             }
-            self.completeSync(outcome: outcome, message: Self.describe(outcome: outcome))
+            self.completeSync(
+                outcome: result.outcome,
+                message: Self.describe(outcome: result.outcome))
         } catch {
             self.failSync(error)
         }
